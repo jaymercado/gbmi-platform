@@ -73,6 +73,21 @@ no_restarts() {
   return "$bad"
 }
 
+no_anonymous_volumes() {
+  # An image that declares a volume gets an anonymous one unless the service mounts something
+  # there, and `make down` would leave it behind.
+  local id name bad=0
+  for id in $("${COMPOSE[@]}" ps --all --quiet); do
+    for name in $(docker inspect --format '{{range .Mounts}}{{if eq .Type "volume"}}{{.Name}} {{end}}{{end}}' "$id"); do
+      if printf '%s' "$name" | grep -qE '^[0-9a-f]{64}$'; then
+        echo "$(docker inspect --format '{{.Name}}' "$id") uses the anonymous volume ${name:0:12}"
+        bad=1
+      fi
+    done
+  done
+  return "$bad"
+}
+
 no_import_errors() {
   local output
   output="$("${COMPOSE[@]}" exec -T airflow-scheduler airflow dags list-import-errors --output json 2>/dev/null)"
@@ -173,6 +188,7 @@ environments_are_isolated() {
 check "long-running services are healthy" services_healthy
 check "clickhouse-init, airflow-init and dbt-manifest finished with exit code 0" one_shots_succeeded
 check "no container has restarted" no_restarts
+check "no service uses an anonymous volume" no_anonymous_volumes
 check "no DAG import errors" no_import_errors
 check "pools sec_api, silver_writer and heavy exist with one slot" pools_exist
 check "ClickHouse reports version 26.8" clickhouse_version

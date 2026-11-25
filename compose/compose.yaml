@@ -151,6 +151,11 @@ services:
       CH_GBMI_PASSWORD: ${CH_GBMI_PASSWORD:?run make setup}
     volumes:
       - ./db/clickhouse/init:/init:ro
+    # The image declares /var/lib/clickhouse as a volume. This container only runs the client,
+    # so it gets an in-memory one; otherwise every `make down` would leave an anonymous
+    # volume behind.
+    tmpfs:
+      - /var/lib/clickhouse
     restart: "no"
     depends_on:
       clickhouse:
