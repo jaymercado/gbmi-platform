@@ -1,6 +1,6 @@
 # P0 spike report
 
-Three spikes settle the technical risks that could change the design (blueprint §13, risks R1, R2 and R6; week 1 plan WP-06 to WP-08). Each section gives, per question: the result, the evidence (a test that stays in the suite), the decision and any follow-up.
+Three spikes settle the technical risks that could change the design (blueprint §13, risks R1, R2, R3 and R6; week 1 plan WP-06 to WP-08). They were run on 2026-11-25. Each section gives, per question: the result, the evidence (a test that stays in the suite), the decision and any follow-up.
 
 **How to read the results.** *Pass* and *fail* are what the named test showed on the stated versions. An option that was rejected is kept in the suite as a *strict expected failure*: if a later release makes it work, that test starts passing, the suite fails, and the decision is revisited.
 
@@ -8,7 +8,7 @@ Three spikes settle the technical risks that could change the design (blueprint 
 
 | Spike | Risk | Decision | Status |
 |---|---|---|---|
-| SK1 — PyIceberg contract | — | Overwrite filtered on the unit, in one catalog commit; days are streamed into one file and added with `add_files` | Local: passed. Glue/S3: not run |
+| SK1 — PyIceberg contract | R3 | Overwrite filtered on the unit, in one catalog commit; days are streamed into one file and added with `add_files` | Local: passed. Glue/S3: not run |
 | SK2 — ClickHouse pinned read | R1 | Engine-level pinning with `iceberg_metadata_file_path`; no fallback needed | Local: passed. S3: not run |
 | SK3 A — partition replace | R2 | Fallback taken: the custom `partition_replace` materialisation. The adapter's `insert_overwrite` fails test T4 | Passed (T1–T6, by day and by month) |
 | SK3 B — Cosmos on Airflow 3.4 | R6 | Cosmos as designed; no fallback needed | Passed (B1–B5) |
@@ -52,7 +52,7 @@ Rejected options, kept as strict expected failures:
 
 1. **Commit primitive: `overwrite` with an explicit unit filter, inside one transaction** (`gbmi.lake.commit.overwrite_unit`). It is one catalog commit and up to two snapshots, as the week 1 plan expected (difference D8). The helper refuses rows that do not belong to the unit and runs the audit before the commit, so a failed audit leaves the previous version live.
 2. **Every snapshot of a commit carries the same `gbmi.commit-id`.** This is what lets maintenance count commits instead of snapshots, and it identifies the rollback target: the snapshot before the commit. A mart records the commit's *last* snapshot as `_silver_snapshot_id`.
-3. **Daily pattern: (b), stream then `add_files`** (`gbmi.lake.commit.overwrite_day_streaming`). Memory is bounded by one batch, the day ends as one file (compaction), and the commit has two snapshots, not twenty-five. The file is written with the table's field ids and codec, so it is indistinguishable from a file PyIceberg wrote. Pattern (a) also works and remains the fallback. Whether ClickHouse reads a file added this way is checked in SK2.
+3. **Daily pattern: (b), stream then `add_files`** (`gbmi.lake.commit.overwrite_day_streaming`). Memory is bounded by one batch, the day ends as one file (compaction), and the commit has two snapshots, not twenty-five. The file is written with the table's field ids and codec, so it is indistinguishable from a file PyIceberg wrote. Pattern (a) also works and remains the fallback. Whether ClickHouse reads a file added this way is checked in SK2. The memory probe later ran this pattern on a real day: 96 GKG files (1,455 MB raw, 111,522 rows) became one 103 MB file in 6.9 seconds with a 535 MiB peak, and a rebuild of the day was one commit of `delete` and `append` (`docs/reports/p0-memory.md`).
 4. **Namespace location is set explicitly on both backends** (`<warehouse>/silver.db`). Without it the two catalogs disagree: PyIceberg's SQL catalog defaults to `<warehouse>/<namespace>/<table>` and its Glue catalog to `<warehouse>/<database>.db/<table>`.
 5. **Snapshot expiry is by snapshot id** (`gbmi.lake.maintenance.expire_snapshots`): keep the newest five commits whole, expire older snapshots after seven days, never a branch head or a tag.
 
@@ -162,7 +162,7 @@ Three of the blueprint's illustrative statements, run on ClickHouse 26.8 with in
 |---|---|
 | Versions | dbt-core 1.12.7, dbt-clickhouse 1.10.4, ClickHouse 26.8.46.6 |
 | Code | `dbt/macros/materializations/partition_replace.sql`, `dbt/macros/partitions.sql` |
-| Evidence | `tests/integration/dbt/test_sk3_partition_replace.py` with the test-only dbt project in `tests/integration/dbt/project/`. Run by `make integration` and by the `dbt` workflow |
+| Evidence | `tests/integration/dbt/test_sk3_partition_replace.py` with the test-only dbt project in `tests/integration/dbt/project/`. Run by `make integration`. The `dbt` workflow is written to run it on every pull request; no workflow has run yet |
 | Set-up | A source of three days in two months. Every test runs for a model partitioned by day (`slot_date`) and one partitioned by month (`toYYYYMM(slot_date)`). dbt connects as a user holding exactly the privileges of the `dbt_rw` role |
 
 **What the adapter's own strategy does.** `insert_overwrite` in dbt-clickhouse 1.10.4 builds a staging table, reads the partitions *present in it* and replaces exactly those. A partition whose rebuild returns no rows is not in the staging table, so it is never replaced and keeps its old rows (read in the installed adapter source, `incremental.sql`, macro `clickhouse__incremental_insert_overwrite`).
@@ -194,7 +194,7 @@ Three further tests guard the materialisation itself: a model that ignores the r
 | | |
 |---|---|
 | Versions | Apache Airflow 3.4.0 (LocalExecutor), astronomer-cosmos 1.16.0, dbt-core 1.12.7 in `/opt/venvs/dbt`, `gbmi` in `/opt/venvs/gbmi` |
-| Evidence | `dags/spike_sk3_cosmos.py` with the model `dbt/models/spike/spike_sk3_cosmos.sql`, run by hand twice on 2026-11-25. Both are removed when the tracer DAG supersedes them; the tracer in `make demo` then stands as the evidence for B2, B4 and B5 |
+| Evidence | A spike DAG, `spike_sk3_cosmos`, with a one-model dbt project, run by hand twice on 2026-11-25. Both files were removed when the tracer DAG superseded them; commit `bbb9ffc` has them. What guards each answer now: the image build fails if `pip check` does (B1), and every `make demo` runs the tracer DAG twice, which exercises B2, B4 and B5 — the second run fails if the partition list does not reach dbt. B3 was observed by hand and has no automated guard until the DAG test suite of phase P1 |
 
 | Q | Question | Result | Observation |
 |---|---|---|---|
@@ -211,3 +211,18 @@ Three further tests guard the materialisation itself: a model that ignores the r
 | A templated list arrives in dbt as the string `"[202611]"` unless the DAG sets `render_template_as_native_obj=True` | The tracer DAG sets it, and the macro `requested_partitions()` also parses a JSON string, so neither mistake can make a model iterate over characters |
 | Airflow 3 looks for new DAG files every 300 seconds by default, and DAGs are paused at creation | The local stack sets the interval to 30 seconds; `make demo` unpauses the tracer and bounds its wait |
 | An `external_python` task's result is unpickled in the Airflow environment, where `gbmi` is not installed | Tasks return built-in types only, and import `gbmi` inside the function |
+
+---
+
+## Open items from the spikes
+
+| Item | Closes when |
+|---|---|
+| SK1 Q8: the lake contract on Glue and S3, with commit latency | An AWS account is connected and the Terraform baseline is applied. Until then ADR-004 is provisional |
+| SK2 Q6: ClickHouse reads a pinned table on S3 with short-lived credentials | The same run, after Q8 |
+| SK2 Q7 and Q8: the query-level alternatives, and partition pruning | Stretch items; neither blocks a decision |
+| SK3 B3 has no automated guard | The DAG test suite of phase P1 |
+| The cost of an hourly overwrite inside an already compacted day; skipping the commit for a unit that is empty and stays empty | Phase P1, on real GKG days |
+| A flag or count column wherever "no values" and "values missing" must differ in a mart | Phase P1, with the GKG parser |
+| ClickHouse's role on AWS should not be able to write to the lake, although the pinning role needs `INSERT` on `lake.*` | Phase P2, with the host's IAM roles |
+| Unreferenced files on the local backend; orphaned dbt staging tables | Phase P4 |

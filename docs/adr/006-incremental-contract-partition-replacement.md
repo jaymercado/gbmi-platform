@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Date** | 2026-11-25 |
-| **Status** | Draft — the materialisation is decided and tested; watermarks and rebuilt aggregates are added in phase P3 |
+| **Status** | **Provisional** (draft) — the materialisation is decided and tested; watermarks and rebuilt aggregates are added in phase P3 |
 | **Sources** | Blueprint §5.6, §7.7; week 1 plan WP-08 |
 | **Related** | TD-08 (blueprint §6.2); risk R2 |
 
@@ -34,7 +34,7 @@ Partition-replaced models use the custom materialisation **`partition_replace`**
 ## Consequences
 
 - **Easier:** a rerun of any partition is idempotent and an emptied input empties its partition. The same materialisation serves hourly and daily builds.
-- **Harder:** the project owns about 150 lines of Jinja that depend on the adapter's internal macros (`get_create_table_as_sql`, `exchange_tables_atomic`). An adapter upgrade has to be checked against the SK3 suite, which is why that suite runs on every pull request.
+- **Harder:** the project owns about 150 lines of Jinja that depend on the adapter's internal macros (`get_create_table_as_sql`, `exchange_tables_atomic`). An adapter upgrade has to be checked against the SK3 suite, which is why the `dbt` workflow is set to run that suite on every pull request.
 - **Accepted:** a run that fails between building the staging table and replacing the partitions leaves that staging table behind. It does no harm — the next run uses a new name — and removing such tables is planned for phase P4. Replacing several partitions is not atomic as a whole; a rerun repairs a partial replacement.
 - **Watch:** the stock strategy stays in the suite as a strict expected failure. If a later adapter release makes T4 pass, the suite fails and this decision is revisited.
 
@@ -55,4 +55,4 @@ Details are in `docs/reports/p0-spikes.md`, section SK3.
 
 ## Status
 
-**Draft.** The materialisation is decided on the evidence above. The record becomes final in phase P3, when the watermark table and the rule for aggregates that are rebuilt in full (blueprint §7.7, items 2, 5 and 7) are implemented and tested.
+**Provisional.** This is the draft that blueprint §16.4 asks for when a spike takes its fallback. The materialisation is decided on the evidence above. The record becomes *accepted* in phase P3, when the watermark table and the rule for aggregates that are rebuilt in full (blueprint §7.7, items 2, 5 and 7) are implemented and tested.

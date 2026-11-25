@@ -20,4 +20,5 @@ A decision without evidence is marked provisional.
 | ADR | Subject | Status |
 |---|---|---|
 | [001](001-scope-non-goals-success-criteria.md) | Scope, non-goals and success criteria | Accepted |
-| [006](006-incremental-contract-partition-replacement.md) | Incremental contract: partition replacement | Draft |
+| [004](004-iceberg-glue-local-backend.md) | Iceberg with Glue; a local filesystem backend instead of an S3 emulator | Provisional |
+| [006](006-incremental-contract-partition-replacement.md) | Incremental contract: partition replacement | Provisional (draft) |
