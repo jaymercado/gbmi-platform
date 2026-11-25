@@ -32,7 +32,15 @@ export MEM_METABASE := 0
 export CH_MAX_SERVER_MEMORY_USAGE := 0
 endif
 
-.PHONY: help setup fmt lint test env images up up-bi down reset ps logs smoke toolbox
+# The Glue/S3 halves of the integration tests run only on request:
+#   eval "$(aws configure export-credentials --profile gbmi --format env)"
+#   GBMI_TEST_AWS=1 GBMI_TEST_AWS_LAKE_BUCKET=<lake bucket> make integration
+INTEGRATION_MARK := integration and not aws
+ifeq ($(GBMI_TEST_AWS),1)
+INTEGRATION_MARK := integration
+endif
+
+.PHONY: help setup fmt lint test env images up up-bi down reset ps logs smoke toolbox integration
 
 help: ## List the available targets
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-14s %s\n", $$1, $$2}'
@@ -96,3 +104,8 @@ smoke: ## Check the running stack (health, pools, versions, shared lake)
 
 toolbox: ## Run a command on the Compose network: make toolbox CMD="gbmi config show"
 	$(COMPOSE) --profile tools run --rm toolbox $(CMD)
+
+integration: ## Integration tests on the Compose network (spikes SK1 and SK2); needs make up
+	$(COMPOSE) --profile tools run --rm toolbox \
+		pytest tests/integration -m "$(INTEGRATION_MARK)" -p no:cacheprovider $(PYTEST_ARGS)
+
