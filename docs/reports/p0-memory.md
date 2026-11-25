@@ -6,6 +6,7 @@ The blueprint's memory budget (§9.1) is a table of estimates, each marked "to b
 |---|---|
 | Measured on | 2026-11-25, MacBook Pro M2 Pro, 16 GB; Docker Desktop 4.42.0, engine 28.2.2 |
 | Docker VM | **7.65 GiB** — the 9 GB of blueprint §9.1 had not been set yet. Nothing below came near that ceiling |
+| Also in the VM | Eight containers of an unrelated local development stack ran throughout. They are in none of the figures; they used 0.3 GB when checked after the measurements |
 | Stack | Airflow 3.4.0 (LocalExecutor, `parallelism=4`, API server with two workers), PostgreSQL 17.12, ClickHouse 26.8.46.6, Metabase 0.65.7.1 |
 | Tool | `benchmarks/p0_memory_probe/docker_stats.py`; raw results in `benchmarks/p0_memory_probe/results/` |
 

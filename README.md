@@ -17,20 +17,20 @@ GDELT files → bronze (verified zips) → silver (Apache Iceberg) → ClickHous
 | What it proves | 4,023 raw lines = 4,023 rows in silver = 4,023 events in the mart = the chart's total; a second run changes nothing |
 | Decided by spikes | How PyIceberg commits a unit, how ClickHouse reads one exact table version, how dbt replaces a partition, and that Cosmos runs dbt on Airflow 3.4 — see the [spike report](docs/reports/p0-spikes.md) |
 | Measured | [Memory](docs/reports/p0-memory.md): about 2 GB idle, 4 GB during the demo; a whole day of the largest feed builds in 7 seconds with a 0.5 GB peak |
-| Not done yet | Nothing has run on AWS or in GitHub Actions. The Terraform code and the four workflows are written and checked offline only — see the [status report](docs/reports/p0-walking-skeleton.md) |
+| Not done yet | Nothing has run on AWS or in GitHub Actions. The Terraform code is checked offline only, and the four workflows have been rehearsed on Linux but have never run — see the [status report](docs/reports/p0-walking-skeleton.md) |
 
 Nothing here is production data yet: there is no ledger, no SEC ingestion and no entity resolution. Those are phases P1 to P3 of the [blueprint](GLOBAL_BUSINESS_MARKET_INTELLIGENCE_PROJECT_BLUEPRINT.md).
 
 ## Run it
 
-Requirements: Docker with 8 GB of memory or more, [uv](https://docs.astral.sh/uv/) and GNU Make. No cloud account is needed. It has been run on macOS on Apple silicon only.
+Requirements: Docker with 8 GB of memory or more, [uv](https://docs.astral.sh/uv/) and GNU Make. No cloud account is needed. It has been run on macOS on Apple silicon and, in a container rehearsal, on Linux on arm64.
 
 ```bash
 make setup   # virtual environments, Git hooks, and a .env with generated secrets
 make demo    # start the stack, run the pipeline on the fixtures, build the chart, check it
 ```
 
-The first run pulls four images and builds one. After that `make demo` takes under two minutes. When it has passed:
+The first run pulls four images and builds one; on a fast connection that took about four minutes in all. After that `make demo` takes under two minutes. When it has passed:
 
 | | |
 |---|---|
