@@ -29,6 +29,7 @@ CLICKHOUSE_ADMIN_PASSWORD="$(env_value CLICKHOUSE_ADMIN_PASSWORD)"
 CH_DBT_PASSWORD="$(env_value CH_DBT_PASSWORD)"
 CH_BI_PASSWORD="$(env_value CH_BI_PASSWORD)"
 CH_GBMI_PASSWORD="$(env_value CH_GBMI_PASSWORD)"
+GBMI_DB_PASSWORD="$(env_value GBMI_DB_PASSWORD)"
 
 ch() {
   "${COMPOSE[@]}" exec -T clickhouse clickhouse-client \
@@ -127,6 +128,21 @@ postgres_databases() {
   return "$bad"
 }
 
+clickhouse_reads_postgres() {
+  # dbt will read the operational tables through postgresql() (blueprint 7.1). The gbmi
+  # database has no tables before phase P1, so this reads a system view over the same path:
+  # the network and the gbmi role's password. The password travels as a query parameter, so
+  # that a failure cannot print it with the query text.
+  local tables
+  tables="$("${COMPOSE[@]}" exec -T clickhouse clickhouse-client \
+    --user default --password "$CLICKHOUSE_ADMIN_PASSWORD" --param_pg_password "$GBMI_DB_PASSWORD" \
+    --query "SELECT count() FROM postgresql('postgres:5432', 'gbmi', 'pg_tables', 'gbmi', {pg_password:String}, 'pg_catalog')")" || {
+    echo "$tables"
+    return 1
+  }
+  [ "$tables" -gt 0 ] 2>/dev/null || { echo "expected a count of PostgreSQL system tables, got '$tables'"; return 1; }
+}
+
 lake_is_shared() {
   # Airflow writes, ClickHouse reads the same path, and ClickHouse cannot write.
   local token="smoke-$$-$RANDOM"
@@ -163,6 +179,7 @@ check "ClickHouse reports version 26.8" clickhouse_version
 check "ClickHouse databases and roles exist" clickhouse_objects
 check "ClickHouse users dbt, bi and gbmi can log in" clickhouse_users_can_log_in
 check "PostgreSQL databases airflow, gbmi and metabase exist" postgres_databases
+check "ClickHouse reads PostgreSQL through postgresql()" clickhouse_reads_postgres
 check "Airflow writes /lake, ClickHouse reads it read-only" lake_is_shared
 check "Airflow, gbmi and dbt environments are isolated" environments_are_isolated
 

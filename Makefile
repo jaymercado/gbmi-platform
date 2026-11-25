@@ -116,11 +116,10 @@ smoke: ## Check the running stack (health, pools, versions, shared lake)
 	bash compose/smoke.sh
 
 toolbox: ## Run a command on the Compose network: make toolbox CMD="gbmi config show"
-	$(COMPOSE) --profile tools run --rm toolbox $(CMD)
+	$(TOOLBOX) $(CMD)
 
-integration: ## Integration tests on the Compose network (spikes SK1 and SK2); needs make up
-	$(COMPOSE) --profile tools run --rm toolbox \
-		pytest tests/integration -m "$(INTEGRATION_MARK)" -p no:cacheprovider $(PYTEST_ARGS)
+integration: ## Integration tests on the Compose network (spikes SK1 to SK3); needs make up
+	$(TOOLBOX) pytest tests/integration -m "$(INTEGRATION_MARK)" -p no:cacheprovider $(PYTEST_ARGS)
 
 dbt-build: ## Build and test every dbt model against the Compose ClickHouse (full refresh)
 	$(TOOLBOX) dbt build --project-dir dbt --profiles-dir dbt/profiles --full-refresh

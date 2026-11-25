@@ -106,8 +106,8 @@ Every comparison is exact row equality between what ClickHouse returns and a PyI
 | Q4 | Which local paths may `IcebergLocal` read? | **Pass, after three settings** | `test_q4_…`. See "What ClickHouse needs" below |
 | Q5 | Does a plain view over `lake.t` survive re-pinning? | **Pass** | `test_q5_…`. The view returns the new rows without being re-created |
 | Q6 | Do Q1 and Q2 hold on S3 with short-lived credentials? | **Not run** | The same tests are parametrised for AWS and skipped without `GBMI_TEST_AWS=1` |
-| Q7 | Do the query-level alternatives work? | **Not run** | Required only if Q1 or Q2 fails; otherwise a stretch item |
-| Q8 | Is a `slot_date` filter pruned to its partition? | **Not run** | Stretch item |
+| Q7 | Do the query-level alternatives work? | **Recorded** (stretch, local) | `test_q7_table_function_…`: the `icebergLocal` table function reads a named metadata file when the setting is written inside its parentheses; as a query-level setting the same name is rejected (`UNKNOWN_SETTING`), and the dbt role is refused because the function needs `READ ON FILE`. `test_q7_snapshot_id_setting_…`: `SETTINGS iceberg_snapshot_id` on an unpinned table returns that snapshot's rows, for the dbt role too, and still does after a later commit; the unpinned table itself follows each commit at once |
+| Q8 | Is a `slot_date` filter pruned to its partition? | **Pass** (stretch, local) | `test_q8_…`: four files, 36 rows. `WHERE slot_date = …` reads 11 rows, the day's file, and the query log shows `IcebergPartitionPrunedFiles = 3`. The same holds through `toDate(slot_date)`, the form the staging model uses; a month filter reads only that month's files. With `use_iceberg_partition_pruning = 0` the Parquet statistics still skip the other three files |
 | — | Does ClickHouse read a day that SK1's pattern (b) added with `add_files`? | **Pass** | `test_day_written_with_add_files_reads_like_any_other`, including the file rewritten by a later hourly overwrite |
 
 ### What ClickHouse needs
@@ -126,6 +126,8 @@ Only the pipeline user holds these grants. The dbt user reads `lake.*` and canno
 
 **Engine-level pinning is the working mechanism** (`gbmi.warehouse.pin.pin_table`), as blueprint §7.7 preferred. Q1, Q2 and Q5 pass locally, so none of the fallback rungs is taken and no draft of ADR-006 is needed for this spike. The decision is **provisional for S3** until Q6 has run.
 
+Q7 changes the order of the fallback ladder, should it ever be needed. The plan's first rung, a query-level `iceberg_metadata_file_path`, does not exist: the setting belongs to the table function, and using the function would give the dbt role `READ ON FILE`, which on the local backend opens every file under the lake mount. The second rung, `iceberg_snapshot_id` on an unpinned table, needs no new grant and would be taken first.
+
 ### What the spike changes or adds to the design
 
 | Finding | Consequence |
@@ -133,6 +135,7 @@ Only the pipeline user holds these grants. The dbt user reads `lake.*` and canno
 | An Iceberg list that is NULL reads as an empty array, because a ClickHouse `Array` cannot be NULL | A mart cannot tell "no themes" from "themes missing" through the array alone. Where the difference matters (GKG themes and countries, phase P1), silver carries a count or a flag column |
 | `pipeline_rw` has to hold `INSERT` on `lake.*` | The pipeline never inserts through ClickHouse. Locally the lake mount is read-only for ClickHouse; on AWS the equivalent protection is the hardening step of blueprint §5.9 (a role for ClickHouse that cannot write to the lake), to be decided in phase P2 |
 | `user_files_path` is the lake mount | Any user with the `FILE` source grant could read lake files with `file()`. No role has that grant |
+| A filter on `slot_date` reaches Iceberg's partition values, also through `toDate(slot_date)` and `toYYYYMM(slot_date)` | A mart build that asks for one month reads only that month's files. The staging model needs no change for the volumes of phase P1 |
 | ClickHouse's documentation recommends the `iceberg` table function over the table engine, because the engine was not designed for schemas that change underneath it | The pinned table is re-created before every build and bound to one metadata file, so its schema cannot change underneath it. A schema change in silver reaches ClickHouse at the next pin |
 
 ### Dialect checks
@@ -148,7 +151,7 @@ Three of the blueprint's illustrative statements, run on ClickHouse 26.8 with in
 ### Follow-up
 
 - **Q6 on S3** when an AWS account is connected. `pin.py` already builds the `IcebergS3` statement, with or without short-lived credentials.
-- Q7 and Q8 remain stretch items.
+- Q7 and Q8 were recorded on the local backend only; they are not repeated on S3.
 
 ---
 
@@ -220,7 +223,6 @@ Three further tests guard the materialisation itself: a model that ignores the r
 |---|---|
 | SK1 Q8: the lake contract on Glue and S3, with commit latency | An AWS account is connected and the Terraform baseline is applied. Until then ADR-004 is provisional |
 | SK2 Q6: ClickHouse reads a pinned table on S3 with short-lived credentials | The same run, after Q8 |
-| SK2 Q7 and Q8: the query-level alternatives, and partition pruning | Stretch items; neither blocks a decision |
 | SK3 B3 has no automated guard | The DAG test suite of phase P1 |
 | The cost of an hourly overwrite inside an already compacted day; skipping the commit for a unit that is empty and stays empty | Phase P1, on real GKG days |
 | A flag or count column wherever "no values" and "values missing" must differ in a mart | Phase P1, with the GKG parser |

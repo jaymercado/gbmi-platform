@@ -36,7 +36,7 @@ Two further constraints shape the choice. The platform must run **offline** — 
 | `dynamic_partition_overwrite` | It infers the partitions from the rows and does nothing on empty input, so it cannot empty a unit. Kept as a strict expected failure in the suite |
 | Streaming a `RecordBatchReader` into the table (blueprint §8.4) | PyIceberg 0.12.0 raises `NotImplementedError` for partitioned tables. Kept as a strict expected failure |
 | One transaction that deletes the day and appends it hour by hour | It works and is atomic, but creates 25 snapshots and 24 files per day and compacts nothing. It remains the fallback for decision 6 |
-| Pinning at query level (`SETTINGS` in each staging model) or by snapshot id | Not needed: engine-level pinning passed. These remain the fallback ladder of the week 1 plan |
+| Pinning in each query: the table function with the metadata file as its setting, or `iceberg_snapshot_id` on an unpinned table | Not needed: engine-level pinning passed. Both work (SK2 Q7). The first needs a file-read grant for the dbt role; the second needs none and would be the first fallback |
 
 ## Consequences
 
@@ -76,6 +76,7 @@ Local backend, run on 2026-11-25 with PyIceberg 0.12.0, PyArrow 26.0.1 and Click
 | ClickHouse reads exactly the pinned metadata file, and the pin holds | `test_sk2_pinned_read.py::test_q1_…`, `test_q2_…` | Pass |
 | A view over a pinned table survives re-pinning | `test_q5_…` | Pass |
 | ClickHouse reads a day written with `add_files` | `test_day_written_with_add_files_reads_like_any_other` | Pass |
+| A filter on `slot_date` reads only that partition's files | `test_q8_slot_date_filter_reads_only_that_partition` | Pass: 3 of 4 files pruned by partition |
 | The whole path works end to end | `make demo`, `tests/e2e/test_demo.py` | Pass: 4,023 rows in silver, in the pinned table, in the mart and in the chart |
 
 **Not run:** SK1 question Q8 (the same tests on Glue and S3) and SK2 question Q6 (ClickHouse reading S3 with short-lived credentials). No AWS account was connected during week 1's first run. Both are parametrised in the suite and run with `GBMI_TEST_AWS=1`.
