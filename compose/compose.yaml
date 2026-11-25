@@ -31,6 +31,8 @@ x-airflow-common: &airflow-common
     AIRFLOW__API_AUTH__JWT_ISSUER: gbmi
     AIRFLOW__API__WORKERS: "2"
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
+    # A failing task shows at once on the laptop and in CI; the default is three retries.
+    GBMI_TASK_RETRIES: ${GBMI_TASK_RETRIES:-0}
     # gbmi package settings (blueprint 9.5): the local backend.
     GBMI_ENV: ${GBMI_ENV:-local}
     GBMI_LAKE_BACKEND: local
@@ -262,6 +264,14 @@ services:
       PATH: /opt/venvs/gbmi/bin:/opt/venvs/dbt/bin:/home/airflow/.local/bin:/usr/python/bin:/usr/local/bin:/usr/bin:/bin
       PYTHONDONTWRITEBYTECODE: "1"
       CLICKHOUSE_ADMIN_PASSWORD: ${CLICKHOUSE_ADMIN_PASSWORD}
+      CH_BI_PASSWORD: ${CH_BI_PASSWORD}
+      # make demo and the end-to-end tests drive Airflow and Metabase through their APIs.
+      AIRFLOW_URL: http://airflow-apiserver:8080
+      AIRFLOW_ADMIN_USER: ${AIRFLOW_ADMIN_USER:-admin}
+      AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD}
+      METABASE_URL: http://metabase:3000
+      METABASE_ADMIN_EMAIL: ${METABASE_ADMIN_EMAIL:-admin@example.com}
+      METABASE_ADMIN_PASSWORD: ${METABASE_ADMIN_PASSWORD}
       # The Glue/S3 halves of the spikes: short-lived credentials are passed through only
       # when GBMI_TEST_AWS=1 is set for make integration (week 1 plan 3.3).
       GBMI_TEST_AWS: ${GBMI_TEST_AWS:-0}

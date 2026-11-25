@@ -40,7 +40,12 @@ ifeq ($(GBMI_TEST_AWS),1)
 INTEGRATION_MARK := integration
 endif
 
-.PHONY: help setup fmt lint test env images up up-bi down reset ps logs smoke toolbox integration
+# The fixture hour of the demo: four export slots, 2026-11-25 08:00 to 08:45 UTC.
+DEMO_HOUR := 2026-11-25T08
+TOOLBOX := $(COMPOSE_BI) --profile tools run --rm toolbox
+
+.PHONY: help setup fmt lint test env images up up-bi down reset ps logs smoke toolbox integration \
+	dbt-build demo e2e logs-dump
 
 help: ## List the available targets
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-14s %s\n", $$1, $$2}'
@@ -65,8 +70,8 @@ lint: ## ruff, mypy, sqlfluff and lock-file checks
 	uv lock --check
 	uv lock --check --project dbt
 
-test: ## Unit tests with coverage
-	uv run pytest tests/unit --cov --cov-report=term-missing
+test: ## Unit and transformation tests with coverage
+	uv run pytest tests/unit tests/transforms --cov --cov-report=term-missing
 
 env: ## Create or complete .env with generated secrets
 	@command -v uv >/dev/null && uv run python compose/make_env.py || python3 compose/make_env.py
@@ -99,6 +104,10 @@ ps: ## Show the state of the services
 logs: ## Follow the logs (S=<service> for one service)
 	$(COMPOSE_BI) logs --follow --tail 100 $(S)
 
+logs-dump: ## Print the last lines of every service log (used by CI when a run fails)
+	$(COMPOSE_BI) ps --all
+	$(COMPOSE_BI) logs --no-color --tail 200
+
 smoke: ## Check the running stack (health, pools, versions, shared lake)
 	bash compose/smoke.sh
 
@@ -108,4 +117,24 @@ toolbox: ## Run a command on the Compose network: make toolbox CMD="gbmi config 
 integration: ## Integration tests on the Compose network (spikes SK1 and SK2); needs make up
 	$(COMPOSE) --profile tools run --rm toolbox \
 		pytest tests/integration -m "$(INTEGRATION_MARK)" -p no:cacheprovider $(PYTEST_ARGS)
+
+dbt-build: ## Build and test every dbt model against the Compose ClickHouse (full refresh)
+	$(TOOLBOX) dbt build --project-dir dbt --profiles-dir dbt/profiles --full-refresh
+
+demo: ## The whole pipeline on committed fixtures, with one chart; needs no cloud account
+	$(MAKE) up-bi
+	$(MAKE) smoke
+	@echo "== tracer DAG on the fixture hour $(DEMO_HOUR)"
+	$(TOOLBOX) python -m tests.e2e.airflow --hour $(DEMO_HOUR) --source fixture
+	@echo "== Metabase: connection, question and dashboard"
+	$(TOOLBOX) python -m monitoring.metabase.provision
+	@echo "== end-to-end assertions"
+	$(TOOLBOX) pytest tests/e2e -m e2e -p no:cacheprovider
+	@echo
+	@echo "Demo passed. Dashboard: http://127.0.0.1:3000  (sign in with METABASE_ADMIN_EMAIL"
+	@echo "and METABASE_ADMIN_PASSWORD from .env). Airflow: http://127.0.0.1:8080"
+	@if [ -t 1 ] && [ -z "$CI" ] && command -v open >/dev/null; then open http://127.0.0.1:3000; fi
+
+e2e: ## End-to-end assertions against a stack on which the demo has run
+	$(TOOLBOX) pytest tests/e2e -m e2e -p no:cacheprovider $(PYTEST_ARGS)
 

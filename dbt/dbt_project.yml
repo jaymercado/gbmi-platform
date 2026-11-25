@@ -16,3 +16,13 @@ clean-targets: ["target", "dbt_packages"]
 
 flags:
   send_anonymous_usage_stats: false
+
+# Each layer lands in the ClickHouse database of the same name (blueprint 7.1); the macro
+# generate_schema_name uses these names as they are.
+models:
+  gbmi:
+    staging:
+      +schema: staging
+      +materialized: view
+    marts:
+      +schema: marts

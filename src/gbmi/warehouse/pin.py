@@ -16,12 +16,15 @@ the pinned table returns. dbt models read ``lake.<table>`` and never name a file
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 from urllib.parse import urlsplit
 
 from clickhouse_connect.driver.client import Client
 from pyiceberg.table import Table
 
-from gbmi.warehouse.client import quote_identifier, quote_string
+from gbmi.config import Settings, get_settings
+from gbmi.lake.catalog import load_lake_catalog
+from gbmi.warehouse.client import connect, quote_identifier, quote_string
 
 LAKE_DATABASE = "lake"
 
@@ -129,3 +132,26 @@ def pin_table(
         metadata_file=relative_metadata_file(location, metadata_location),
         snapshot_id=snapshot.snapshot_id if snapshot else None,
     )
+
+
+def pin_silver_table_task(name: str, settings: Settings | None = None) -> dict[str, Any]:
+    """Task entry point: pin ``lake.<name>`` to the catalog's current metadata file.
+
+    Returns the snapshot that was pinned, which the mart build records as
+    ``_silver_snapshot_id`` (blueprint 7.12).
+    """
+    settings = settings or get_settings()
+    table = load_lake_catalog(settings).load_table((settings.silver_namespace, name))
+    client = connect(settings=settings)
+    try:
+        pinned = pin_table(client, table, name=name)
+        relation = f"{quote_identifier(pinned.database)}.{quote_identifier(pinned.name)}"
+        rows = client.query(f"SELECT count() FROM {relation}").result_rows[0][0]  # noqa: S608
+    finally:
+        client.close()
+    return {
+        "table": pinned.qualified_name,
+        "metadata_file": pinned.metadata_file,
+        "snapshot_id": pinned.snapshot_id,
+        "rows": int(rows),
+    }

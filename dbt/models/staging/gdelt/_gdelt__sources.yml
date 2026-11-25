@@ -1,0 +1,35 @@
+version: 2
+
+sources:
+  - name: lake
+    schema: lake
+    description: >
+      Silver Iceberg tables as ClickHouse reads them. Before each build the pipeline re-creates
+      one table per silver table, bound to an exact Iceberg metadata file (blueprint 5.12), so
+      a build never sees a table that is being written.
+    tables:
+      - name: gdelt_event
+        description: >
+          One row per coded event of the GDELT 2.0 Events feed (English), typed and
+          deduplicated on global_event_id. Source: The GDELT Project,
+          https://www.gdeltproject.org/ - the data is used and redistributed with this
+          citation, as the project's terms require.
+        columns:
+          - name: global_event_id
+            description: GDELT's identifier of the event. Unique, but not ordered by date.
+          - name: slot_date
+            description: UTC date of the 15-minute slot whose file carried the row; the partition.
+          - name: slot_hour
+            description: UTC hour of the slot.
+          - name: event_date
+            description: The date GDELT assigns to the event (SQLDATE); it can lie years before the slot.
+          - name: event_root_code
+            description: CAMEO root code of the action, two digits (01 to 20).
+          - name: actor1_type1_code
+            description: CAMEO role code of the first actor (GOV, BUS, MIL, ...), if GDELT coded one.
+          - name: action_geo_country_code
+            description: FIPS 10-4 country code of the place of the action, if GDELT resolved one.
+          - name: num_mentions
+            description: Mentions of the event in the first 15 minutes it was seen.
+          - name: avg_tone
+            description: Average tone of the documents mentioning the event, from -100 to +100.

@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: fct_gdelt_event_daily
+    description: >
+      GDELT events per UTC day, country of the action, CAMEO root code and type of the first
+      actor: the macro view of news events for trend charts (use case UC-2).
+      Source: The GDELT Project, https://www.gdeltproject.org/.
+    meta:
+      owner: data-engineering
+      layer: marts
+      grain: one row per UTC day, action country, CAMEO root code and first-actor type
+      sensitivity: public
+      build: partition replace by month
+    columns:
+      - name: date
+        description: UTC day of the slot in which GDELT published the events.
+        data_tests:
+          - not_null
+      - name: action_geo_country_code
+        description: FIPS 10-4 country code of the place of the action; empty when GDELT resolved none.
+        data_tests:
+          - not_null
+      - name: event_root_code
+        description: CAMEO root code of the action (01 to 20).
+        data_tests:
+          - not_null
+      - name: actor1_type1_code
+        description: CAMEO role code of the first actor; empty when GDELT coded none.
+        data_tests:
+          - not_null
+      - name: events
+        description: Number of events.
+        data_tests:
+          - not_null
+      - name: mentions
+        description: Mentions of those events in the first 15 minutes each was seen.
+      - name: mean_tone
+        description: Mean of the events' average tone, from -100 (negative) to +100 (positive).
+      - name: _silver_snapshot_id
+        description: Iceberg snapshot of gdelt_event that the partition was built from.
+      - name: _pipeline_version
+        description: Version of the pipeline code that built the partition.
+      - name: _built_at
+        description: When the partition was built (UTC).
+      - name: _dbt_invocation_id
+        description: The dbt run that built the partition.

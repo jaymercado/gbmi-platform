@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: stg_gdelt__event
+    description: >
+      GDELT events as silver holds them, read through the pinned table lake.gdelt_event.
+      Source: The GDELT Project, https://www.gdeltproject.org/.
+    meta:
+      owner: data-engineering
+      layer: staging
+      grain: one row per GDELT event (global_event_id)
+      sensitivity: public
+    columns:
+      - name: global_event_id
+        description: GDELT's identifier of the event.
+        data_tests:
+          - not_null
+          - unique
+      - name: slot_date
+        description: UTC date of the slot whose file carried the row.
+        data_tests:
+          - not_null
