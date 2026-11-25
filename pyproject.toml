@@ -18,6 +18,9 @@ dependencies = [
     "pydantic-settings>=2.16,<3",
     "typer>=0.29,<1",
     "structlog>=26.1",
+    # The IANA time-zone database. PyArrow needs one to return timestamptz values, and minimal
+    # Linux images have none; where the system has its own, Python uses that one first.
+    "tzdata>=2025.2",
 ]
 
 [project.scripts]
