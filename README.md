@@ -4,34 +4,75 @@ An entity-resolved company-intelligence lakehouse: it ingests GDELT 2.0 news met
 
 ## Status
 
-**Phase P0 — walking skeleton and de-risking (week 1).** Nothing here is production data yet. The goal of this phase is one hour of GDELT Events flowing end to end on a laptop — source → bronze → silver (Apache Iceberg) → ClickHouse → dbt mart → Metabase chart, run by Airflow — and a recorded decision for each of three technical risks.
+**Phase P0 — walking skeleton and de-risking — works on a laptop.** One hour of GDELT Events flows end to end with one command:
 
-| Document | Purpose |
+```text
+GDELT files → bronze (verified zips) → silver (Apache Iceberg) → ClickHouse (pinned read)
+            → dbt mart (partition-replaced) → Metabase chart          run by Airflow 3.4
+```
+
+| | |
 |---|---|
-| [Project blueprint](GLOBAL_BUSINESS_MARKET_INTELLIGENCE_PROJECT_BLUEPRINT.md) | The design and its evidence; the source of truth |
-| [Week 1 implementation plan](WEEK_1_IMPLEMENTATION_PLAN.md) | What phase P0 builds and how it is checked |
-| [Decision records](docs/adr/) | Why the design is what it is |
+| What runs | `make demo`: the tracer DAG on four committed GDELT slots, then a chart and end-to-end assertions |
+| What it proves | 4,023 raw lines = 4,023 rows in silver = 4,023 events in the mart = the chart's total; a second run changes nothing |
+| Decided by spikes | How PyIceberg commits a unit, how ClickHouse reads one exact table version, how dbt replaces a partition, and that Cosmos runs dbt on Airflow 3.4 — see the [spike report](docs/reports/p0-spikes.md) |
+| Measured | [Memory](docs/reports/p0-memory.md): about 2 GB idle, 4 GB during the demo; a whole day of the largest feed builds in 7 seconds with a 0.5 GB peak |
+| Not done yet | Nothing has run on AWS or in GitHub Actions. The Terraform code and the four workflows are written and checked offline only — see the [status report](docs/reports/p0-walking-skeleton.md) |
 
-## The problem
-
-Open data says a great deal about companies — news attention, regulatory filings, financial trajectory — but not in a usable form. News metadata names organisations as noisy free text; filings identify companies by a registrant number, not by the names the press uses; financial facts are restated over time. The value of this platform is the link between the two sources and the evidence behind it: every company-level number can be traced to a source file, a filing or an article URL, and to the version of the rule that produced it.
+Nothing here is production data yet: there is no ledger, no SEC ingestion and no entity resolution. Those are phases P1 to P3 of the [blueprint](GLOBAL_BUSINESS_MARKET_INTELLIGENCE_PROJECT_BLUEPRINT.md).
 
 ## Run it
 
-Requirements: macOS or Linux on arm64 or x86-64, [uv](https://docs.astral.sh/uv/), GNU Make, and Docker with about 9 GB of memory for the full stack.
+Requirements: Docker with 8 GB of memory or more, [uv](https://docs.astral.sh/uv/) and GNU Make. No cloud account is needed. It has been run on macOS on Apple silicon only.
 
 ```bash
-make setup   # create the virtual environments and install the Git hooks
-make lint    # ruff, mypy, sqlfluff, lock-file checks
-make test    # unit tests
+make setup   # virtual environments, Git hooks, and a .env with generated secrets
+make demo    # start the stack, run the pipeline on the fixtures, build the chart, check it
 ```
 
-`make demo` — the whole pipeline on committed fixtures, with no cloud account — arrives with the tracer pipeline later in this phase.
+The first run pulls four images and builds one. After that `make demo` takes under two minutes. When it has passed:
+
+| | |
+|---|---|
+| Dashboard | <http://127.0.0.1:3000> — sign in with `METABASE_ADMIN_EMAIL` and `METABASE_ADMIN_PASSWORD` from `.env` |
+| Airflow | <http://127.0.0.1:8080> — user `admin`, password `AIRFLOW_ADMIN_PASSWORD` from `.env` |
+| Stop | `make down` keeps the data; `make reset` removes it |
+
+Other commands (`make help` lists them all):
+
+```bash
+make lint test      # ruff, mypy, sqlfluff, lock files; unit and transformation tests
+make up smoke       # start the core stack and check it
+make integration    # the three spikes, against the running stack
+make tf-check       # Terraform format, validate, tflint and checkov, with no AWS access
+```
+
+To run the pipeline on live data instead of the fixtures, trigger the DAG `tracer_gdelt_events` in Airflow with `source` set to `live` and an `hour` such as `2026-11-25T08`.
+
+## How it is built
+
+| Layer | What | Where |
+|---|---|---|
+| Ingestion | Files are verified against GDELT's size and MD5 and stored unchanged; a rerun downloads nothing | `src/gbmi/sources/gdelt/` |
+| Silver | Rows are validated field by field before they are typed; bad rows go to quarantine with a reason; a unit is replaced in one Iceberg commit after an audit | `src/gbmi/transforms/`, `src/gbmi/quality/`, `src/gbmi/lake/` |
+| Warehouse | ClickHouse reads a table pinned to one Iceberg metadata file, so a build never sees a table that is being written | `src/gbmi/warehouse/` |
+| Marts | dbt models; large facts are rebuilt one partition at a time with the `partition_replace` materialisation | `dbt/` |
+| Orchestration | Airflow 3.4 with LocalExecutor; one image, three isolated Python environments (Airflow, `gbmi`, dbt) | `dags/`, `docker/airflow/`, `compose/` |
+| Infrastructure | Terraform for the AWS baseline (not applied yet) | `infra/terraform/` |
+
+Decisions and their evidence are in [docs/adr](docs/adr/).
+
+## Limits of this slice
+
+- **One feed, one hour.** Only GDELT Events is parsed. Mentions, the Global Knowledge Graph and all SEC data come in phases P1 and P2.
+- **No ledger.** A missing source file is simply absent; tracking every expected slot through a state machine is phase P1.
+- **Local backend only.** The lake is a directory and the catalog is SQLite. The same code is written for S3 and Glue, but that half of the tests has not been run.
+- **No deployment.** There is no host, no schedule and no monitoring yet.
 
 ## Data sources and attribution
 
-- **GDELT.** This project uses data from [The GDELT Project](https://www.gdeltproject.org/), which permits unrestricted use and redistribution with a citation and a link to its website. Only GDELT metadata, article titles and URLs are stored; no article text is fetched or kept.
-- **SEC EDGAR.** This project uses public data from the EDGAR system of the [U.S. Securities and Exchange Commission](https://www.sec.gov/). It is not affiliated with or endorsed by the SEC. Automated access declares a user agent and stays below the SEC's published request limit.
+- **GDELT.** This project uses data from [The GDELT Project](https://www.gdeltproject.org/), which permits unrestricted use and redistribution with a citation and a link to its website. Only GDELT metadata, article titles and URLs are stored; no article text is fetched or kept. The fixtures under `tests/fixtures/gdelt/` are GDELT files, redistributed unchanged.
+- **SEC EDGAR.** This project will use public data from the EDGAR system of the [U.S. Securities and Exchange Commission](https://www.sec.gov/). It is not affiliated with or endorsed by the SEC. Automated access declares a user agent and stays below the SEC's published request limit.
 
 See [NOTICE](NOTICE) for the full attribution text.
 

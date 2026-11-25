@@ -194,7 +194,7 @@ Three further tests guard the materialisation itself: a model that ignores the r
 | | |
 |---|---|
 | Versions | Apache Airflow 3.4.0 (LocalExecutor), astronomer-cosmos 1.16.0, dbt-core 1.12.7 in `/opt/venvs/dbt`, `gbmi` in `/opt/venvs/gbmi` |
-| Evidence | A spike DAG, `spike_sk3_cosmos`, with a one-model dbt project, run by hand twice on 2026-11-25. Both files were removed when the tracer DAG superseded them; commit `bbb9ffc` has them. What guards each answer now: the image build fails if `pip check` does (B1), and every `make demo` runs the tracer DAG twice, which exercises B2, B4 and B5 — the second run fails if the partition list does not reach dbt. B3 was observed by hand and has no automated guard until the DAG test suite of phase P1 |
+| Evidence | A spike DAG, `spike_sk3_cosmos`, with a one-model dbt project, run by hand twice on 2026-11-25. Both files were removed when the tracer DAG superseded them; the branch `wp-08-sk3-partition-replace-cosmos` still has them. What guards each answer now: the image build fails if `pip check` does (B1), and every `make demo` runs the tracer DAG twice, which exercises B2, B4 and B5 — the second run fails if the partition list does not reach dbt. B3 was observed by hand and has no automated guard until the DAG test suite of phase P1 |
 
 | Q | Question | Result | Observation |
 |---|---|---|---|
