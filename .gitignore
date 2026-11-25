@@ -1,0 +1,42 @@
+# Data and local state
+data/
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# dbt
+target/
+dbt_packages/
+logs/
+.user.yml
+
+# Terraform (state, plans and local values stay out of Git)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+backend.hcl
+*.tfvars
+infra/terraform/local.env
+
+# Operating system and editors
+.DS_Store
+.idea/
+.vscode/
