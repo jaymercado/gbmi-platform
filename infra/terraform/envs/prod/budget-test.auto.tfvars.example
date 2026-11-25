@@ -1,0 +1,4 @@
+# Budget alert test (week 1 plan, WP-03 step 4). Copy to budget-test.auto.tfvars (git-ignored)
+# and apply; create a few cents of real spend; delete the file and apply again once the alert
+# email has arrived. Being a file, the override cannot be left behind the way a -var flag can.
+monthly_budget_usd = 0.02

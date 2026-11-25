@@ -34,6 +34,7 @@ crash.log
 crash.*.log
 backend.hcl
 *.tfvars
+*_override.tf
 infra/terraform/local.env
 
 # Operating system and editors

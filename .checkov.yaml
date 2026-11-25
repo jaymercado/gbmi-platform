@@ -1,0 +1,24 @@
+# Policy scan of the Terraform code (blueprint 9.4). Run with: make tf-check
+#
+# Every skipped check is listed with its reason. The platform runs on about USD 30 a month in
+# one region and holds only public-source data, so three controls are left out on purpose:
+# a customer-managed KMS key, cross-region replication and S3 access logging.
+directory:
+  - infra/terraform
+framework:
+  - terraform
+quiet: true
+compact: true
+skip-check:
+  # KMS by default. Buckets use SSE-S3 (AES256). A customer-managed key costs USD 1 a month
+  # plus request charges and protects nothing here: the data is public-source (blueprint 5.8).
+  - CKV_AWS_145
+  # Cross-region replication. One region by design; raw files can be downloaded again and
+  # high availability is out of scope (blueprint 3.5). Recovery is tested, not replicated.
+  - CKV_AWS_144
+  # S3 access logging. It would add a logging bucket and storage cost with no consumer at this
+  # size; bucket policies deny non-TLS access and public access is blocked.
+  - CKV_AWS_18
+  # S3 event notifications. Nothing consumes object events: pipelines are level-triggered from
+  # the ledger, not edge-triggered from storage (blueprint 5.1, principle 3).
+  - CKV2_AWS_62

@@ -32,6 +32,10 @@ export MEM_METABASE := 0
 export CH_MAX_SERVER_MEMORY_USAGE := 0
 endif
 
+TF := infra/terraform
+TF_ROOTS := $(TF)/bootstrap $(TF)/envs/prod
+TF_MODULES := $(TF)/modules/lake_s3 $(TF)/modules/glue_catalog $(TF)/modules/budgets
+
 # The Glue/S3 halves of the integration tests run only on request:
 #   eval "$(aws configure export-credentials --profile gbmi --format env)"
 #   GBMI_TEST_AWS=1 GBMI_TEST_AWS_LAKE_BUCKET=<lake bucket> make integration
@@ -45,7 +49,7 @@ DEMO_HOUR := 2026-11-25T08
 TOOLBOX := $(COMPOSE_BI) --profile tools run --rm toolbox
 
 .PHONY: help setup fmt lint test env images up up-bi down reset ps logs smoke toolbox integration \
-	dbt-build demo e2e logs-dump
+	dbt-build demo e2e logs-dump tf-check plan
 
 help: ## List the available targets
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-14s %s\n", $$1, $$2}'
@@ -138,3 +142,25 @@ demo: ## The whole pipeline on committed fixtures, with one chart; needs no clou
 e2e: ## End-to-end assertions against a stack on which the demo has run
 	$(TOOLBOX) pytest tests/e2e -m e2e -p no:cacheprovider $(PYTEST_ARGS)
 
+tf-check: ## Terraform checks that need no AWS access: fmt, validate, tflint, checkov
+	terraform fmt -check -recursive $(TF)
+	@for root in $(TF_ROOTS); do \
+		echo "== validate $$root"; \
+		terraform -chdir=$$root init -backend=false -input=false >/dev/null || exit 1; \
+		terraform -chdir=$$root validate || exit 1; \
+	done
+	@tflint --init --config "$(CURDIR)/$(TF)/.tflint.hcl" >/dev/null
+	@for dir in $(TF_ROOTS) $(TF_MODULES); do \
+		echo "== tflint $$dir"; \
+		tflint --config "$(CURDIR)/$(TF)/.tflint.hcl" --chdir $$dir || exit 1; \
+	done
+	uvx checkov==3.4.11 --config-file .checkov.yaml
+
+plan: ## terraform plan for bootstrap and envs/prod (needs AWS credentials; see infra/terraform/README.md)
+	@test -f $(TF)/local.env || { echo "create $(TF)/local.env from $(TF)/local.env.example first"; exit 1; }
+	@set -a; . $(TF)/local.env; set +a; \
+	for root in $(TF_ROOTS); do \
+		echo "== plan $$root"; \
+		terraform -chdir=$$root init -input=false -backend-config=backend.hcl >/dev/null || exit 1; \
+		terraform -chdir=$$root plan -input=false -lock-timeout=60s || exit 1; \
+	done
