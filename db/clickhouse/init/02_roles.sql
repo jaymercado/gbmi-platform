@@ -33,7 +33,13 @@ GRANT SELECT, SHOW ON marts.* TO bi_ro;
 GRANT SELECT, SHOW ON ops.* TO bi_ro;
 
 CREATE ROLE IF NOT EXISTS pipeline_rw;
-GRANT SELECT, CREATE TABLE, DROP TABLE, SHOW ON lake.* TO pipeline_rw;
+-- INSERT is required to create a table with an Iceberg engine, because the engine can write.
+-- The pipeline never inserts through ClickHouse, and the lake mount is read-only for it.
+GRANT SELECT, INSERT, CREATE TABLE, DROP TABLE, SHOW ON lake.* TO pipeline_rw;
+-- ClickHouse 26.8 requires a grant per table engine that reaches outside the server. Only
+-- the pipeline may create Iceberg tables, and only in the lake database (spike SK2, Q4).
+GRANT TABLE ENGINE ON IcebergLocal TO pipeline_rw;
+GRANT TABLE ENGINE ON IcebergS3 TO pipeline_rw;
 GRANT SELECT, SHOW ON staging.* TO pipeline_rw;
 GRANT SELECT, SHOW ON intermediate.* TO pipeline_rw;
 GRANT SELECT, SHOW ON marts.* TO pipeline_rw;

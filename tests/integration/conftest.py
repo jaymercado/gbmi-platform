@@ -22,10 +22,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
+from clickhouse_connect.driver.client import Client
 from pyiceberg.catalog import Catalog
 
 from gbmi.config import Environment, LakeBackend, Settings
 from gbmi.lake.catalog import ensure_silver_namespace, load_lake_catalog
+from gbmi.warehouse.client import connect
 
 SHARED_LAKE = Path("/lake")
 
@@ -106,3 +108,52 @@ def lake(request: pytest.FixtureRequest, tmp_path: Path) -> Iterator[Lake]:
 def local_lake(tmp_path: Path) -> Iterator[Lake]:
     """A lake on the local backend only."""
     yield from _local_lake(tmp_path)
+
+
+# --- ClickHouse -----------------------------------------------------------------------------
+
+STACK_NEEDED = "needs the Compose stack and its shared /lake mount: run with make integration"
+
+
+def _clickhouse_url(user: str, password_variable: str) -> str:
+    password = os.environ.get(password_variable)
+    host = os.environ.get("DBT_CH_HOST")
+    if not password or not host:
+        pytest.skip(STACK_NEEDED)
+    return f"http://{user}:{password}@{host}:{os.environ.get('DBT_CH_PORT', '8123')}"
+
+
+def _client(url: str) -> Client:
+    try:
+        return connect(url)
+    except Exception as error:  # the stack is not running
+        pytest.skip(f"{STACK_NEEDED} ({type(error).__name__})")
+
+
+@pytest.fixture(scope="session")
+def clickhouse() -> Client:
+    """ClickHouse as the pipeline user ``gbmi`` (role pipeline_rw), from GBMI_CH_URL."""
+    url = os.environ.get("GBMI_CH_URL")
+    if not url:
+        pytest.skip(STACK_NEEDED)
+    return _client(url)
+
+
+@pytest.fixture(scope="session")
+def clickhouse_dbt() -> Client:
+    """ClickHouse as the dbt user (role dbt_rw)."""
+    return _client(_clickhouse_url("dbt", "DBT_CH_PASSWORD"))
+
+
+@pytest.fixture(scope="session")
+def clickhouse_admin() -> Client:
+    """ClickHouse as the administrator, for test scaffolding only."""
+    return _client(_clickhouse_url("default", "CLICKHOUSE_ADMIN_PASSWORD"))
+
+
+@pytest.fixture
+def shared_lake(lake: Lake) -> Lake:
+    """A lake that ClickHouse can read: the /lake mount for the local backend, or S3."""
+    if lake.backend == "local" and not lake.settings.lake_uri.startswith(f"file://{SHARED_LAKE}/"):
+        pytest.skip(STACK_NEEDED)
+    return lake

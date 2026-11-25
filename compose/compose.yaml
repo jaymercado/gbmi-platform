@@ -98,6 +98,9 @@ services:
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_ADMIN_PASSWORD:?run make setup}
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+      # user_files_path is the read-only lake mount (docker/clickhouse/config.d/gbmi.xml), and
+      # the entrypoint would try to chown it. The data volume already belongs to clickhouse.
+      CLICKHOUSE_DO_NOT_CHOWN: "1"
       CH_MAX_SERVER_MEMORY_USAGE: ${CH_MAX_SERVER_MEMORY_USAGE:-2147483648}
     volumes:
       - clickhouse-data:/var/lib/clickhouse
