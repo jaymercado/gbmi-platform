@@ -42,3 +42,16 @@ def test_level_filter_and_late_binding() -> None:
     assert line["event"] == "kept"
     assert line["run_id"] == "run-2"
     assert line["dag_id"] == "tracer_gdelt_events"
+
+
+def test_logger_created_before_configuration_follows_it() -> None:
+    """Modules create their logger at import, before any command configures logging."""
+    early = get_logger("gbmi.early")
+    stream = io.StringIO()
+
+    configure_logging(run_id="run-3", level="WARNING", stream=stream)
+    early.info("filtered_out")
+    early.warning("kept", slot="20261125084500")
+
+    (line,) = _lines(stream)
+    assert (line["event"], line["logger"], line["run_id"]) == ("kept", "gbmi.early", "run-3")
