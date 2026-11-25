@@ -13,6 +13,10 @@ large_file_skip_byte_limit = 0
 apply_dbt_builtins = True
 load_macros_from_path = dbt/macros
 
+# dbt context variables that the built-ins above do not define.
+[sqlfluff:templater:jinja:context]
+invocation_id = 00000000-0000-0000-0000-000000000000
+
 [sqlfluff:indentation]
 tab_space_size = 4
 indented_joins = False

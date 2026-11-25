@@ -1,0 +1,18 @@
+{#- A partition_replace model that ignores the requested partitions, partitioned by month.
+    The materialisation must refuse to swap it (spike SK3). -#}
+{{ config(
+    materialized='partition_replace',
+    partition_by='toYYYYMM(slot_date)',
+    order_by='(slot_date, category)'
+) }}
+
+select
+    slot_date,
+    category,
+    count() as events,
+    sum(amount) as amount,
+    max(id) as max_id
+from {{ source('sk3', 'source_events') }}
+group by
+    slot_date,
+    category

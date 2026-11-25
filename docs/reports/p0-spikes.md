@@ -10,8 +10,8 @@ Three spikes settle the technical risks that could change the design (blueprint 
 |---|---|---|---|
 | SK1 — PyIceberg contract | — | Overwrite filtered on the unit, in one catalog commit; days are streamed into one file and added with `add_files` | Local: passed. Glue/S3: not run |
 | SK2 — ClickHouse pinned read | R1 | Engine-level pinning with `iceberg_metadata_file_path`; no fallback needed | Local: passed. S3: not run |
-| SK3 A — partition replace | R2 | *(recorded in the SK3 section)* | |
-| SK3 B — Cosmos on Airflow 3.4 | R6 | *(recorded in the SK3 section)* | |
+| SK3 A — partition replace | R2 | Fallback taken: the custom `partition_replace` materialisation. The adapter's `insert_overwrite` fails test T4 | Passed (T1–T6, by day and by month) |
+| SK3 B — Cosmos on Airflow 3.4 | R6 | Cosmos as designed; no fallback needed | Passed (B1–B5) |
 
 ---
 
@@ -149,3 +149,65 @@ Three of the blueprint's illustrative statements, run on ClickHouse 26.8 with in
 
 - **Q6 on S3** when an AWS account is connected. `pin.py` already builds the `IcebergS3` statement, with or without short-lived credentials.
 - Q7 and Q8 remain stretch items.
+
+---
+
+## SK3 — partition replace and Cosmos
+
+### Part A — the incremental contract
+
+**Question.** Can a partition-replaced mart be rebuilt idempotently, one partition at a time (blueprint §7.7, risk R2)?
+
+| | |
+|---|---|
+| Versions | dbt-core 1.12.7, dbt-clickhouse 1.10.4, ClickHouse 26.8.46.6 |
+| Code | `dbt/macros/materializations/partition_replace.sql`, `dbt/macros/partitions.sql` |
+| Evidence | `tests/integration/dbt/test_sk3_partition_replace.py` with the test-only dbt project in `tests/integration/dbt/project/`. Run by `make integration` and by the `dbt` workflow |
+| Set-up | A source of three days in two months. Every test runs for a model partitioned by day (`slot_date`) and one partitioned by month (`toYYYYMM(slot_date)`). dbt connects as a user holding exactly the privileges of the `dbt_rw` role |
+
+**What the adapter's own strategy does.** `insert_overwrite` in dbt-clickhouse 1.10.4 builds a staging table, reads the partitions *present in it* and replaces exactly those. A partition whose rebuild returns no rows is not in the staging table, so it is never replaced and keeps its old rows (read in the installed adapter source, `incremental.sql`, macro `clickhouse__incremental_insert_overwrite`).
+
+| T | Test | `insert_overwrite` (stock) | `partition_replace` (custom) |
+|---|---|---|---|
+| T1 | First build creates every partition | Pass | **Pass** |
+| T2 | Identical rebuild: same count and checksum per partition, no duplicates | Pass | **Pass** |
+| T3 | One partition's input changes; build with `partitions=[p]`: only `p` changes | Pass | **Pass** — a second partition whose input also changed, but was not requested, keeps its old rows |
+| T4 | One partition's input becomes empty: the partition ends empty | **Fail** — kept as a strict expected failure | **Pass** |
+| T5 | The replace step fails (user without `ALTER`) | Not run | **Pass** — target unchanged; the staging table of the failed run is left behind; the next run gives the correct result |
+| T6 | `--full-refresh` equals the incremental result | Not run | **Pass** |
+
+Three further tests guard the materialisation itself: a model that ignores the requested partitions is refused before anything is swapped; a partition run without a partition list is an error; an empty list is a no-op.
+
+**Decision: the fallback of blueprint §7.7 step 3 is adopted.** Partition-replaced marts use the `partition_replace` materialisation. It replaces every *requested* partition — those the new data contains, and those the request selects in the target — with `ALTER TABLE … REPLACE PARTITION ID … FROM <staging>` and `allow_replace_partition_from_empty_source = 1`. The requested partitions come from the dbt variable `partitions`. The decision is recorded in the draft of ADR-006.
+
+| Finding | Consequence |
+|---|---|
+| A failed run leaves its staging table behind, named `<model>__dbt_new_data_<invocation id>` | The next run uses a new name and is not disturbed. Dropping orphaned staging tables is an open item for phase P4, as the week 1 plan already lists |
+| Several `REPLACE PARTITION` commands in one `ALTER` are each atomic, not atomic together | A crash between two partitions leaves some replaced and some not. The rerun repairs it, which is the behaviour blueprint §7.7 item 5 expects |
+| The partition id of a `Date32` key is its day number (20756 for 2026-10-30), not `YYYYMMDD` as for a `Date` key | The materialisation reads ids from `_partition_id` and never builds them, so it is unaffected. Anything that names partitions by id must not assume `YYYYMMDD` |
+| dbt-clickhouse creates the profile's default database on connect | The dbt user needs `CREATE DATABASE` on it; `dbt_rw` has it for the five databases it builds into |
+
+### Part B — Cosmos on Airflow 3.4
+
+**Question.** Does Cosmos 1.16.0 run dbt from its own environment on Airflow 3.4.0, with nothing parsed when DAG files load (blueprint §5.5, risk R6)?
+
+| | |
+|---|---|
+| Versions | Apache Airflow 3.4.0 (LocalExecutor), astronomer-cosmos 1.16.0, dbt-core 1.12.7 in `/opt/venvs/dbt`, `gbmi` in `/opt/venvs/gbmi` |
+| Evidence | `dags/spike_sk3_cosmos.py` with the model `dbt/models/spike/spike_sk3_cosmos.sql`, run by hand twice on 2026-11-25. Both are removed when the tracer DAG supersedes them; the tracer in `make demo` then stands as the evidence for B2, B4 and B5 |
+
+| Q | Question | Result | Observation |
+|---|---|---|---|
+| B1 | Does the image build with Cosmos 1.16.0 under the Airflow 3.4.0 constraints? | **Pass** | `pip check`: "No broken requirements found" (image build, WP-05) |
+| B2 | Does a `DbtTaskGroup` render from a prebuilt manifest and run dbt from `/opt/venvs/dbt`? | **Pass** | `LoadMode.DBT_MANIFEST`, `ExecutionConfig(dbt_executable_path=…, invocation_mode=SUBPROCESS)` and `ProfileConfig(profiles_yml_filepath=…)`: one task, `dbt.spike_sk3_cosmos_run`, for the one model; the run is green |
+| B3 | Is DAG parsing free of dbt calls? | **Pass** | Parsing the file takes 0.51 s; dbt's log file is untouched by it |
+| B4 | Do runtime variables reach dbt? | **Pass** | The second run was triggered with `{"partitions": [202611]}`. Afterwards partition 202610 still carried the first run's dbt invocation id and partition 202611 the second run's |
+| B5 | Does `@task.external_python` run a `gbmi` function from `/opt/venvs/gbmi`? | **Pass** | The task reported its interpreter as `/opt/venvs/gbmi/…` and returned a dictionary through XCom to a task in the Airflow environment |
+
+**Decision: Cosmos as designed.** No fallback is taken and no draft of ADR-010 is needed.
+
+| Finding | Consequence |
+|---|---|
+| A templated list arrives in dbt as the string `"[202611]"` unless the DAG sets `render_template_as_native_obj=True` | The tracer DAG sets it, and the macro `requested_partitions()` also parses a JSON string, so neither mistake can make a model iterate over characters |
+| Airflow 3 looks for new DAG files every 300 seconds by default, and DAGs are paused at creation | The local stack sets the interval to 30 seconds; `make demo` unpauses the tracer and bounds its wait |
+| An `external_python` task's result is unpickled in the Airflow environment, where `gbmi` is not installed | Tasks return built-in types only, and import `gbmi` inside the function |

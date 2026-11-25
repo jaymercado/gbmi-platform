@@ -1,0 +1,63 @@
+name: dbt
+
+# The incremental contract (blueprint 7.7, item 6): the partition_replace materialisation is
+# built twice against an ephemeral ClickHouse and must give identical partitions.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dbt-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  partition-replace:
+    name: build-twice test on ClickHouse 26.8
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    services:
+      clickhouse:
+        image: clickhouse/clickhouse-server:26.8@sha256:e49863ded96abdc0545bcd0320c1b99c979c18f27915eb6519a5546760d24cb9
+        env:
+          # Throwaway credentials for a container that lives only for this job.
+          CLICKHOUSE_USER: default
+          CLICKHOUSE_PASSWORD: ci-only-password
+          CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+        ports:
+          - 8123:8123
+        options: >-
+          --ulimit nofile=262144:262144
+          --health-cmd "wget --quiet --tries=1 --spider http://localhost:8123/ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      UV_PYTHON_PREFERENCE: only-managed
+      DBT_TARGET: ci
+      DBT_CH_HOST: localhost
+      DBT_CH_PORT: "8123"
+      CLICKHOUSE_ADMIN_PASSWORD: ci-only-password
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          version: "0.13.10"
+          enable-cache: true
+
+      - name: Install the locked environments
+        run: |
+          uv sync --frozen
+          uv sync --frozen --project dbt
+
+      - name: Parse the main project
+        run: uv run --project dbt dbt parse --project-dir dbt --profiles-dir dbt/profiles
+
+      - name: Build-twice test (spike SK3, tests T1 to T6)
+        run: uv run pytest tests/integration/dbt -m integration -p no:cacheprovider

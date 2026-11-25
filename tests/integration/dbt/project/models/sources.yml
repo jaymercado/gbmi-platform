@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: sk3
+    schema: "{{ var('sk3_database') }}"
+    tables:
+      - name: source_events
+        description: Rows the test inserts, changes and deletes; three days in two months.

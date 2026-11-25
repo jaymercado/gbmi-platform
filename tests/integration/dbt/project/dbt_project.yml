@@ -1,0 +1,24 @@
+# Test-only dbt project for spike SK3 (week 1 plan, WP-08). It uses the main project's macros,
+# so the partition_replace materialisation under test is the one the marts use, and it holds
+# the spike models here so that they never enter the tracer's task group or `make dbt-build`.
+name: gbmi_sk3
+version: "0.0.1"
+config-version: 2
+profile: gbmi
+
+model-paths: ["models"]
+macro-paths: ["../../../../dbt/macros"]
+target-path: target
+clean-targets: ["target"]
+
+flags:
+  send_anonymous_usage_stats: false
+
+vars:
+  # The test creates one database per test case and passes its name here.
+  sk3_database: sk3
+
+models:
+  gbmi_sk3:
+    +schema: "{{ var('sk3_database') }}"
+    +engine: MergeTree()
