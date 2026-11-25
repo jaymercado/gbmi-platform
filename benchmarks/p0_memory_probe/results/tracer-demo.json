@@ -1,0 +1,113 @@
+{
+  "label": "tracer-demo",
+  "mode": "watch",
+  "project": "gbmi",
+  "started_at": "2026-11-25T16:25:59+00:00",
+  "finished_at": "2026-11-25T16:27:14+00:00",
+  "interval_seconds": 2.0,
+  "docker": {
+    "server_version": "28.2.2",
+    "mem_total_bytes": 8217751552,
+    "cpus": 12,
+    "architecture": "aarch64",
+    "operating_system": "Docker Desktop"
+  },
+  "command": [
+    "make",
+    "demo"
+  ],
+  "exit_code": 0,
+  "duration_seconds": 74.7,
+  "containers": {
+    "airflow-apiserver": {
+      "samples": 34,
+      "mem_median_bytes": 780664831,
+      "mem_min_bytes": 664902041,
+      "mem_max_bytes": 788843724,
+      "cpu_median_percent": 2.39,
+      "cpu_max_percent": 100.51,
+      "limit_bytes": 1048576000,
+      "cgroup_peak_bytes": 872099840
+    },
+    "airflow-dag-processor": {
+      "samples": 34,
+      "mem_median_bytes": 234985881,
+      "mem_min_bytes": 234566451,
+      "mem_max_bytes": 235090739,
+      "cpu_median_percent": 0.51,
+      "cpu_max_percent": 40.5,
+      "limit_bytes": 524288000,
+      "cgroup_peak_bytes": 414916608
+    },
+    "airflow-init": {
+      "samples": 3,
+      "mem_median_bytes": 80918609,
+      "mem_min_bytes": 73190604,
+      "mem_max_bytes": 92211773,
+      "cpu_median_percent": 98.86,
+      "cpu_max_percent": 99.43,
+      "limit_bytes": 8217346179,
+      "cgroup_peak_bytes": null
+    },
+    "airflow-scheduler": {
+      "samples": 34,
+      "mem_median_bytes": 466039603,
+      "mem_min_bytes": 331559731,
+      "mem_max_bytes": 693213593,
+      "cpu_median_percent": 24.46,
+      "cpu_max_percent": 111.56,
+      "limit_bytes": 2726230491,
+      "cgroup_peak_bytes": 783388672
+    },
+    "airflow-triggerer": {
+      "samples": 34,
+      "mem_median_bytes": 255433113,
+      "mem_min_bytes": 255013683,
+      "mem_max_bytes": 255537971,
+      "cpu_median_percent": 0.71,
+      "cpu_max_percent": 2.42,
+      "limit_bytes": 419430400,
+      "cgroup_peak_bytes": 296189952
+    },
+    "clickhouse": {
+      "samples": 34,
+      "mem_median_bytes": 393845145,
+      "mem_min_bytes": 374865920,
+      "mem_max_bytes": 419010969,
+      "cpu_median_percent": 1.96,
+      "cpu_max_percent": 22.76,
+      "limit_bytes": 2621003792,
+      "cgroup_peak_bytes": 476852224
+    },
+    "metabase": {
+      "samples": 34,
+      "mem_median_bytes": 1157493686,
+      "mem_min_bytes": 1157493686,
+      "mem_max_bytes": 1206885810,
+      "cpu_median_percent": 0.49,
+      "cpu_max_percent": 131.08,
+      "limit_bytes": 1610612736,
+      "cgroup_peak_bytes": 1610616832
+    },
+    "postgres": {
+      "samples": 34,
+      "mem_median_bytes": 209348198,
+      "mem_min_bytes": 195035136,
+      "mem_max_bytes": 231106150,
+      "cpu_median_percent": 2.21,
+      "cpu_max_percent": 9.61,
+      "limit_bytes": 536870912,
+      "cgroup_peak_bytes": 339890176
+    },
+    "toolbox": {
+      "samples": 17,
+      "mem_median_bytes": 23446159,
+      "mem_min_bytes": 23026728,
+      "mem_max_bytes": 195873996,
+      "cpu_median_percent": 0.0,
+      "cpu_max_percent": 0.1,
+      "limit_bytes": 8217346179,
+      "cgroup_peak_bytes": null
+    }
+  }
+}

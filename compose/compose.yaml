@@ -201,7 +201,7 @@ services:
       timeout: 10s
       retries: 12
       start_period: 40s
-    mem_limit: ${MEM_AIRFLOW_APISERVER:-800m}
+    mem_limit: ${MEM_AIRFLOW_APISERVER:-1000m}
 
   # Under LocalExecutor the scheduler container also hosts the task processes, which is why it
   # gets the Airflow share and the task-process share of the memory budget.
@@ -214,7 +214,7 @@ services:
       timeout: 10s
       retries: 12
       start_period: 40s
-    mem_limit: ${MEM_AIRFLOW_SCHEDULER:-2800m}
+    mem_limit: ${MEM_AIRFLOW_SCHEDULER:-2600m}
 
   airflow-dag-processor:
     <<: *airflow-common

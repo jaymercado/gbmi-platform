@@ -1,0 +1,19 @@
+{
+  "day": "2026-11-24",
+  "files": 96,
+  "raw_lines": 111522,
+  "rows": 111522,
+  "raw_bytes": 1455399858,
+  "compressed_bytes": 469123996,
+  "rows_not_27_columns": 0,
+  "seconds": 6.9,
+  "peak_rss_mib": 535.4,
+  "cpu_seconds": 7.3,
+  "duckdb_memory_limit": "1GB",
+  "snapshot_operations": [
+    "append"
+  ],
+  "data_files": 1,
+  "data_file_bytes": 103291406,
+  "table": "silver.probe_gkg_day"
+}

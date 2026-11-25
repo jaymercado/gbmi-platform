@@ -18,7 +18,7 @@ services:
       # No sample database or sample dashboards: the instance shows this platform only.
       MB_LOAD_SAMPLE_CONTENT: "false"
       # The heap is capped below the container limit (blueprint 9.1).
-      JAVA_OPTS: ${METABASE_JAVA_OPTS:--Xms256m -Xmx800m}
+      JAVA_OPTS: ${METABASE_JAVA_OPTS:--Xms256m -Xmx640m}
     ports:
       - "127.0.0.1:3000:3000"
     healthcheck:
@@ -27,7 +27,7 @@ services:
       timeout: 5s
       retries: 30
       start_period: 60s
-    mem_limit: ${MEM_METABASE:-1200m}
+    mem_limit: ${MEM_METABASE:-1536m}
     restart: "no"
     depends_on:
       postgres:

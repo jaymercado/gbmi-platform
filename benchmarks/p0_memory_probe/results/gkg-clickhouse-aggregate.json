@@ -1,0 +1,48 @@
+{
+  "rounds": 39,
+  "queries_finished": 117,
+  "seconds": 14.9,
+  "slowest_query_seconds": {
+    "count": 0.14,
+    "organisations": 0.12,
+    "themes": 0.26
+  },
+  "peak_query_memory_mib": 128.0,
+  "rows_read": 13048074,
+  "sample": {
+    "count": [
+      [
+        111522,
+        111522
+      ]
+    ],
+    "organisations": [
+      [
+        "United States",
+        7207
+      ],
+      [
+        "Nvidia",
+        4242
+      ],
+      [
+        "White House",
+        3189
+      ]
+    ],
+    "themes": [
+      [
+        "TAX_FNCACT",
+        88059
+      ],
+      [
+        "EPU_POLICY",
+        41370
+      ],
+      [
+        "TAX_ETHNICITY",
+        37403
+      ]
+    ]
+  }
+}

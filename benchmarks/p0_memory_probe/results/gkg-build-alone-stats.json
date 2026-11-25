@@ -1,0 +1,100 @@
+{
+  "label": "gkg-build-alone",
+  "mode": "watch",
+  "project": "gbmi",
+  "started_at": "2026-11-25T16:19:08+00:00",
+  "finished_at": "2026-11-25T16:19:20+00:00",
+  "interval_seconds": 2.0,
+  "docker": {
+    "server_version": "28.2.2",
+    "mem_total_bytes": 8217751552,
+    "cpus": 12,
+    "architecture": "aarch64",
+    "operating_system": "Docker Desktop"
+  },
+  "command": [
+    "bash",
+    "-c",
+    "\"$@\" < benchmarks/p0_memory_probe/gkg_day_probe.py > \"$0\"",
+    "benchmarks/p0_memory_probe/results/gkg-build-alone.json",
+    "docker",
+    "compose",
+    "--project-directory",
+    ".",
+    "--env-file",
+    ".env",
+    "-f",
+    "compose/compose.yaml",
+    "exec",
+    "-T",
+    "-e",
+    "PROBE_DAY=2026-11-24",
+    "airflow-scheduler",
+    "/opt/venvs/gbmi/bin/python",
+    "-"
+  ],
+  "exit_code": 0,
+  "duration_seconds": 10.8,
+  "containers": {
+    "airflow-apiserver": {
+      "samples": 5,
+      "mem_median_bytes": 664377753,
+      "mem_min_bytes": 664377753,
+      "mem_max_bytes": 664377753,
+      "cpu_median_percent": 0.22,
+      "cpu_max_percent": 3.16,
+      "limit_bytes": 838860800,
+      "cgroup_peak_bytes": 718749696
+    },
+    "airflow-dag-processor": {
+      "samples": 5,
+      "mem_median_bytes": 234881024,
+      "mem_min_bytes": 234881024,
+      "mem_max_bytes": 235195596,
+      "cpu_median_percent": 0.52,
+      "cpu_max_percent": 0.83,
+      "limit_bytes": 524288000,
+      "cgroup_peak_bytes": 402509824
+    },
+    "airflow-scheduler": {
+      "samples": 5,
+      "mem_median_bytes": 484756684,
+      "mem_min_bytes": 238760755,
+      "mem_max_bytes": 607440076,
+      "cpu_median_percent": 98.49,
+      "cpu_max_percent": 100.15,
+      "limit_bytes": 2935610146,
+      "cgroup_peak_bytes": 1231343616
+    },
+    "airflow-triggerer": {
+      "samples": 5,
+      "mem_median_bytes": 255328256,
+      "mem_min_bytes": 255328256,
+      "mem_max_bytes": 255328256,
+      "cpu_median_percent": 0.64,
+      "cpu_max_percent": 1.86,
+      "limit_bytes": 419430400,
+      "cgroup_peak_bytes": 297099264
+    },
+    "clickhouse": {
+      "samples": 5,
+      "mem_median_bytes": 473536921,
+      "mem_min_bytes": 473536921,
+      "mem_max_bytes": 473536921,
+      "cpu_median_percent": 2.66,
+      "cpu_max_percent": 4.02,
+      "limit_bytes": 2621003792,
+      "cgroup_peak_bytes": 476950528
+    },
+    "postgres": {
+      "samples": 5,
+      "mem_median_bytes": 52292485,
+      "mem_min_bytes": 52281999,
+      "mem_max_bytes": 54085550,
+      "cpu_median_percent": 2.33,
+      "cpu_max_percent": 2.85,
+      "limit_bytes": 536870912,
+      "cgroup_peak_bytes": 60964864
+    }
+  }
+}

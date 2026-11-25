@@ -65,13 +65,21 @@ def containers(project: str) -> dict[str, str]:
 
 
 def take_sample(services: dict[str, str]) -> dict[str, dict[str, float]]:
-    """One `docker stats` reading: memory in use (working set), its limit and CPU percent."""
-    output = run("docker", "stats", "--no-stream", "--format", "{{json .}}", *services)
+    """One `docker stats` reading: memory in use (working set), its limit and CPU percent.
+
+    Every running container is read and the project's ones are picked out afterwards. Naming
+    the containers on the command line would fail whenever a one-shot container exits between
+    listing and sampling.
+    """
+    output = run("docker", "stats", "--no-stream", "--no-trunc", "--format", "{{json .}}")
     sample: dict[str, dict[str, float]] = {}
     for line in output.splitlines():
         row = json.loads(line)
-        service = services.get(row["ID"][:12]) or services.get(row["ID"])
-        if service is None:
+        service = next(
+            (name for container_id, name in services.items() if row["ID"].startswith(container_id)),
+            None,
+        )
+        if service is None or " / " not in row["MemUsage"]:
             continue
         used, _, limit = row["MemUsage"].partition(" / ")
         sample[service] = {
