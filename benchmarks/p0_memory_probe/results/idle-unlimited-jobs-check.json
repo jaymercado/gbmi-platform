@@ -1,0 +1,77 @@
+{
+  "label": "idle-unlimited",
+  "mode": "sample",
+  "project": "gbmi",
+  "started_at": "2026-11-25T14:31:54+00:00",
+  "finished_at": "2026-11-25T14:34:08+00:00",
+  "interval_seconds": 30.0,
+  "docker": {
+    "server_version": "28.2.2",
+    "mem_total_bytes": 8217751552,
+    "cpus": 12,
+    "architecture": "aarch64",
+    "operating_system": "Docker Desktop"
+  },
+  "containers": {
+    "airflow-apiserver": {
+      "samples": 5,
+      "mem_median_bytes": 659659161,
+      "mem_min_bytes": 659554304,
+      "mem_max_bytes": 660498022,
+      "cpu_median_percent": 0.51,
+      "cpu_max_percent": 3.24,
+      "limit_bytes": 8217346179,
+      "cgroup_peak_bytes": 712744960
+    },
+    "airflow-dag-processor": {
+      "samples": 5,
+      "mem_median_bytes": 208142336,
+      "mem_min_bytes": 208142336,
+      "mem_max_bytes": 208456908,
+      "cpu_median_percent": 0.78,
+      "cpu_max_percent": 6.59,
+      "limit_bytes": 8217346179,
+      "cgroup_peak_bytes": 374353920
+    },
+    "airflow-scheduler": {
+      "samples": 5,
+      "mem_median_bytes": 338165760,
+      "mem_min_bytes": 337117184,
+      "mem_max_bytes": 338690048,
+      "cpu_median_percent": 2.52,
+      "cpu_max_percent": 4.39,
+      "limit_bytes": 8217346179,
+      "cgroup_peak_bytes": 378900480
+    },
+    "airflow-triggerer": {
+      "samples": 5,
+      "mem_median_bytes": 255957401,
+      "mem_min_bytes": 255957401,
+      "mem_max_bytes": 255957401,
+      "cpu_median_percent": 1.69,
+      "cpu_max_percent": 2.33,
+      "limit_bytes": 8217346179,
+      "cgroup_peak_bytes": 416587776
+    },
+    "clickhouse": {
+      "samples": 5,
+      "mem_median_bytes": 399717171,
+      "mem_min_bytes": 398983168,
+      "mem_max_bytes": 401185177,
+      "cpu_median_percent": 4.41,
+      "cpu_max_percent": 5.48,
+      "limit_bytes": 8217346179,
+      "cgroup_peak_bytes": 410193920
+    },
+    "postgres": {
+      "samples": 5,
+      "mem_median_bytes": 52523171,
+      "mem_min_bytes": 52502200,
+      "mem_max_bytes": 52774830,
+      "cpu_median_percent": 2.43,
+      "cpu_max_percent": 4.26,
+      "limit_bytes": 8217346179,
+      "cgroup_peak_bytes": 65085440
+    }
+  }
+}

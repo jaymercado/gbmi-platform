@@ -1,0 +1,17 @@
+# Connection profiles, configured entirely from the environment (blueprint 9.5).
+# Targets: local (Compose), ci (service-container ClickHouse). prod is added in phase P2.
+gbmi:
+  target: "{{ env_var('DBT_TARGET', 'local') }}"
+  outputs:
+    local: &clickhouse
+      type: clickhouse
+      driver: http
+      host: "{{ env_var('DBT_CH_HOST', 'localhost') }}"
+      port: "{{ env_var('DBT_CH_PORT', '8123') | int }}"
+      user: "{{ env_var('DBT_CH_USER', 'dbt') }}"
+      password: "{{ env_var('DBT_CH_PASSWORD', '') }}"
+      schema: marts
+      secure: false
+      threads: 2
+    ci:
+      <<: *clickhouse

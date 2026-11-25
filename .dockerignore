@@ -1,0 +1,20 @@
+# The build context is the repository root. Everything is excluded unless listed here,
+# so that neither secrets (.env), local data nor the two large planning documents reach the daemon.
+*
+!.python-version
+!pyproject.toml
+!uv.lock
+!README.md
+!LICENSE
+!NOTICE
+!src/**
+!dags/**
+!dbt/**
+!docker/airflow/requirements.txt
+
+dbt/.venv
+dbt/target
+dbt/logs
+dbt/dbt_packages
+**/__pycache__
+**/*.pyc

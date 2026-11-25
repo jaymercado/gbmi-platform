@@ -1,0 +1,275 @@
+# Core profile of the local stack (blueprint 9.1): PostgreSQL, the four Airflow processes and
+# ClickHouse. It starts from the Airflow 3.4.0 reference Compose file and changes it:
+# LocalExecutor (no Redis, Celery worker or Flower), postgres:17, a ClickHouse service, ports
+# published on 127.0.0.1 only, memory limits from the blueprint's budget, and two helper services.
+#
+# Always run through the Makefile, which passes
+#   --project-directory . --env-file .env
+# so that every relative path below is relative to the repository root.
+#
+# Images other than the one built here are pinned by digest; tags are kept for readability.
+name: gbmi
+
+x-airflow-common: &airflow-common
+  image: gbmi-airflow:dev
+  build:
+    context: .
+    dockerfile: docker/airflow/Dockerfile
+    target: dev
+  environment: &airflow-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__PARALLELISM: "4"
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:?run make setup}
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-apiserver:8080/execution/
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg://airflow:${AIRFLOW_DB_PASSWORD:?run make setup}@postgres/airflow
+    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:?run make setup}
+    AIRFLOW__API_AUTH__JWT_ISSUER: gbmi
+    AIRFLOW__API__WORKERS: "2"
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
+    # gbmi package settings (blueprint 9.5): the local backend.
+    GBMI_ENV: ${GBMI_ENV:-local}
+    GBMI_LAKE_BACKEND: local
+    GBMI_LAKE_URI: file:///lake
+    GBMI_CATALOG_URI: sqlite:////lake/catalog/catalog.db
+    GBMI_CH_URL: http://gbmi:${CH_GBMI_PASSWORD:?run make setup}@clickhouse:8123
+    GBMI_PG_DSN: postgresql://gbmi:${GBMI_DB_PASSWORD:?run make setup}@postgres:5432/gbmi
+    # dbt profile (dbt/profiles/profiles.yml).
+    DBT_TARGET: ${DBT_TARGET:-local}
+    DBT_CH_HOST: clickhouse
+    DBT_CH_PORT: "8123"
+    DBT_CH_USER: dbt
+    DBT_CH_PASSWORD: ${CH_DBT_PASSWORD:?run make setup}
+  volumes:
+    - ./src:/opt/gbmi/src:ro
+    - ./dags:/opt/gbmi/dags:ro
+    - ./dbt:/opt/gbmi/dbt
+    - airflow-logs:/opt/airflow/logs
+    # The lake is mounted at the same path in every container, so that the file URIs inside
+    # Iceberg metadata resolve identically for writers and for ClickHouse (blueprint 9.1).
+    - ./data/lake:/lake
+    - ./tests/fixtures:/fixtures:ro
+  # On Linux the Makefile sets AIRFLOW_UID to the caller's id so that bind-mounted files stay
+  # readable and writable on both sides.
+  user: "${AIRFLOW_UID:-50000}:0"
+  # No automatic restarts in this file: on the laptop and in CI a failure should stay visible.
+  restart: "no"
+  depends_on: &airflow-depends-on
+    postgres:
+      condition: service_healthy
+    clickhouse-init:
+      condition: service_completed_successfully
+    airflow-init:
+      condition: service_completed_successfully
+    dbt-manifest:
+      condition: service_completed_successfully
+
+services:
+  postgres:
+    image: postgres:17@sha256:87c8b42f423b45d5247e6aa8fdb2e7762fec164c68a50fe3eb07e7bfcaf4dbcf
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run make setup}
+      AIRFLOW_DB_PASSWORD: ${AIRFLOW_DB_PASSWORD}
+      GBMI_DB_PASSWORD: ${GBMI_DB_PASSWORD}
+      METABASE_DB_PASSWORD: ${METABASE_DB_PASSWORD:?run make setup}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      # Over TCP and against the gbmi database: the temporary server that runs the init
+      # script listens on the Unix socket only, so this passes only once initialisation is done.
+      test: ["CMD-SHELL", "PGPASSWORD=$$POSTGRES_PASSWORD psql --host 127.0.0.1 --username postgres --dbname gbmi --tuples-only --command 'select 1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+    mem_limit: ${MEM_POSTGRES:-512m}
+    restart: "no"
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.8@sha256:e49863ded96abdc0545bcd0320c1b99c979c18f27915eb6519a5546760d24cb9
+    environment:
+      # The image only opens the network to the default user, and only lets it manage roles,
+      # when a password and access management are set.
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_ADMIN_PASSWORD:?run make setup}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+      CH_MAX_SERVER_MEMORY_USAGE: ${CH_MAX_SERVER_MEMORY_USAGE:-2147483648}
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ./docker/clickhouse/config.d/gbmi.xml:/etc/clickhouse-server/config.d/gbmi.xml:ro
+      # Read-only: ClickHouse reads Iceberg tables from the lake and never writes to it.
+      - ./data/lake:/lake:ro
+    ports:
+      - "127.0.0.1:8123:8123"
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    mem_limit: ${MEM_CLICKHOUSE:-2500m}
+    restart: "no"
+
+  # One-shot: apply db/clickhouse/init/*.sql (databases, roles, users). Every statement is
+  # idempotent and the service runs on each start, so a change to a grant takes effect at the
+  # next `make up` without recreating the volume.
+  clickhouse-init:
+    image: clickhouse/clickhouse-server:26.8@sha256:e49863ded96abdc0545bcd0320c1b99c979c18f27915eb6519a5546760d24cb9
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        set -euo pipefail
+        for file in /init/*.sql; do
+          echo "applying $$file"
+          clickhouse-client --host clickhouse --user default --password "$$CLICKHOUSE_PASSWORD" \
+            --param_dbt_password="$$CH_DBT_PASSWORD" \
+            --param_bi_password="$$CH_BI_PASSWORD" \
+            --param_gbmi_password="$$CH_GBMI_PASSWORD" \
+            --multiquery < "$$file"
+        done
+    environment:
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_ADMIN_PASSWORD}
+      CH_DBT_PASSWORD: ${CH_DBT_PASSWORD:?run make setup}
+      CH_BI_PASSWORD: ${CH_BI_PASSWORD:?run make setup}
+      CH_GBMI_PASSWORD: ${CH_GBMI_PASSWORD:?run make setup}
+    volumes:
+      - ./db/clickhouse/init:/init:ro
+    restart: "no"
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+
+  # One-shot: migrate the metadata database, create the administrator and the three pools.
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        set -euo pipefail
+        /entrypoint airflow version
+        airflow pools set sec_api 1 "SEC EDGAR requests (blueprint 5.5)"
+        airflow pools set silver_writer 1 "Jobs that commit to silver tables (blueprint 5.5)"
+        airflow pools set heavy 1 "Memory-intensive tasks (blueprint 5.5)"
+    environment:
+      <<: *airflow-env
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USER:-admin}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:?run make setup}
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # One-shot: build the dbt manifest. A DAG that renders dbt tasks needs it in order to import,
+  # so every Airflow process waits for this service (week 1 plan, WP-05).
+  dbt-manifest:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - cd /opt/gbmi/dbt && /opt/venvs/dbt/bin/dbt parse --profiles-dir profiles && test -s target/manifest.json
+    restart: "no"
+    depends_on: {}
+
+  airflow-apiserver:
+    <<: *airflow-common
+    command: api-server
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/api/v2/monitor/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 40s
+    mem_limit: ${MEM_AIRFLOW_APISERVER:-800m}
+
+  # Under LocalExecutor the scheduler container also hosts the task processes, which is why it
+  # gets the Airflow share and the task-process share of the memory budget.
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8974/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 40s
+    mem_limit: ${MEM_AIRFLOW_SCHEDULER:-2800m}
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    command: dag-processor
+    healthcheck:
+      # The reference file runs `airflow jobs check` here. That starts a Python process which
+      # adds about 115 to 150 MiB to the container every 30 seconds (measured in WP-05), so the
+      # heartbeat is read from the API server's health endpoint instead.
+      test:
+        - CMD-SHELL
+        - >-
+          curl --fail --silent http://airflow-apiserver:8080/api/v2/monitor/health
+          | grep -q "\"dag_processor\":{\"status\":\"healthy\".*\"hostname\":\"$${HOSTNAME}\""
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 40s
+    mem_limit: ${MEM_AIRFLOW_DAG_PROCESSOR:-500m}
+
+  airflow-triggerer:
+    <<: *airflow-common
+    command: triggerer
+    healthcheck:
+      # See airflow-dag-processor: a heartbeat read from the API server, not a Python process.
+      test:
+        - CMD-SHELL
+        - >-
+          curl --fail --silent http://airflow-apiserver:8080/api/v2/monitor/health
+          | grep -q "\"triggerer\":{\"status\":\"healthy\".*\"hostname\":\"$${HOSTNAME}\""
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 40s
+    mem_limit: ${MEM_AIRFLOW_TRIGGERER:-400m}
+
+  # Runs tests and one-off commands on the Compose network with the development environment:
+  #   make integration        or        make toolbox CMD="gbmi config show"
+  toolbox:
+    <<: *airflow-common
+    profiles: ["tools"]
+    entrypoint: []
+    command: ["/opt/venvs/gbmi/bin/gbmi", "version"]
+    init: true
+    working_dir: /opt/gbmi
+    environment:
+      <<: *airflow-env
+      PATH: /opt/venvs/gbmi/bin:/opt/venvs/dbt/bin:/home/airflow/.local/bin:/usr/python/bin:/usr/local/bin:/usr/bin:/bin
+      PYTHONDONTWRITEBYTECODE: "1"
+      CLICKHOUSE_ADMIN_PASSWORD: ${CLICKHOUSE_ADMIN_PASSWORD}
+      GBMI_TEST_AWS: ${GBMI_TEST_AWS:-0}
+    volumes:
+      - .:/opt/gbmi
+      - ./data/lake:/lake
+      - ./tests/fixtures:/fixtures:ro
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse-init:
+        condition: service_completed_successfully
+
+volumes:
+  postgres-data:
+  clickhouse-data:
+  airflow-logs:

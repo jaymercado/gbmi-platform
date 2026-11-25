@@ -1,0 +1,32 @@
+# BI profile (blueprint 9.1): Metabase, started on demand with
+#   make up-bi
+# on top of compose.yaml. Its application data lives in the shared PostgreSQL.
+services:
+  metabase:
+    image: metabase/metabase:v0.65.7.1@sha256:ee7aa3cec2e21a6b3fd7d1c150184fef20900da09578745ca880e8dc2323ae0d
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_HOST: postgres
+      MB_DB_PORT: "5432"
+      MB_DB_DBNAME: metabase
+      MB_DB_USER: metabase
+      MB_DB_PASS: ${METABASE_DB_PASSWORD:?run make setup}
+      MB_ENCRYPTION_SECRET_KEY: ${METABASE_ENCRYPTION_KEY:?run make setup}
+      MB_SITE_NAME: GBMI Platform
+      MB_ANON_TRACKING_ENABLED: "false"
+      MB_CHECK_FOR_UPDATES: "false"
+      # The heap is capped below the container limit (blueprint 9.1).
+      JAVA_OPTS: ${METABASE_JAVA_OPTS:--Xms256m -Xmx800m}
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    mem_limit: ${MEM_METABASE:-1200m}
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
