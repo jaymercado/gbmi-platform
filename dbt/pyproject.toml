@@ -1,0 +1,16 @@
+# Locked toolchain for dbt. It is a separate environment from the gbmi package and from Airflow
+# (BP 5.5); it is not an installable Python package.
+[project]
+name = "gbmi-dbt"
+version = "0.0.0"
+description = "Locked dbt toolchain for the GBMI platform"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "dbt-core==1.12.7",
+    "dbt-clickhouse==1.10.4",
+    "sqlfluff==4.5.0",
+]
+
+[tool.uv]
+package = false
+python-preference = "only-managed"

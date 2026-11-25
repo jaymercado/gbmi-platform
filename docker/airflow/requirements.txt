@@ -1,0 +1,3 @@
+# Installed into the Airflow environment under the Airflow 3.4.0 constraints file (WP-05).
+# Nothing else belongs here: gbmi and dbt have their own virtual environments (BP 5.5, 9.3).
+astronomer-cosmos==1.16.0

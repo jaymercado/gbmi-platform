@@ -1,0 +1,43 @@
+# SQL lint for dbt models. The Jinja templater with dbt built-ins needs no database
+# connection, so linting runs anywhere (week 1 plan, WP-02).
+[sqlfluff]
+dialect = clickhouse
+templater = jinja
+max_line_length = 120
+# ClickHouse resolves column aliases inside the same SELECT and its functions are
+# case-sensitive, so the rules that assume otherwise are switched off.
+exclude_rules = references.keywords, structure.column_order, ambiguous.column_count
+large_file_skip_byte_limit = 0
+
+[sqlfluff:templater:jinja]
+apply_dbt_builtins = True
+load_macros_from_path = dbt/macros
+
+[sqlfluff:indentation]
+tab_space_size = 4
+indented_joins = False
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.identifiers]
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.functions]
+# ClickHouse function names are case-sensitive (toYYYYMM, argMax): leave them as written.
+extended_capitalisation_policy = consistent
+ignore_words_regex = .*
+
+[sqlfluff:rules:capitalisation.literals]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.types]
+# ClickHouse type names are case-sensitive (Date32, DateTime64).
+extended_capitalisation_policy = consistent
+ignore_words_regex = .*
+
+[sqlfluff:rules:aliasing.table]
+aliasing = explicit
+
+[sqlfluff:rules:aliasing.column]
+aliasing = explicit

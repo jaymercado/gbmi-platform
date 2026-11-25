@@ -1,0 +1,30 @@
+GBMI Platform
+Copyright 2026 Jay Mercado
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+================================================================================
+Data sources and attribution
+================================================================================
+
+GDELT
+
+This project uses data from The GDELT Project (https://www.gdeltproject.org/).
+The GDELT Project makes its datasets available for unlimited and unrestricted
+use for any academic, commercial, or governmental use, and permits
+redistribution, provided that any use or redistribution includes a citation to
+the GDELT Project and a link to its website
+(https://www.gdeltproject.org/about.html#termsofuse).
+
+Recorded GDELT 2.0 files under tests/fixtures/gdelt/ are redistributed unchanged
+under those terms. The platform stores GDELT metadata, article titles and URLs
+only; it never fetches or stores article text.
+
+SEC EDGAR
+
+This project uses public data from the EDGAR system of the U.S. Securities and
+Exchange Commission (https://www.sec.gov/). It is not affiliated with, endorsed
+by or sponsored by the SEC, and it does not use SEC marks. Automated access
+follows the SEC's fair-access policy: a declared user agent and a request rate
+below the published limit of 10 requests per second
+(https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data).

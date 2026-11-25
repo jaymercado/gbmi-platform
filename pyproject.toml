@@ -1,0 +1,110 @@
+[project]
+name = "gbmi"
+version = "0.0.1"
+description = "Global Business & Market Intelligence platform: an entity-resolved company-intelligence lakehouse on GDELT and SEC EDGAR"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Jay Mercado" }]
+dependencies = [
+    "duckdb>=2.0.1,<2.1",
+    "pyiceberg[pyarrow,sql-sqlite,glue]==0.12.0",
+    "clickhouse-connect>=1.13,<2",
+    "psycopg[binary]>=3.3,<4",
+    "httpx>=0.28,<1",
+    "tenacity>=9.2,<10",
+    "pydantic>=2.14,<3",
+    "pydantic-settings>=2.16,<3",
+    "typer>=0.29,<1",
+    "structlog>=26.1",
+]
+
+[project.scripts]
+gbmi = "gbmi.cli:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2,<10",
+    "pytest-cov>=7.1",
+    "ruff>=0.17.6,<0.18",
+    "mypy>=2.4,<3",
+    "pre-commit>=4.7,<5",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.10,<0.14"]
+build-backend = "uv_build"
+
+[tool.uv]
+# The laptop's only other Python 3.12 is Anaconda's; laptop, image and CI use uv-managed CPython.
+python-preference = "only-managed"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+extend-exclude = ["data", "dbt/target", "dbt/dbt_packages"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",  # pycodestyle, pyflakes
+    "I",            # import order
+    "N",            # naming
+    "UP",           # modern syntax
+    "B",            # bugbear
+    "C4",           # comprehensions
+    "SIM",          # simplifications
+    "PTH",          # pathlib
+    "DTZ",          # timezone-aware datetimes (BP 7.11: everything is UTC)
+    "T20",          # no print in package code
+    "S",            # security checks
+    "RUF",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "S108", "S608"]
+"benchmarks/**" = ["T20", "S101"]
+"monitoring/**" = ["T20"]
+"dags/**" = ["S101"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src/gbmi"]
+plugins = ["pydantic.mypy"]
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+check_untyped_defs = true
+no_implicit_optional = true
+strict_equality = true
+
+# BP 10: strict mode for core, ledger, sources and er; standard elsewhere.
+[[tool.mypy.overrides]]
+module = ["gbmi.core.*", "gbmi.ledger.*", "gbmi.sources.*", "gbmi.er.*"]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+warn_return_any = true
+no_implicit_reexport = true
+extra_checks = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --strict-config"
+markers = [
+    "integration: needs the Compose stack (run with make integration)",
+    "aws: needs short-lived AWS credentials (GBMI_TEST_AWS=1)",
+    "e2e: runs against a finished make demo",
+]
+
+[tool.coverage.run]
+source = ["gbmi"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
