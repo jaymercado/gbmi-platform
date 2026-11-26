@@ -1,12 +1,14 @@
-"""The tracer: one hour of GDELT Events from source to mart (week 1 plan, WP-09).
+"""The tracer: one hour of GDELT from source to mart (week 1 plan, WP-09; week 2 plan, WP-07).
 
     land -> build_silver -> pin_lake -> dbt (staging and mart, each with its tests) -> assert_counts
 
 Triggered by hand with two parameters: the UTC hour and the source (the recorded fixture hour
-or the live GDELT servers). Every task is a thin wrapper around a function of the gbmi
-package, which runs in its own environment (blueprint 5.5, 8.1); dbt runs through Cosmos from
-a prebuilt manifest. Rerunning an hour changes nothing: each hop replaces its unit as a whole
-(blueprint 5.6).
+or the live GDELT servers). The tasks land and build_silver work through the ledger, for the
+three feeds: the files of the hour are expected, listed, downloaded and verified, and the hour
+is built into the four silver tables. The mart is built from the events. Every task is a thin
+wrapper around a function of the gbmi package, which runs in its own environment (blueprint
+5.5, 8.1); dbt runs through Cosmos from a prebuilt manifest. Rerunning an hour changes nothing:
+each hop replaces its unit as a whole (blueprint 5.6).
 """
 
 from __future__ import annotations
@@ -34,7 +36,7 @@ PINNED = "{{ ti.xcom_pull(task_ids='pin_lake')['%s'] }}"
 
 @dag(
     dag_id="tracer_gdelt_events",
-    description="One hour of GDELT Events: bronze, silver, pinned lake table, mart.",
+    description="One hour of GDELT: bronze, silver, pinned lake table, mart of the events.",
     schedule=None,
     catchup=False,
     max_active_runs=1,
@@ -62,20 +64,20 @@ def tracer_gdelt_events() -> None:
     # unpickled in the Airflow environment.
 
     @task.external_python(python=GBMI_PYTHON, expect_airflow=False)
-    def land(hour: str, source: str) -> dict[str, Any]:
+    def land(hour: str, source: str, run_id: str) -> dict[str, Any]:
         from gbmi.logging import configure_logging
-        from gbmi.sources.gdelt.land import land_export_hour
+        from gbmi.sources.gdelt.tasks import land_hour_task
 
-        configure_logging()
-        return land_export_hour(hour, source)
+        configure_logging(run_id=run_id)
+        return land_hour_task(hour, source, run_id=run_id)
 
     @task.external_python(python=GBMI_PYTHON, expect_airflow=False, pool=POOL_SILVER_WRITER)
     def build_silver(hour: str, run_id: str) -> dict[str, Any]:
         from gbmi.logging import configure_logging
-        from gbmi.transforms.duckdb.gdelt_event import build_event_hour_task
+        from gbmi.transforms.tasks import build_hour_feeds_task
 
         configure_logging(run_id=run_id)
-        return build_event_hour_task(hour, run_id)
+        return build_hour_feeds_task(hour, run_id=run_id)
 
     @task.external_python(python=GBMI_PYTHON, expect_airflow=False)
     def pin_lake() -> dict[str, Any]:
@@ -93,7 +95,7 @@ def tracer_gdelt_events() -> None:
         configure_logging()
         return assert_tracer_counts(hour, built["counts"]["committed"], pinned["snapshot_id"])
 
-    landed = land(hour="{{ params.hour }}", source="{{ params.source }}")
+    landed = land(hour="{{ params.hour }}", source="{{ params.source }}", run_id="{{ run_id }}")
     built = build_silver(hour="{{ params.hour }}", run_id="{{ run_id }}")
     pinned = pin_lake()
 

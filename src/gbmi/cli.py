@@ -25,7 +25,7 @@ app = typer.Typer(
 )
 config_app = typer.Typer(help="Inspect the active configuration.", no_args_is_help=True)
 db_app = typer.Typer(help="The operational database: schema migrations.", no_args_is_help=True)
-gdelt_app = typer.Typer(help="GDELT: land files and build silver tables.", no_args_is_help=True)
+gdelt_app = typer.Typer(help="GDELT: expect, list and land the files.", no_args_is_help=True)
 ledger_app = typer.Typer(help="The ledger of expected source files.", no_args_is_help=True)
 lake_app = typer.Typer(help="The lake as the warehouse sees it.", no_args_is_help=True)
 quality_app = typer.Typer(help="Quality gates and reconciliation.", no_args_is_help=True)
@@ -314,33 +314,6 @@ def gdelt_reconcile(
         _print(reconcile_task(as_of, source, force, run_id))
     except ValueError as error:
         raise _fail("gdelt reconcile", error) from error
-
-
-@gdelt_app.command("land")
-def gdelt_land(
-    hour: HourArgument,
-    source: Annotated[
-        str, typer.Option(help="fixture (recorded files) or live (GDELT).")
-    ] = "fixture",
-    fixtures_dir: Annotated[
-        str, typer.Option(envvar="GBMI_FIXTURES_DIR", help="Recorded files for --source fixture.")
-    ] = "/fixtures/gdelt/v2",
-) -> None:
-    """Land the export files of one hour in bronze, verified and unchanged."""
-    from gbmi.sources.gdelt.land import land_export_hour
-
-    _print(land_export_hour(hour, source, fixtures_dir=fixtures_dir))
-
-
-@gdelt_app.command("build-silver")
-def gdelt_build_silver(
-    hour: HourArgument,
-    run_id: Annotated[str | None, typer.Option(envvar="GBMI_RUN_ID")] = None,
-) -> None:
-    """Parse, audit and commit one slot-hour of the silver table gdelt_event."""
-    from gbmi.transforms.duckdb.gdelt_event import build_event_hour_task
-
-    _print(build_event_hour_task(hour, run_id))
 
 
 def _build_feeds(command: str, feeds: list[str] | None, build: Callable[[str], object]) -> None:

@@ -8,7 +8,7 @@ import signal
 import subprocess
 import sys
 import zipfile
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -29,7 +29,6 @@ from gbmi.sources.gdelt.land import (
     VerificationError,
     fetcher_for,
     land_file,
-    land_hour,
     md5_hex,
     verify,
 )
@@ -141,24 +140,6 @@ def test_a_file_that_fails_the_gate_is_not_promoted(tmp_path: Path) -> None:
         land_file(Bronze(f"file://{tmp_path}"), fetcher, line)
 
     assert not list(tmp_path.rglob("*.zip"))
-
-
-def test_fixture_hour_lands_four_verified_files(tmp_path: Path) -> None:
-    bronze = Bronze(f"file://{tmp_path}")
-
-    lines, landed = land_hour(bronze, FixtureFetcher(FIXTURES), date(2026, 11, 25), 8)
-
-    assert [line.slot.stamp for line in lines] == [
-        "20261125080000", "20261125081500", "20261125083000", "20261125084500",
-    ]  # fmt: skip
-    assert all(line.url.startswith("https://") for line in lines)
-    assert [file.size for file in landed] == [81069, 47061, 58856, 76194]
-    assert all(file.written for file in landed)
-    # A second run changes nothing.
-    _, again = land_hour(bronze, FixtureFetcher(FIXTURES), date(2026, 11, 25), 8)
-    assert not any(file.written for file in again)
-    # An hour that the source does not list lands nothing.
-    assert land_hour(bronze, FixtureFetcher(FIXTURES), date(2026, 11, 25), 9) == ([], [])
 
 
 def no_waiting(monkeypatch: pytest.MonkeyPatch) -> None:

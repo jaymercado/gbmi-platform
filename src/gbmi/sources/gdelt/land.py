@@ -14,20 +14,18 @@ from __future__ import annotations
 import hashlib
 import io
 import zipfile
-from dataclasses import asdict, dataclass
-from datetime import UTC, date, datetime
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Protocol
 
 import httpx
 import pyarrow.fs as pafs
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential_jitter
 
-from gbmi.config import Settings, get_settings
 from gbmi.core.clock import utc_now
 from gbmi.core.failpoint import BRONZE_BEFORE_MOVE, failpoint
-from gbmi.core.gdelt import Feed, Slot, parse_hour
 from gbmi.logging import get_logger
 from gbmi.sources.gdelt.index import (
     LAST_UPDATE_URL,
@@ -35,8 +33,6 @@ from gbmi.sources.gdelt.index import (
     IndexLine,
     IndexSource,
     IndexTail,
-    lines_for_hour,
-    read_master_list,
 )
 
 log = get_logger(__name__)
@@ -324,60 +320,6 @@ def land_file(bronze: Bronze, fetcher: Fetcher, line: IndexLine) -> LandedFile:
         written=written,
         published_at=published_at,
     )
-
-
-def land_hour(
-    bronze: Bronze,
-    fetcher: Fetcher,
-    slot_date: date,
-    slot_hour: int,
-    feed: Feed = Feed.EXPORT,
-    *,
-    as_of: datetime | None = None,
-) -> tuple[list[IndexLine], list[LandedFile]]:
-    """Land every listed file of one feed and one UTC hour, without the ledger.
-
-    Returns the index lines found and the files now in bronze. A slot that the source does not
-    list is absent from both. The ledger-driven ingest (``gbmi.sources.gdelt.ingest``) is the
-    routine path; this function serves the tracer of phase P0 and the fixture recorder.
-    """
-    first = Slot(datetime(slot_date.year, slot_date.month, slot_date.day, slot_hour, tzinfo=UTC))
-    listed = read_master_list(fetcher, oldest=first, as_of=as_of or utc_now())
-    lines = lines_for_hour(listed, slot_date, slot_hour, feed)
-    return lines, [land_file(bronze, fetcher, line) for line in lines]
-
-
-def land_export_hour(
-    hour: str,
-    source: str = "fixture",
-    *,
-    fixtures_dir: str = "/fixtures/gdelt/v2",
-    settings: Settings | None = None,
-) -> dict[str, Any]:
-    """Task entry point: land the export files of one hour, ``YYYY-MM-DDTHH``.
-
-    ``source`` is ``live`` for the GDELT servers or ``fixture`` for the recorded hour. Returns a
-    summary of built-in types.
-    """
-    settings = settings or get_settings()
-    slot_date, slot_hour = parse_hour(hour)
-    lines, landed = land_hour(
-        Bronze(settings.lake_uri),
-        fetcher_for(source, fixtures_dir),
-        slot_date,
-        slot_hour,
-        Feed.EXPORT,
-    )
-    if not landed:
-        raise FileNotFoundError(f"the {source} source lists no export file for {hour}")
-    return {
-        "hour": hour,
-        "source": source,
-        "listed": len(lines),
-        "written": sum(file.written for file in landed),
-        "bytes": sum(file.size for file in landed),
-        "files": [asdict(file) for file in landed],
-    }
 
 
 def fetcher_for(source: str, fixtures_dir: str = "/fixtures/gdelt/v2") -> Fetcher:
