@@ -5,14 +5,12 @@ GDELT Event Database Codebook V2.0 gives them. The schema is positional and fixe
 any other column count is rejected, never guessed at (gate G2, blueprint 5.7).
 
 ``EVENT_COLUMNS`` says which of the 61 source columns become which column of the silver table
-``gdelt_event`` (blueprint 7.4) and how each is converted. Every engine that parses the feed
-is generated from this one definition.
+``gdelt_event`` (blueprint 7.4) and how each is converted.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from enum import StrEnum
+from gbmi.core.positional import Kind, feed_schema
 
 EXPORT_COLUMNS: tuple[str, ...] = (
     # event id and date
@@ -44,64 +42,40 @@ EXPORT_COLUMNS: tuple[str, ...] = (
 )  # fmt: skip
 
 EXPORT_COLUMN_COUNT = 61
-if len(EXPORT_COLUMNS) != EXPORT_COLUMN_COUNT:  # a typo here would shift every later column
-    raise AssertionError(
-        f"the export schema has {EXPORT_COLUMN_COUNT} columns, not {len(EXPORT_COLUMNS)}"
-    )
-
-
-class Kind(StrEnum):
-    """How a source field becomes a typed value. An empty field is NULL, except for a key."""
-
-    KEY = "key"  # integer, required
-    INTEGER = "integer"
-    DOUBLE = "double"
-    TEXT = "text"
-    FLAG = "flag"  # 0 or 1, stored as a boolean
-    DATE8 = "date8"  # YYYYMMDD
-    TIMESTAMP14 = "timestamp14"  # YYYYMMDDHHMMSS, UTC
-
-
-@dataclass(frozen=True)
-class SilverColumn:
-    """One column of ``gdelt_event`` that comes straight from an export field."""
-
-    name: str
-    source: str
-    kind: Kind
-
-    @property
-    def position(self) -> int:
-        """One-based position of the source field in an export row."""
-        return EXPORT_COLUMNS.index(self.source) + 1
-
-
 EVENT_KEY = "global_event_id"
 
-EVENT_COLUMNS: tuple[SilverColumn, ...] = (
-    SilverColumn(EVENT_KEY, "GLOBALEVENTID", Kind.KEY),
-    SilverColumn("event_date", "SQLDATE", Kind.DATE8),
-    SilverColumn("actor1_code", "Actor1Code", Kind.TEXT),
-    SilverColumn("actor1_name", "Actor1Name", Kind.TEXT),
-    SilverColumn("actor1_country_code", "Actor1CountryCode", Kind.TEXT),
-    SilverColumn("actor1_type1_code", "Actor1Type1Code", Kind.TEXT),
-    SilverColumn("actor2_code", "Actor2Code", Kind.TEXT),
-    SilverColumn("actor2_name", "Actor2Name", Kind.TEXT),
-    SilverColumn("actor2_country_code", "Actor2CountryCode", Kind.TEXT),
-    SilverColumn("actor2_type1_code", "Actor2Type1Code", Kind.TEXT),
-    SilverColumn("is_root_event", "IsRootEvent", Kind.FLAG),
-    SilverColumn("event_code", "EventCode", Kind.TEXT),
-    SilverColumn("event_base_code", "EventBaseCode", Kind.TEXT),
-    SilverColumn("event_root_code", "EventRootCode", Kind.TEXT),
-    SilverColumn("quad_class", "QuadClass", Kind.INTEGER),
-    SilverColumn("goldstein_scale", "GoldsteinScale", Kind.DOUBLE),
-    SilverColumn("num_mentions", "NumMentions", Kind.INTEGER),
-    SilverColumn("num_sources", "NumSources", Kind.INTEGER),
-    SilverColumn("num_articles", "NumArticles", Kind.INTEGER),
-    SilverColumn("avg_tone", "AvgTone", Kind.DOUBLE),
-    SilverColumn("action_geo_type", "ActionGeo_Type", Kind.INTEGER),
-    SilverColumn("action_geo_full_name", "ActionGeo_FullName", Kind.TEXT),
-    SilverColumn("action_geo_country_code", "ActionGeo_CountryCode", Kind.TEXT),
-    SilverColumn("date_added", "DATEADDED", Kind.TIMESTAMP14),
-    SilverColumn("source_url", "SOURCEURL", Kind.TEXT),
+EXPORT = feed_schema(
+    "export",
+    EXPORT_COLUMNS,
+    EXPORT_COLUMN_COUNT,
+    (
+        (EVENT_KEY, "GLOBALEVENTID", Kind.KEY),
+        ("event_date", "SQLDATE", Kind.DATE8),
+        ("actor1_code", "Actor1Code", Kind.TEXT),
+        ("actor1_name", "Actor1Name", Kind.TEXT),
+        ("actor1_country_code", "Actor1CountryCode", Kind.TEXT),
+        ("actor1_type1_code", "Actor1Type1Code", Kind.TEXT),
+        ("actor2_code", "Actor2Code", Kind.TEXT),
+        ("actor2_name", "Actor2Name", Kind.TEXT),
+        ("actor2_country_code", "Actor2CountryCode", Kind.TEXT),
+        ("actor2_type1_code", "Actor2Type1Code", Kind.TEXT),
+        ("is_root_event", "IsRootEvent", Kind.FLAG),
+        ("event_code", "EventCode", Kind.TEXT),
+        ("event_base_code", "EventBaseCode", Kind.TEXT),
+        ("event_root_code", "EventRootCode", Kind.TEXT),
+        ("quad_class", "QuadClass", Kind.INTEGER),
+        ("goldstein_scale", "GoldsteinScale", Kind.DOUBLE),
+        ("num_mentions", "NumMentions", Kind.INTEGER),
+        ("num_sources", "NumSources", Kind.INTEGER),
+        ("num_articles", "NumArticles", Kind.INTEGER),
+        ("avg_tone", "AvgTone", Kind.DOUBLE),
+        ("action_geo_type", "ActionGeo_Type", Kind.INTEGER),
+        ("action_geo_full_name", "ActionGeo_FullName", Kind.TEXT),
+        ("action_geo_country_code", "ActionGeo_CountryCode", Kind.TEXT),
+        ("date_added", "DATEADDED", Kind.TIMESTAMP14),
+        ("source_url", "SOURCEURL", Kind.TEXT),
+    ),
 )
+
+#: The columns of ``gdelt_event`` which come straight from an export field.
+EVENT_COLUMNS = EXPORT.columns
