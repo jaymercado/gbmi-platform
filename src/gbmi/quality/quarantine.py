@@ -72,3 +72,20 @@ def write_quarantined_file(
     with filesystem.open_output_stream(path) as stream:
         stream.write(content)
     return key
+
+
+def clear_hour_quarantine(lake_uri: str, source: str, feed: str, slot_date: date) -> int:
+    """Remove the quarantine files of the hour units of a day; returns the files removed.
+
+    A day build writes one quarantine file for the whole day. The files of the hour builds of
+    the same day would count the same rows a second time.
+    """
+    filesystem, root = pafs.FileSystem.from_uri(lake_uri)
+    removed = 0
+    for hour in range(24):
+        key = quarantine_key(source, feed, Unit(slot_date, hour))
+        path = f"{root.rstrip('/')}/{key}"
+        if filesystem.get_file_info(path).type != pafs.FileType.NotFound:
+            filesystem.delete_file(path)
+            removed += 1
+    return removed

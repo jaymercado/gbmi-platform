@@ -45,9 +45,9 @@ The first run pulls four images and builds one; on a fast connection that took a
 Other commands (`make help` lists them all):
 
 ```bash
-make lint test      # ruff, mypy, sqlfluff, lock files; unit, ledger and transformation tests (the ledger tests use the PostgreSQL of the running stack)
+make lint test      # ruff, mypy, sqlfluff, lock files; unit, ledger, transformation and contract tests (the ledger tests use the PostgreSQL of the running stack)
 make up smoke       # start the core profile of the working stack and check the stack
-make integration    # the three spikes, against the running stack
+make integration    # the integration tests against the running stack: the three spikes, the ingestion and the silver build
 make integration-aws  # the Glue/S3 halves of the spikes; needs an AWS sign-in (infra/terraform/README.md)
 make tf-check       # Terraform format, validate, tflint and checkov, with no AWS access
 ```

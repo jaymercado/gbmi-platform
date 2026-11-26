@@ -7,42 +7,22 @@ database of its own, a lake in a temporary directory and the fixture files of th
 from __future__ import annotations
 
 import json
-from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
 from gbmi.cli import app
-from gbmi.config import get_settings
 from gbmi.ledger.db import connect
-from gbmi.ledger.migrate import migrate
 from gbmi.ledger.repository import open_ledger
 from gbmi.ledger.states import State
 from gbmi.ops.runs import recorded_run
 from gbmi.quality.results import record_results
 from gbmi.sources.gdelt import tasks
 
-from .conftest import MIGRATIONS
-
-FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "gdelt" / "v2"
 #: The clock of the test: the files of the fixture hour (08:00 to 08:45) are published.
 AS_OF = "2026-11-25T09:00:00+00:00"
 FIXTURE_BYTES = 263_180 + 288_245 + 938_979  # export, mentions, gkg (ATTRIBUTION.md)
-
-
-@pytest.fixture
-def stack(empty_db: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
-    """Settings which point at a new database, a new lake and the fixture files."""
-    migrate(empty_db, MIGRATIONS)
-    monkeypatch.setenv("GBMI_PG_DSN", empty_db)
-    monkeypatch.setenv("GBMI_LAKE_URI", f"file://{tmp_path}")
-    monkeypatch.setenv("GBMI_CATALOG_URI", f"sqlite:///{tmp_path}/catalog/catalog.db")
-    monkeypatch.setenv("GBMI_FIXTURES_DIR", str(FIXTURES))
-    monkeypatch.setenv("GBMI_PIPELINE_VERSION", "test-version")
-    get_settings.cache_clear()
-    yield empty_db
-    get_settings.cache_clear()
 
 
 def runs(dsn: str) -> list[tuple[object, ...]]:

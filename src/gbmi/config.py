@@ -58,6 +58,8 @@ class Settings(BaseSettings):
     ingest_batch_limit: int = Field(default=200, ge=1)
     #: Parallel downloads of one ingest run (blueprint 8.3: 4 to 8).
     ingest_concurrency: int = Field(default=4, ge=1, le=8)
+    #: One silver run builds at most this many units (blueprint 8.1: bounded batches).
+    silver_max_units: int = Field(default=48, ge=1)
     sec_user_agent: str | None = None
     watchlist_size: int = Field(default=50, ge=1, le=10_000)
     alert_webhook: SecretStr | None = None
