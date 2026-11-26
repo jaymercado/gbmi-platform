@@ -103,3 +103,28 @@ def day_rows(
     ).fetchall()
     found = {row[0]: int(row[1]) for row in rows}
     return [found.get(day) for day in dates]
+
+
+def versions_of_run(
+    connection: Connection, *, source: str, slot_date: date, run_id: str | None
+) -> dict[str, dict[str, Any]]:
+    """The newest day-level version of each table which one run built for a date."""
+    rows = connection.execute(
+        "SELECT DISTINCT ON (table_name) table_name, feed, committed_rows, file_count, "
+        "fileset_hash, content_digest, snapshot_id, duration_ms FROM ops.silver_partition "
+        "WHERE source = %s AND slot_date = %s AND unit_kind = 'day' "
+        "AND run_id IS NOT DISTINCT FROM %s ORDER BY table_name, partition_version_id DESC",
+        (source, slot_date, run_id),
+    ).fetchall()
+    return {
+        row[0]: {
+            "feed": row[1],
+            "rows": int(row[2]),
+            "files": int(row[3]),
+            "fileset_hash": row[4],
+            "content_digest": row[5],
+            "snapshot_id": row[6],
+            "duration_ms": row[7],
+        }
+        for row in rows
+    }

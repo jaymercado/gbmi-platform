@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any
 
-from gbmi.core.gdelt import Feed, Slot
+from gbmi.core.gdelt import Feed, Slot, slots_of_hour
 from gbmi.ledger.calendar import (
     LEAD,
     SLOT_LENGTH,
@@ -333,6 +333,79 @@ def run_ingest(
         },
     }
     log.info("ingest_run", **summary)
+    return summary
+
+
+def land_hour(
+    slot_date: date,
+    slot_hour: int,
+    *,
+    as_of: datetime,
+    fetcher: Fetcher,
+    ledger: Ledger,
+    bronze: Bronze,
+    lake_uri: str,
+    concurrency: int = DEFAULT_CONCURRENCY,
+    sleep: Sleep = time.sleep,
+) -> dict[str, Any]:
+    """Expect, list and land the files of one UTC hour, for the three feeds.
+
+    The routine path is ``run_ingest``, which follows the clock. The tracer names an hour: the
+    twelve slots of the hour get their ledger rows, the master list names the files, and the
+    listed files of the hour are downloaded and verified. A slot which is verified or loaded
+    already is left alone, so a second run downloads nothing.
+    """
+    slots = slots_of_hour(slot_date, slot_hour)
+    keys = [SlotKey(feed, slot) for slot in slots for feed in Feed]
+    created = ledger.ensure_expected(keys)
+    lines = read_master_list(fetcher, oldest=slots[0], as_of=as_of)
+    wanted = [line for line in latest(lines).values() if slots[0] <= line.slot <= slots[-1]]
+    listed = ledger.mark_listed(listings(wanted), as_of=as_of)
+    selected = ledger.find(first=slots[0], last=slots[-1], states=[State.LISTED])
+    counts = download_listed(
+        selected,
+        ledger=ledger,
+        bronze=bronze,
+        fetcher=fetcher,
+        lake_uri=lake_uri,
+        as_of=as_of,
+        concurrency=concurrency,
+        sleep=sleep,
+    )
+    records = ledger.find(first=slots[0], last=slots[-1])
+    summary: dict[str, Any] = {
+        "hour": f"{slot_date.isoformat()}T{slot_hour:02d}",
+        "as_of": as_of.isoformat(),
+        "slots": len(keys),
+        "expected_created": created,
+        "in_the_master_list": len(wanted),
+        "listed": len(listed),
+        "selected": len(selected),
+        **{
+            name: counts.get(name, 0)
+            for name in (
+                "verified",
+                "written",
+                "already_in_bronze",
+                "bytes",
+                "rejected",
+                "quarantined",
+                "unavailable",
+                "errors",
+            )
+        },
+        "states": dict(Counter(record.state.value for record in records)),
+        "files": [
+            {
+                "feed": record.key.feed.value,
+                "slot": record.key.slot.stamp,
+                "state": record.state.value,
+                "bytes": record.expected_bytes,
+            }
+            for record in records
+        ],
+    }
+    log.info("land_hour", **{name: value for name, value in summary.items() if name != "files"})
     return summary
 
 

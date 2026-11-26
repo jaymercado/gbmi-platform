@@ -14,7 +14,15 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
-_MAKE_STATE = {"STACK", "COMPOSE_PROJECT_NAME", "GBMI_LAKE_DIR", "CONFIRM", "MAKEFLAGS", "MFLAGS"}
+_MAKE_STATE = {
+    "STACK",
+    "COMPOSE_PROJECT_NAME",
+    "GBMI_LAKE_DIR",
+    "GBMI_DAG_SCHEDULES",
+    "CONFIRM",
+    "MAKEFLAGS",
+    "MFLAGS",
+}
 
 pytestmark = pytest.mark.skipif(shutil.which("make") is None, reason="GNU Make is not installed")
 
@@ -63,6 +71,20 @@ def test_other_targets_use_the_working_stack_unless_told_otherwise() -> None:
     assert "label=com.docker.compose.project=gbmi-demo)" in working.stdout
     assert all("--project-name gbmi-demo " in command for command in compose_commands(demo.stdout))
     assert "mkdir -p data/demo/lake" in demo.stdout
+
+
+def test_the_demo_stack_runs_its_dags_by_hand_and_the_working_stack_by_the_clock() -> None:
+    # The value reaches the containers through compose/compose.yaml; dags/common reads the value.
+    working = dry_run("--print-data-base", "up")
+    demo = dry_run("--print-data-base", "up", "STACK=gbmi-demo")
+    inherited = dry_run("--print-data-base", "up", GBMI_DAG_SCHEDULES="off")
+
+    assert "GBMI_DAG_SCHEDULES := on" in working.stdout
+    assert "GBMI_DAG_SCHEDULES := off" in demo.stdout
+    # A value from the shell does not take the schedules from the working stack.
+    assert "GBMI_DAG_SCHEDULES := on" in inherited.stdout
+    compose = (REPO / "compose" / "compose.yaml").read_text(encoding="utf-8")
+    assert "GBMI_DAG_SCHEDULES: ${GBMI_DAG_SCHEDULES:-on}" in compose
 
 
 def test_an_unknown_stack_is_refused() -> None:
