@@ -1,7 +1,8 @@
 """A small client for the Airflow REST API, used by ``make demo`` and the end-to-end tests.
 
-It does what an operator would do in the UI: unpause a DAG, trigger a run with parameters,
-wait for it and read what its tasks returned. Run as a module it triggers the tracer:
+It does what an operator would do in the UI: unpause a DAG, trigger a run with parameters and,
+for a date-scoped DAG, with a logical date, wait for the run and read what its tasks returned.
+Run as a module it triggers the tracer:
 
     python -m tests.e2e.airflow --hour 2026-11-25T08 --source fixture
 """
@@ -72,11 +73,31 @@ class AirflowClient:
         """DAGs are paused at creation; a run triggered on a paused DAG stays queued."""
         self._http.patch(f"/api/v2/dags/{dag_id}", json={"is_paused": False}).raise_for_status()
 
-    def trigger(self, dag_id: str, conf: dict[str, Any]) -> str:
+    def dag(self, dag_id: str) -> dict[str, Any]:
+        """What Airflow knows about a DAG: the schedule, the pause state."""
+        details: dict[str, Any] = self._get(f"/dags/{dag_id}")
+        return details
+
+    def delete_runs(self, dag_id: str, logical_date: str) -> int:
+        """Delete the runs of a DAG with the logical date; returns their number.
+
+        A DAG holds one run for each logical date, so a test which triggers a run with a
+        logical date removes the run of an earlier test run first.
+        """
+        runs = self._get(
+            f"/dags/{dag_id}/dagRuns", logical_date_gte=logical_date, logical_date_lte=logical_date
+        )["dag_runs"]
+        for run in runs:
+            self._http.delete(
+                f"/api/v2/dags/{dag_id}/dagRuns/{run['dag_run_id']}"
+            ).raise_for_status()
+        return len(runs)
+
+    def trigger(self, dag_id: str, conf: dict[str, Any], logical_date: str | None = None) -> str:
         run_id = f"manual__{uuid.uuid4().hex[:12]}"
         response = self._http.post(
             f"/api/v2/dags/{dag_id}/dagRuns",
-            json={"dag_run_id": run_id, "logical_date": None, "conf": conf},
+            json={"dag_run_id": run_id, "logical_date": logical_date, "conf": conf},
         )
         response.raise_for_status()
         return run_id
@@ -102,11 +123,17 @@ class AirflowClient:
             return f"(no log: HTTP {response.status_code})"
         return "\n".join(response.text.splitlines()[-lines:])
 
-    def run(self, dag_id: str, conf: dict[str, Any], timeout: float = 900) -> DagRun:
+    def run(
+        self,
+        dag_id: str,
+        conf: dict[str, Any],
+        timeout: float = 900,
+        logical_date: str | None = None,
+    ) -> DagRun:
         """Trigger a run and wait for it; on failure raise with the failing task's log."""
         self.wait_until_listed(dag_id)
         self.unpause(dag_id)
-        run_id = self.trigger(dag_id, conf)
+        run_id = self.trigger(dag_id, conf, logical_date)
         started = time.monotonic()
         state = "queued"
         while time.monotonic() - started < timeout:
@@ -158,8 +185,9 @@ def main() -> int:
     except DagRunError as error:
         print(error, file=sys.stderr)
         return 1
-    for file in result["land"]["files"]:
-        file.pop("md5", None)
+    # The summaries of the three feeds are long; the demo log shows the totals.
+    for summary in result["build_silver"]["feeds"].values():
+        summary.pop("files", None)
     print(json.dumps(result, indent=2, default=str))
     return 0
 

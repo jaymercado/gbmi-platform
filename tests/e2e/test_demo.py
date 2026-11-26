@@ -1,4 +1,4 @@
-"""End-to-end assertions on a finished ``make demo`` (week 1 plan, WP-09 step 10).
+"""End-to-end assertions on a finished ``make demo`` (week 1 plan, WP-09; week 2 plan, WP-07).
 
 The demo has run the tracer on the committed fixture hour and provisioned Metabase. These
 tests then check the acceptance criterion of phase P0 from the outside:
@@ -9,15 +9,20 @@ tests then check the acceptance criterion of phase P0 from the outside:
 (c) a second run of the DAG leaves the content checksums of silver and of the mart unchanged
     (blueprint 1.5, recommendation 7).
 
+Since week 2 the tracer works through the ledger and builds the three feeds:
+
+(d) the twelve slots of the fixture hour are loaded in the ledger;
+(e) each of the four silver tables holds the rows which an independent count of the fixture
+    zips gives (``tests/e2e/fixture_counts.py``);
+(f) a second run downloads nothing and leaves the content of the four tables unchanged.
+
 They run on the Compose network: ``make demo``, or ``make e2e`` against a stack that is up.
 """
 
 from __future__ import annotations
 
 import os
-import zipfile
 from datetime import date
-from pathlib import Path
 from typing import Any
 
 import pytest
@@ -27,83 +32,14 @@ from gbmi.config import get_settings
 from gbmi.core.checksum import ContentChecksum, content_checksum
 from gbmi.lake.catalog import load_lake_catalog
 from gbmi.lake.commit import Unit
+from gbmi.ledger.db import connect as connect_ledger
 from gbmi.warehouse.client import connect
 from monitoring.metabase.provision import ATTRIBUTION, CARD_NAME, DASHBOARD_NAME, MetabaseClient
 from tests.e2e.airflow import FIXTURE_HOUR, AirflowClient, run_tracer
 
 pytestmark = pytest.mark.e2e
 
-FIXTURE_DIR = Path(os.environ.get("GBMI_FIXTURES_DIR", "/fixtures/gdelt/v2")) / "export"
 UNIT = Unit(date(2026, 11, 25), 8)
-EXPORT_COLUMNS = 61
-
-
-# --- An independent count from the fixture zips ----------------------------------------------
-# Written without the pipeline's code, so that it cannot inherit the pipeline's mistakes.
-
-_INTEGER_FIELDS = (0, 25, 29, 31, 32, 33, 51)  # ids, flags and counts that must be integers
-_NUMBER_FIELDS = (30, 34)  # Goldstein scale, average tone
-_DATE_FIELD, _TIMESTAMP_FIELD = 1, 59
-
-
-def _is_integer(text: str) -> bool:
-    return text.removeprefix("-").isdigit()
-
-
-def _is_number(text: str) -> bool:
-    try:
-        float(text)
-    except ValueError:
-        return False
-    return True
-
-
-def _row_is_valid(fields: list[str]) -> bool:
-    if len(fields) != EXPORT_COLUMNS or not _is_integer(fields[0]):
-        return False
-    if any(fields[index] and not _is_integer(fields[index]) for index in _INTEGER_FIELDS[1:]):
-        return False
-    if any(fields[index] and not _is_number(fields[index]) for index in _NUMBER_FIELDS):
-        return False
-    day, stamp = fields[_DATE_FIELD], fields[_TIMESTAMP_FIELD]
-    return (not day or (len(day) == 8 and day.isdigit())) and (
-        not stamp or (len(stamp) == 14 and stamp.isdigit())
-    )
-
-
-@pytest.fixture(scope="module")
-def expected() -> dict[str, int]:
-    """Raw lines, quarantined rows and duplicate rows of the fixture hour."""
-    raw_lines = quarantined = 0
-    seen: set[str] = set()
-    duplicates = 0
-    archives = sorted(FIXTURE_DIR.glob("20261125080000.export.CSV.zip")) + sorted(
-        path
-        for path in FIXTURE_DIR.glob("202611250[8]*.export.CSV.zip")
-        if "080000" not in path.name
-    )
-    assert len(archives) == 4, f"expected four fixture zips in {FIXTURE_DIR}"
-    for archive_path in archives:
-        with zipfile.ZipFile(archive_path) as archive:
-            (member,) = archive.namelist()
-            lines = archive.read(member).decode("utf-8", errors="replace").split("\n")
-        if lines[-1] == "":
-            lines.pop()
-        for line in lines:
-            raw_lines += 1
-            fields = line.split("\t")
-            if not _row_is_valid(fields):
-                quarantined += 1
-            elif fields[0] in seen:
-                duplicates += 1
-            else:
-                seen.add(fields[0])
-    return {
-        "raw_lines": raw_lines,
-        "quarantined": quarantined,
-        "duplicates": duplicates,
-        "committed": raw_lines - quarantined - duplicates,
-    }
 
 
 # --- The running platform ---------------------------------------------------------------------
@@ -122,10 +58,10 @@ def metabase() -> MetabaseClient:
     return client
 
 
-def silver_state() -> tuple[int | None, ContentChecksum]:
-    """Current snapshot and content checksum of the fixture hour in silver."""
+def silver_state(name: str = "gdelt_event") -> tuple[int | None, ContentChecksum]:
+    """Current snapshot and content checksum of the fixture hour in a silver table."""
     settings = get_settings()
-    table = load_lake_catalog(settings).load_table((settings.silver_namespace, "gdelt_event"))
+    table = load_lake_catalog(settings).load_table((settings.silver_namespace, name))
     snapshot = table.current_snapshot()
     checksum = content_checksum(table.scan(row_filter=UNIT.row_filter).to_arrow())
     return (snapshot.snapshot_id if snapshot else None), checksum
@@ -178,6 +114,47 @@ def test_chart_total_equals_raw_minus_quarantined_minus_duplicates(
 
     assert total == expected["raw_lines"] - expected["quarantined"] - expected["duplicates"]
     assert bars > 1  # a chart of several CAMEO root codes, not a single number
+
+
+# --- (d) and (e): the ledger and the four tables ------------------------------------------------
+
+
+def test_the_fixture_hour_gives_the_planned_rows_to_the_four_tables(
+    expected_rows: dict[str, int],
+) -> None:
+    """7,882 mention lines hold 120 repeated pairs; 240 documents name 541 organisations."""
+    assert expected_rows == {
+        "gdelt_event": 4023,
+        "gdelt_mention": 7762,
+        "gdelt_gkg_doc": 240,
+        "gdelt_gkg_org": 541,
+    }
+
+
+def test_the_twelve_slots_of_the_fixture_hour_are_loaded() -> None:
+    with connect_ledger(autocommit=True) as ledger:
+        states = ledger.execute(
+            "SELECT feed, state, count(*), "
+            "count(*) FILTER (WHERE raw_lines = parsed_rows + quarantined_rows) "
+            "FROM ops.source_slot WHERE source = 'gdelt' "
+            "AND slot_ts >= '2026-11-25 08:00+00' AND slot_ts < '2026-11-25 09:00+00' "
+            "GROUP BY feed, state ORDER BY feed"
+        ).fetchall()
+
+    # Four slots of each feed, each loaded, each with a balanced accounting.
+    assert states == [
+        ("export", "loaded", 4, 4),
+        ("gkg", "loaded", 4, 4),
+        ("mentions", "loaded", 4, 4),
+    ]
+
+
+def test_the_four_silver_tables_hold_the_rows_counted_from_the_fixture_zips(
+    expected_rows: dict[str, int],
+) -> None:
+    stored = {name: silver_state(name)[1].rows for name in expected_rows}
+
+    assert stored == expected_rows
 
 
 # --- (b) ---------------------------------------------------------------------------------------
@@ -236,12 +213,20 @@ def test_second_run_leaves_the_content_checksums_unchanged(
     metabase: MetabaseClient, clickhouse: Client, expected: dict[str, int]
 ) -> None:
     snapshot_before, silver_before = silver_state()
+    others = ("gdelt_mention", "gdelt_gkg_doc", "gdelt_gkg_org")
+    others_before = {name: silver_state(name) for name in others}
     mart_before = mart_state(clickhouse)
 
     rerun = run_tracer(AirflowClient(), FIXTURE_HOUR, "fixture")
 
     snapshot_after, silver_after = silver_state()
     mart_after = mart_state(clickhouse)
+    # (f) The other three tables: the same content, and a new snapshot for each.
+    for name, (snapshot, checksum) in others_before.items():
+        snapshot_now, checksum_now = silver_state(name)
+        assert checksum_now == checksum, name
+        assert snapshot_now != snapshot, name
+    assert rerun["land"]["states"] == {"loaded": 12}
     # Same rows in silver; a new snapshot, by design (blueprint 5.6).
     assert silver_after == silver_before
     assert snapshot_after != snapshot_before
