@@ -3,7 +3,7 @@
 # on top of compose.yaml. Its application data lives in the shared PostgreSQL.
 services:
   metabase:
-    image: metabase/metabase:v0.65.7.1@sha256:ee7aa3cec2e21a6b3fd7d1c150184fef20900da09578745ca880e8dc2323ae0d
+    image: metabase/metabase:v0.65.7.2@sha256:f9dfe4929a658770371fbc5b60d9ed16520a7b8859f43463e7a6068f4cd7fd61
     environment:
       MB_DB_TYPE: postgres
       MB_DB_HOST: postgres
