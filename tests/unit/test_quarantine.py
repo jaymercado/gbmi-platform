@@ -9,7 +9,13 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from gbmi.lake.commit import Unit
-from gbmi.quality.quarantine import QUARANTINE_SCHEMA, quarantine_key, write_quarantine
+from gbmi.quality.quarantine import (
+    QUARANTINE_SCHEMA,
+    clear_hour_quarantine,
+    quarantine_key,
+    write_quarantine,
+    write_quarantined_file,
+)
 
 UNIT = Unit(date(2026, 11, 25), 8)
 NOW = datetime(2026, 11, 25, 9, tzinfo=UTC)
@@ -58,3 +64,25 @@ def test_rerun_replaces_the_file_and_a_clean_rerun_removes_it(tmp_path: Path) ->
     assert write_quarantine(lake, "gdelt", "export", UNIT, rejected()) is None
     assert not (tmp_path / key).exists()
     assert write_quarantine(lake, "gdelt", "export", UNIT, rejected()) is None
+
+
+def test_a_day_build_removes_the_hour_files_of_the_day_and_nothing_else(tmp_path: Path) -> None:
+    lake = f"file://{tmp_path}"
+    day = date(2026, 11, 25)
+    hours = [
+        write_quarantine(lake, "gdelt", "export", Unit(day, hour), rejected("bad id"))
+        for hour in (0, 8, 23)
+    ]
+    kept = [
+        write_quarantine(lake, "gdelt", "export", Unit(day), rejected("bad id", "bad id")),
+        write_quarantine(lake, "gdelt", "gkg", Unit(day, 8), rejected("another feed")),
+        write_quarantine(lake, "gdelt", "export", Unit(date(2026, 11, 24), 8), rejected("a day")),
+        write_quarantine(lake, "other", "export", Unit(day, 8), rejected("another source")),
+        write_quarantined_file(lake, "gdelt", "export", day, "20261125080000.export.CSV.zip", b"z"),
+    ]
+
+    assert clear_hour_quarantine(lake, "gdelt", "export", day) == 3
+
+    assert not any((tmp_path / str(key)).exists() for key in hours)
+    assert all((tmp_path / str(key)).exists() for key in kept)
+    assert clear_hour_quarantine(lake, "gdelt", "export", day) == 0

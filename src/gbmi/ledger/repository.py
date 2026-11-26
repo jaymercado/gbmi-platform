@@ -13,7 +13,8 @@ the clock (week 2 plan 3.3). ``ops.slot_transition.as_of`` records the clock of 
 
 from __future__ import annotations
 
-from collections.abc import Collection, Iterator, Sequence
+import hashlib
+from collections.abc import Collection, Iterable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
@@ -142,6 +143,17 @@ class StaleStateError(Exception):
         self.key = key
         self.from_state = from_state
         self.to_state = to_state
+
+
+def fileset_hash(files: Iterable[tuple[str, str]]) -> str:
+    """The hash of a set of source files: SHA-256 over the lines ``<stamp>:<md5>`` in slot order.
+
+    A partition version stores the hash of the files which went into the build (blueprint
+    8.4). An equal hash means: the same files with the same bytes. Each line ends with a line
+    feed, so ``shasum -a 256`` over a text file with the same lines gives the same value.
+    """
+    lines = "".join(f"{stamp}:{md5}\n" for stamp, md5 in sorted(files))
+    return hashlib.sha256(lines.encode("ascii")).hexdigest()
 
 
 def _utc(value: datetime | None) -> datetime | None:
@@ -633,12 +645,67 @@ class Ledger:
         """The listed slots, oldest first: the files which the ingest job has to fetch."""
         return self.find(states=[State.LISTED], limit=limit)
 
+    def unit_slots(
+        self, feed: Feed, slot_date: date, slot_hour: int | None = None
+    ) -> list[SlotRecord]:
+        """The slots which a build of the unit reads: verified or loaded, without a claim.
+
+        The unit is one slot-hour, or the whole slot-date when ``slot_hour`` is None. The slots
+        come in slot order.
+        """
+        if slot_hour is None:
+            first, last = first_slot_of(slot_date), last_slot_of(slot_date)
+        else:
+            start = first_slot_of(slot_date).start + timedelta(hours=slot_hour)
+            first, last = Slot(start), Slot(start + timedelta(minutes=45))
+        records = self.find(
+            first=first, last=last, feeds=[feed], states=[State.VERIFIED, State.LOADED]
+        )
+        return [record for record in records if record.reserved_for is None]
+
+    def _days_to_finalise_again(self, first_day: date) -> set[PendingUnit]:
+        """The finalised days, from ``first_day`` on, which no longer equal their day build.
+
+        A day was finalised when a day-level partition version exists. The day has to be
+        built again in two cases: the loaded files of the day are not the files of the newest
+        day build (another file-set hash), or an hour unit of the day was built after the
+        newest day build.
+        """
+        versions = self.connection.execute(
+            "WITH newest AS ("
+            "  SELECT feed, slot_date, max(partition_version_id) AS any_kind,"
+            "         max(partition_version_id) FILTER (WHERE unit_kind = 'day') AS day_kind"
+            "  FROM ops.silver_partition"
+            "  WHERE source = %(source)s AND slot_date >= %(first)s GROUP BY feed, slot_date) "
+            "SELECT n.feed, n.slot_date, n.any_kind > n.day_kind, v.fileset_hash "
+            "FROM newest n JOIN ops.silver_partition v ON v.partition_version_id = n.day_kind",
+            {"source": self.source, "first": first_day},
+        ).fetchall()
+        if not versions:
+            return set()
+        slots = self.connection.execute(
+            "SELECT feed, (slot_ts AT TIME ZONE 'UTC')::date, "
+            "to_char(slot_ts AT TIME ZONE 'UTC', 'YYYYMMDDHH24MISS'), expected_md5 "
+            "FROM ops.source_slot WHERE source = %(source)s AND state = 'loaded' "
+            "AND reserved_for IS NULL AND slot_ts >= %(first)s",
+            {"source": self.source, "first": first_slot_of(first_day).start},
+        ).fetchall()
+        loaded: dict[tuple[str, date], list[tuple[str, str]]] = {}
+        for feed, day, stamp, md5 in slots:
+            loaded.setdefault((feed, day), []).append((stamp, md5))
+        return {
+            PendingUnit(day, Feed(feed), None)
+            for feed, day, hour_after_day, recorded in versions
+            if hour_after_day or fileset_hash(loaded.get((feed, day), ())) != recorded
+        }
+
     def pending_units(self, as_of: datetime, *, days: int = TRAILING_DAYS) -> list[PendingUnit]:
         """What the silver jobs have to build (week 2 plan 3.3).
 
         A pending slot is a verified slot without a claim, in the trailing ``days``. A feed and
         date with pending slots gives one hour unit for each hour with a pending slot while the
-        date has no day-level partition version, and one day unit afterwards.
+        date has no day-level partition version, and one day unit afterwards. A finalised day
+        which no longer equals its day build is pending as a whole day too.
         """
         rows = self.connection.execute(
             "WITH pending AS ("
@@ -659,6 +726,7 @@ class Ledger:
             },
         ).fetchall()
         units = {PendingUnit(row[1], Feed(row[0]), None if row[3] else int(row[2])) for row in rows}
+        units |= self._days_to_finalise_again(slot_at(as_of - timedelta(days=days)).slot_date)
         return sorted(
             units, key=lambda unit: (unit.slot_date, unit.feed.value, unit.slot_hour or 0)
         )
