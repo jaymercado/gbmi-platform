@@ -177,7 +177,7 @@ smoke: ## Check the running stack (health, pools, versions, shared lake)
 toolbox: _other-stack-stopped _lake-dir ## Run a command on the Compose network: make toolbox CMD="gbmi config show"
 	$(TOOLBOX) $(CMD)
 
-integration: _other-stack-stopped _lake-dir ## Integration tests on the Compose network (spikes SK1 to SK3); needs make up
+integration: _other-stack-stopped _lake-dir ## Integration tests on the Compose network (spikes SK1 to SK3, ingestion, silver build); needs make up
 	$(TOOLBOX) pytest tests/integration -m "$(INTEGRATION_MARK)" -p no:cacheprovider $(PYTEST_ARGS)
 
 integration-aws: ## The Glue/S3 halves of the spikes, one test at a time with fresh credentials; needs make up and aws login
