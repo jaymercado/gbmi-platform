@@ -48,7 +48,7 @@ Rules:
 |---|---|
 | Labeller | Claude, an AI model made by Anthropic, working in Claude Code. Jay handed the labelling over on 2026-11-26 (week 1 plan, D14). No person has reviewed the labels |
 | Scope | All 200 strings, in one session |
-| Blind | Yes: no matching system existed. The labeller read the string, the document count and the titles |
+| Blind | Yes: no matching system existed, so no decision of a system could influence a label |
 | Universe and CIKs | A copy of the SEC ticker list: the file `company_tickers.parquet` of the open-source library [edgartools](https://github.com/dgunning/edgartools), refreshed from the SEC on 2026-10-22, with 10,443 tickers and 8,029 CIKs. Each of the 200 strings was searched in the copy, and each CIK was read from the copy. No request went to the SEC (week 1 plan, D7), so the search in the copy took the place of rule 2 |
 | Web searches | Twelve names, on 2026-11-26: the owners of CNN, Twitter, ESPN and the Eastern Daily Press, and the identity of Amazon Autos, Global Airlines, Rembrandt Holdings, Scandesor Development, Getaway Negril Hotel, Foundation For Operational Forecasting, Green Ideas Technology and Origin Sciences |
 
