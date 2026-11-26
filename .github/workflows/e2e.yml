@@ -3,7 +3,7 @@ name: e2e
 # The acceptance criterion of phase P0 (blueprint 11.2): `make demo` passes in CI. The whole
 # stack runs on the runner: the DAG tests with the interpreter of Airflow, the integration tests
 # (spikes SK1 to SK3, ingestion, silver build), then the tracer and the three GDELT DAGs on the
-# committed fixtures with one chart and the end-to-end assertions.
+# committed fixtures with one chart and the end-to-end assertions, and last the three drills.
 on:
   pull_request:
   push:
@@ -61,6 +61,12 @@ jobs:
 
       - name: make demo
         run: make demo
+
+      - name: Drills DR2, DR4 and DR8 on the recorded files
+        run: |
+          make drill DR=2
+          make drill DR=4
+          make drill DR=8
 
       - name: Service logs
         if: failure()
