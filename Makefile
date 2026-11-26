@@ -105,10 +105,10 @@ lint: ## ruff, mypy, sqlfluff and lock-file checks
 # covers the parsers and the ledger (week 2 plan 3.3).
 COVERAGE_GATE := src/gbmi/ledger/*,src/gbmi/core/*,src/gbmi/transforms/duckdb/*
 
-test: ## Unit, ledger and transformation tests with the coverage gate; needs a reachable PostgreSQL
+test: ## Unit, ledger, transformation and contract tests with the coverage gate; needs a reachable PostgreSQL
 	@export GBMI_TEST_PG_ADMIN_DSN="$${GBMI_TEST_PG_ADMIN_DSN:-postgresql://postgres:$$(sed -n 's/^POSTGRES_PASSWORD=//p' .env 2>/dev/null)@127.0.0.1:5432/postgres}"; \
-	echo "uv run pytest tests/unit tests/ledger tests/transforms --cov --cov-report=term-missing"; \
-	uv run pytest tests/unit tests/ledger tests/transforms --cov --cov-report=term-missing
+	echo "uv run pytest tests/unit tests/ledger tests/transforms tests/contract --cov --cov-report=term-missing"; \
+	uv run pytest tests/unit tests/ledger tests/transforms tests/contract --cov --cov-report=term-missing
 	@echo "== coverage gate: gbmi.ledger, gbmi.core and gbmi.transforms.duckdb together, at least 80%"
 	uv run coverage report --include='$(COVERAGE_GATE)' --fail-under=80
 

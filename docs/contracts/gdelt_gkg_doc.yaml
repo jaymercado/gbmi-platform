@@ -1,0 +1,120 @@
+# Contract of the silver table gdelt_gkg_doc (blueprint 7.4 and 9.6).
+# tests/contract compares the file with the schema in gbmi.lake.tables: a change of the table
+# without a change of the contract fails the test, and the other way round.
+table: gdelt_gkg_doc
+layer: silver
+format: Apache Iceberg, format version 2, Parquet with ZSTD compression
+source: "GDELT 2.0 Global Knowledge Graph feed (gkg), English. The GDELT Project, https://www.gdeltproject.org/"
+grain: "One row for each article."
+logical_key: [gkg_record_id]
+partition: slot_date
+duplicates: "The first occurrence in slot and line order stays. The other rows of the key count as duplicates."
+columns:
+  - name: gkg_record_id
+    type: string
+    required: true
+    meaning: "Identifier of the record (GKGRECORDID): the batch time, a hyphen and a sequence number. A T before the number marks a translated document."
+  - name: slot_date
+    type: date
+    required: true
+    meaning: "UTC date of the 15-minute slot whose file carried the row. The partition of the table."
+  - name: slot_hour
+    type: int
+    required: true
+    meaning: "UTC hour of the slot, from 0 to 23. An hour unit replaces the rows of one slot_date and slot_hour."
+  - name: slot_ts
+    type: timestamptz
+    required: true
+    meaning: "Start of the slot in UTC: the time in the name of the source file."
+  - name: doc_date
+    type: timestamptz
+    required: true
+    meaning: "Date which GDELT gives the record, in UTC (V2.1DATE): the time of the 15-minute batch, the same for every row of a file. Equal to slot_ts."
+  - name: source_collection_identifier
+    type: int
+    required: false
+    meaning: "Source collection of the article: 1 web, 2 citation only, 3 CORE, 4 DTIC, 5 JSTOR, 6 non-textual source (V2SOURCECOLLECTIONIDENTIFIER)."
+  - name: source_common_name
+    type: string
+    required: false
+    meaning: "Name of the source: for a web source the domain of the page (V2SOURCECOMMONNAME)."
+  - name: document_url
+    type: string
+    required: true
+    meaning: "External identifier of the article: the URL for a web source (V2DOCUMENTIDENTIFIER)."
+  - name: page_title
+    type: string
+    required: false
+    meaning: "Title of the article from the tag PAGE_TITLE of the extras: character references resolved, white space collapsed. NULL when the record has no title."
+  - name: story_id
+    type: string
+    required: true
+    meaning: "Identifier of the story: the first 16 hexadecimal characters of the SHA-256 hash of the normalised title (normalisation version 1). Articles with the same normalised title are one story. A document without a usable title takes the hash of 'url:' plus document_url."
+  - name: tone
+    type: double
+    required: false
+    meaning: "Tone of the article: positive_score minus negative_score, from -100 to +100 (V1.5TONE, value 1)."
+  - name: positive_score
+    type: double
+    required: false
+    meaning: "Share of words with a positive emotional connotation, in percent (V1.5TONE, value 2)."
+  - name: negative_score
+    type: double
+    required: false
+    meaning: "Share of words with a negative emotional connotation, in percent (V1.5TONE, value 3)."
+  - name: polarity
+    type: double
+    required: false
+    meaning: "Share of words which match the tonal dictionary of GDELT, in percent (V1.5TONE, value 4)."
+  - name: activity_reference_density
+    type: double
+    required: false
+    meaning: "Share of words which are active words, in percent (V1.5TONE, value 5)."
+  - name: self_group_reference_density
+    type: double
+    required: false
+    meaning: "Share of words which are pronouns, in percent (V1.5TONE, value 6)."
+  - name: word_count
+    type: int
+    required: false
+    meaning: "Number of words of the article (V1.5TONE, value 7)."
+  - name: themes
+    type: list<string>
+    required: true
+    meaning: "Distinct theme codes of the article in sorted order (V1THEMES). Never NULL: an article without themes has an empty list."
+  - name: countries
+    type: list<string>
+    required: true
+    meaning: "Distinct FIPS 10-4 country codes of the places in the article, two letters, in sorted order (V1LOCATIONS). Never NULL: an article without places has an empty list."
+  - name: org_count
+    type: int
+    required: true
+    meaning: "Number of rows of the article in gdelt_gkg_org: the distinct normalised organisation strings of the article."
+  - name: is_translated
+    type: boolean
+    required: true
+    meaning: "True when GDELT translated the document (the record identifier holds -T). False for every record of the English feed."
+  - name: _source_file
+    type: string
+    required: false
+    meaning: "Key of the bronze object which carried the row, relative to the lake root."
+  - name: _source_md5
+    type: string
+    required: false
+    meaning: "MD5 of the bronze object, equal to the MD5 in the GDELT file list."
+  - name: _slot_ts
+    type: timestamptz
+    required: false
+    meaning: "Slot of the source file. Equal to slot_ts."
+  - name: _ingested_at
+    type: timestamptz
+    required: false
+    meaning: "Time of the build which wrote the row, in UTC. Differs between two builds of the same unit."
+  - name: _run_id
+    type: string
+    required: false
+    meaning: "Identifier of the orchestrator run which wrote the row. Differs between two builds of the same unit."
+  - name: _pipeline_version
+    type: string
+    required: false
+    meaning: "Version of the code which wrote the row: the Git commit in an image, the package version elsewhere."

@@ -1,0 +1,76 @@
+# Contract of the silver table gdelt_mention (blueprint 7.4 and 9.6).
+# tests/contract compares the file with the schema in gbmi.lake.tables: a change of the table
+# without a change of the contract fails the test, and the other way round.
+table: gdelt_mention
+layer: silver
+format: Apache Iceberg, format version 2, Parquet with ZSTD compression
+source: "GDELT 2.0 Mentions feed (mentions), English. The GDELT Project, https://www.gdeltproject.org/"
+grain: "One row for each mention of an event in an article, for each slot."
+logical_key: [global_event_id, mention_identifier, slot_ts]
+partition: slot_date
+duplicates: "One file can hold a pair of event and article more than once; the rows differ in offsets and confidence. The row with the highest confidence stays, then the first line. The other rows count as duplicates."
+columns:
+  - name: global_event_id
+    type: long
+    required: true
+    meaning: "Identifier of the mentioned event (GLOBALEVENTID). The event can be up to one year older than the mention."
+  - name: mention_identifier
+    type: string
+    required: true
+    meaning: "External identifier of the article: the URL for a web source (MentionIdentifier)."
+  - name: slot_date
+    type: date
+    required: true
+    meaning: "UTC date of the 15-minute slot whose file carried the row. The partition of the table."
+  - name: slot_hour
+    type: int
+    required: true
+    meaning: "UTC hour of the slot, from 0 to 23. An hour unit replaces the rows of one slot_date and slot_hour."
+  - name: slot_ts
+    type: timestamptz
+    required: true
+    meaning: "Start of the slot in UTC: the time in the name of the source file."
+  - name: event_time_date
+    type: timestamptz
+    required: false
+    meaning: "Time at which GDELT first recorded the event, in UTC (EventTimeDate)."
+  - name: mention_type
+    type: int
+    required: false
+    meaning: "Source collection of the article: 1 web, 2 citation only, 3 CORE, 4 DTIC, 5 JSTOR, 6 non-textual source (MentionType)."
+  - name: mention_source_name
+    type: string
+    required: false
+    meaning: "Name of the source: for a web source the domain of the page (MentionSourceName)."
+  - name: confidence
+    type: int
+    required: false
+    meaning: "Confidence of GDELT in the extraction of the event from the article, in percent (Confidence)."
+  - name: mention_doc_tone
+    type: double
+    required: false
+    meaning: "Tone of the article, from -100 to +100: the measure of avg_tone, for the one article (MentionDocTone)."
+  - name: _source_file
+    type: string
+    required: false
+    meaning: "Key of the bronze object which carried the row, relative to the lake root."
+  - name: _source_md5
+    type: string
+    required: false
+    meaning: "MD5 of the bronze object, equal to the MD5 in the GDELT file list."
+  - name: _slot_ts
+    type: timestamptz
+    required: false
+    meaning: "Slot of the source file. Equal to slot_ts."
+  - name: _ingested_at
+    type: timestamptz
+    required: false
+    meaning: "Time of the build which wrote the row, in UTC. Differs between two builds of the same unit."
+  - name: _run_id
+    type: string
+    required: false
+    meaning: "Identifier of the orchestrator run which wrote the row. Differs between two builds of the same unit."
+  - name: _pipeline_version
+    type: string
+    required: false
+    meaning: "Version of the code which wrote the row: the Git commit in an image, the package version elsewhere."

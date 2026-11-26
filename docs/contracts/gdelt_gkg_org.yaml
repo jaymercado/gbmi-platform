@@ -1,0 +1,72 @@
+# Contract of the silver table gdelt_gkg_org (blueprint 7.4 and 9.6).
+# tests/contract compares the file with the schema in gbmi.lake.tables: a change of the table
+# without a change of the contract fails the test, and the other way round.
+table: gdelt_gkg_org
+layer: silver
+format: Apache Iceberg, format version 2, Parquet with ZSTD compression
+source: "GDELT 2.0 Global Knowledge Graph feed (gkg), English: the columns V2ENHANCEDORGANIZATIONS and V1ORGANIZATIONS. The GDELT Project, https://www.gdeltproject.org/"
+grain: "One row for each article and normalised organisation string."
+logical_key: [gkg_record_id, org_string_id]
+partition: slot_date
+duplicates: "Rows exist only for the documents of gdelt_gkg_doc. Several raw forms with one normalised string are one row."
+columns:
+  - name: gkg_record_id
+    type: string
+    required: true
+    meaning: "Identifier of the article: the key of gdelt_gkg_doc."
+  - name: org_string_id
+    type: string
+    required: true
+    meaning: "Identifier of the organisation string: the first 16 hexadecimal characters of the SHA-256 hash of org_string_norm."
+  - name: slot_date
+    type: date
+    required: true
+    meaning: "UTC date of the 15-minute slot whose file carried the row. The partition of the table."
+  - name: slot_hour
+    type: int
+    required: true
+    meaning: "UTC hour of the slot, from 0 to 23. An hour unit replaces the rows of one slot_date and slot_hour."
+  - name: slot_ts
+    type: timestamptz
+    required: true
+    meaning: "Start of the slot in UTC: the time in the name of the source file."
+  - name: org_string_raw
+    type: string
+    required: true
+    meaning: "The name in the spelling of GDELT: of the raw forms with the same normalised string, the form with the smallest character offset."
+  - name: org_string_norm
+    type: string
+    required: true
+    meaning: "The normalised name (normalisation version 1): Unicode NFKC, case-folded, without diacritics, every character which is not a letter or a digit replaced by one space, spaces collapsed."
+  - name: first_offset
+    type: int
+    required: false
+    meaning: "Smallest character offset of the name in the article (V2ENHANCEDORGANIZATIONS). NULL when the record fills only V1ORGANIZATIONS."
+  - name: mention_count
+    type: int
+    required: true
+    meaning: "Number of entries of the name in V2ENHANCEDORGANIZATIONS. 1 when the record fills only V1ORGANIZATIONS."
+  - name: _source_file
+    type: string
+    required: false
+    meaning: "Key of the bronze object which carried the row, relative to the lake root."
+  - name: _source_md5
+    type: string
+    required: false
+    meaning: "MD5 of the bronze object, equal to the MD5 in the GDELT file list."
+  - name: _slot_ts
+    type: timestamptz
+    required: false
+    meaning: "Slot of the source file. Equal to slot_ts."
+  - name: _ingested_at
+    type: timestamptz
+    required: false
+    meaning: "Time of the build which wrote the row, in UTC. Differs between two builds of the same unit."
+  - name: _run_id
+    type: string
+    required: false
+    meaning: "Identifier of the orchestrator run which wrote the row. Differs between two builds of the same unit."
+  - name: _pipeline_version
+    type: string
+    required: false
+    meaning: "Version of the code which wrote the row: the Git commit in an image, the package version elsewhere."
