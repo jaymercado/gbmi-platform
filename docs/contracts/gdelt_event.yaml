@@ -1,0 +1,148 @@
+# Contract of the silver table gdelt_event (blueprint 7.4 and 9.6).
+# tests/contract compares the file with the schema in gbmi.lake.tables: a change of the table
+# without a change of the contract fails the test, and the other way round.
+table: gdelt_event
+layer: silver
+format: Apache Iceberg, format version 2, Parquet with ZSTD compression
+source: "GDELT 2.0 Events feed (export), English. The GDELT Project, https://www.gdeltproject.org/"
+grain: "One row for each coded event."
+logical_key: [global_event_id]
+partition: slot_date
+duplicates: "The first occurrence in slot and line order stays. The other rows of the key count as duplicates."
+columns:
+  - name: global_event_id
+    type: long
+    required: true
+    meaning: "Identifier which GDELT gives the event (GLOBALEVENTID). Unique; not ordered by date."
+  - name: slot_date
+    type: date
+    required: true
+    meaning: "UTC date of the 15-minute slot whose file carried the row. The partition of the table."
+  - name: slot_hour
+    type: int
+    required: true
+    meaning: "UTC hour of the slot, from 0 to 23. An hour unit replaces the rows of one slot_date and slot_hour."
+  - name: slot_ts
+    type: timestamptz
+    required: true
+    meaning: "Start of the slot in UTC: the time in the name of the source file."
+  - name: event_date
+    type: date
+    required: false
+    meaning: "Date which GDELT assigns to the event (SQLDATE). The date can lie years before the slot."
+  - name: actor1_code
+    type: string
+    required: false
+    meaning: "Complete raw CAMEO code of the first actor (Actor1Code)."
+  - name: actor1_name
+    type: string
+    required: false
+    meaning: "Name of the first actor in the spelling of GDELT (Actor1Name)."
+  - name: actor1_country_code
+    type: string
+    required: false
+    meaning: "CAMEO country code of the first actor, three letters (Actor1CountryCode)."
+  - name: actor1_type1_code
+    type: string
+    required: false
+    meaning: "CAMEO role code of the first actor, for example GOV, BUS or MIL (Actor1Type1Code)."
+  - name: actor2_code
+    type: string
+    required: false
+    meaning: "Complete raw CAMEO code of the second actor (Actor2Code)."
+  - name: actor2_name
+    type: string
+    required: false
+    meaning: "Name of the second actor in the spelling of GDELT (Actor2Name)."
+  - name: actor2_country_code
+    type: string
+    required: false
+    meaning: "CAMEO country code of the second actor, three letters (Actor2CountryCode)."
+  - name: actor2_type1_code
+    type: string
+    required: false
+    meaning: "CAMEO role code of the second actor (Actor2Type1Code)."
+  - name: is_root_event
+    type: boolean
+    required: false
+    meaning: "Flag of GDELT for an event from the lead paragraph of the article, which GDELT offers as a rough measure of importance (IsRootEvent)."
+  - name: event_code
+    type: string
+    required: false
+    meaning: "CAMEO code of the action (EventCode). Text, because a code can start with a zero."
+  - name: event_base_code
+    type: string
+    required: false
+    meaning: "CAMEO code of the action at level two of the CAMEO taxonomy (EventBaseCode). Equal to event_code for an action at level one or two."
+  - name: event_root_code
+    type: string
+    required: false
+    meaning: "CAMEO root code of the action, two digits (EventRootCode)."
+  - name: quad_class
+    type: int
+    required: false
+    meaning: "Class of the action from 1 to 4: verbal cooperation, material cooperation, verbal conflict, material conflict (QuadClass)."
+  - name: goldstein_scale
+    type: double
+    required: false
+    meaning: "Theoretical impact of the action type on the stability of a country, from -10 to +10 (GoldsteinScale)."
+  - name: num_mentions
+    type: int
+    required: false
+    meaning: "Mentions of the event in all source documents during the 15-minute update in which GDELT first saw the event (NumMentions)."
+  - name: num_sources
+    type: int
+    required: false
+    meaning: "Information sources with one or more mentions of the event during the 15-minute update in which GDELT first saw the event (NumSources)."
+  - name: num_articles
+    type: int
+    required: false
+    meaning: "Source documents with one or more mentions of the event during the 15-minute update in which GDELT first saw the event (NumArticles)."
+  - name: avg_tone
+    type: double
+    required: false
+    meaning: "Average tone of the documents which mention the event, from -100 to +100 (AvgTone)."
+  - name: action_geo_type
+    type: int
+    required: false
+    meaning: "Resolution of the place of the action: 1 country, 2 US state, 3 US city, 4 world city, 5 world state (ActionGeo_Type)."
+  - name: action_geo_full_name
+    type: string
+    required: false
+    meaning: "Name of the place of the action (ActionGeo_FullName)."
+  - name: action_geo_country_code
+    type: string
+    required: false
+    meaning: "FIPS 10-4 country code of the place of the action, two letters (ActionGeo_CountryCode)."
+  - name: date_added
+    type: timestamptz
+    required: false
+    meaning: "Time at which the event entered the GDELT database, in UTC (DATEADDED). Equal to slot_ts."
+  - name: source_url
+    type: string
+    required: false
+    meaning: "URL or citation of the first news report in which GDELT found the event (SOURCEURL)."
+  - name: _source_file
+    type: string
+    required: false
+    meaning: "Key of the bronze object which carried the row, relative to the lake root."
+  - name: _source_md5
+    type: string
+    required: false
+    meaning: "MD5 of the bronze object, equal to the MD5 in the GDELT file list."
+  - name: _slot_ts
+    type: timestamptz
+    required: false
+    meaning: "Slot of the source file. Equal to slot_ts."
+  - name: _ingested_at
+    type: timestamptz
+    required: false
+    meaning: "Time of the build which wrote the row, in UTC. Differs between two builds of the same unit."
+  - name: _run_id
+    type: string
+    required: false
+    meaning: "Identifier of the orchestrator run which wrote the row. Differs between two builds of the same unit."
+  - name: _pipeline_version
+    type: string
+    required: false
+    meaning: "Version of the code which wrote the row: the Git commit in an image, the package version elsewhere."
