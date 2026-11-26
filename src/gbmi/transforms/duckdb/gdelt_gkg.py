@@ -45,6 +45,7 @@ from gbmi.transforms.duckdb.positional import (
     Parsed,
     arrow,
     check_files,
+    duplicate_rows,
     line_counts,
     quarantine_rows,
     typed_columns,
@@ -285,6 +286,7 @@ def parse_gkg(
             )
         )
         quarantine = quarantine_rows(connection, run_id=run_id, ingested_at=ingested_at)
+        duplicates = duplicate_rows(connection, "doc_typed")
     finally:
         connection.close()
     docs = docs.select([field.name for field in GDELT_GKG_DOC_SCHEMA.fields]).cast(
@@ -297,7 +299,7 @@ def parse_gkg(
         feed=Feed.GKG,
         tables={GDELT_GKG_DOC: docs, GDELT_GKG_ORG: orgs},
         quarantine=quarantine,
-        counts=line_counts(accepted, docs.num_rows),
+        counts=line_counts(accepted, docs.num_rows, duplicates),
         files=accepted,
         rejected=rejected,
         notes={"organisation_names_without_a_normal_form": dropped},

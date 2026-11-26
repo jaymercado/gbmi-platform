@@ -276,14 +276,23 @@ def quarantine_rows(
     return rows.cast(QUARANTINE_SCHEMA)
 
 
-def line_counts(files: Sequence[FileCounts], committed: int) -> UnitCounts:
-    """The accounting of a unit from the accounting of its files and the rows to commit."""
-    parsed = sum(counts.parsed_rows for counts in files)
+def duplicate_rows(connection: duckdb.DuckDBPyConnection, table: str = "typed") -> int:
+    """The typed rows which are not the first occurrence of their key.
+
+    The number is counted in the typed table and not derived from the output, so the identity
+    "committed rows = parsed rows - duplicate rows" of gate G3 compares two measurements.
+    """
+    row = connection.execute(f"select count(*) from {table} where occurrence > 1").fetchone()  # noqa: S608
+    return int(row[0]) if row else 0
+
+
+def line_counts(files: Sequence[FileCounts], committed: int, duplicates: int) -> UnitCounts:
+    """The accounting of a unit: the lines of its files, the duplicates and the rows to commit."""
     return UnitCounts(
         raw_lines=sum(counts.raw_lines for counts in files),
-        parsed=parsed,
+        parsed=sum(counts.parsed_rows for counts in files),
         quarantined=sum(counts.quarantined_rows for counts in files),
-        duplicates=parsed - committed,
+        duplicates=duplicates,
         committed=committed,
     )
 

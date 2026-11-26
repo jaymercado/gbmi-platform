@@ -33,6 +33,7 @@ from gbmi.transforms.duckdb.positional import (
     Parsed,
     arrow,
     check_files,
+    duplicate_rows,
     line_counts,
     quarantine_rows,
     raw_lines,
@@ -100,6 +101,7 @@ def parse_events(
             )
         )
         quarantine = quarantine_rows(connection, run_id=run_id, ingested_at=ingested_at)
+        duplicates = duplicate_rows(connection)
     finally:
         connection.close()
     events = events.select([field.name for field in GDELT_EVENT_SCHEMA.fields]).cast(
@@ -109,7 +111,7 @@ def parse_events(
         feed=Feed.EXPORT,
         tables={GDELT_EVENT: events},
         quarantine=quarantine,
-        counts=line_counts(accepted, events.num_rows),
+        counts=line_counts(accepted, events.num_rows, duplicates),
         files=accepted,
         rejected=rejected,
     )
