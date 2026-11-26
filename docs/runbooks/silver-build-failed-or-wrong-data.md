@@ -76,6 +76,14 @@ docker compose --project-name gbmi --project-directory . --env-file .env -f comp
 
 The same command without `--dry-run` starts the backfill. The DAG has to be unpaused: Airflow does not start the runs of a paused DAG.
 
+Three rules for a backfill:
+
+- **Enqueue first.** `gbmi gdelt enqueue` creates the ledger rows of the named days only, and the routine ingest continues the calendar after the newest slot of the ledger. A range which is enqueued after an ingest run and does not reach the existing rows leaves the days in between without ledger rows, and no report names the missing slots. So enqueue before the first ingest run, or let the range end on the day before the oldest day of the ledger.
+- **Before the builds:** no slot of the range is `listed` or `quarantined`. `gbmi ledger status` shows the states; the [other runbook](gdelt-slot-quarantined-or-overdue.md) closes such a slot.
+- **After the builds:** no slot of the range is `verified`. `gdelt_silver_hourly` looks at the trailing seven days only, so a file which is verified after the day build of an older day waits until the day is built again by hand with `gbmi silver build-day`.
+
+Do not start `gdelt_silver_daily` by hand for the current UTC day. The day then counts as finalised, and `gdelt_silver_hourly` builds the whole day again every 15 minutes until the day ends.
+
 ### B. Accept a day outside the volume band
 
 When the day is truly small or large, build the day with a note. The note is stored with the check, and the status of the check is `accepted`.
