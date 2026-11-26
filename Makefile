@@ -78,8 +78,8 @@ endif
 DEMO_HOUR := 2026-11-25T08
 TOOLBOX := $(COMPOSE_BI) --profile tools run --rm toolbox
 
-.PHONY: help setup fmt lint test test-dags env images up up-bi down reset ps logs smoke toolbox integration \
-	integration-aws dbt-build demo e2e logs-dump tf-check plan _other-stack-stopped _lake-dir _demo _e2e
+.PHONY: help setup fmt lint test test-dags env images up up-bi down reset ps logs smoke toolbox psql integration \
+	integration-aws dbt-build demo e2e drill logs-dump tf-check plan _other-stack-stopped _lake-dir _demo _e2e
 
 help: ## List the available targets
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-14s %s\n", $$1, $$2}'
@@ -181,6 +181,21 @@ smoke: ## Check the running stack (health, pools, versions, shared lake)
 
 toolbox: _other-stack-stopped _lake-dir ## Run a command on the Compose network: make toolbox CMD="gbmi config show"
 	$(TOOLBOX) $(CMD)
+
+# The runbooks read the ledger with SQL. The statement goes through an environment variable, so
+# double quotes and dollar signs in the statement reach psql unchanged.
+psql: ## Run one SQL statement on the operational database of the stack: make psql SQL="SELECT ..."
+	@if [ -z "$$SQL" ]; then echo 'make psql SQL="SELECT ...": the statement is missing'; exit 1; fi
+	@$(COMPOSE) exec -T postgres psql --username postgres --dbname gbmi --command "$$SQL"
+
+# A drill injects a fault, runs the documented recovery and checks the outcome (blueprint 9.8).
+# Each drill works in a throwaway database and in a lake directory of its own under _test/.
+DRILL_2 := dr2_crash_silver
+DRILL_4 := dr4_corrupt_file
+DRILL_8 := dr8_rerun_silver
+drill: _other-stack-stopped _lake-dir ## Run a failure drill on the recorded files: make drill DR=2 (2, 4 or 8); needs make up
+	@if [ -z "$(DRILL_$(DR))" ]; then echo "make drill DR=<n>: n is 2 (crash), 4 (corrupt file) or 8 (rerun)"; exit 1; fi
+	$(TOOLBOX) python -m drills.$(DRILL_$(DR)) $(ARGS)
 
 # The Airflow environment of the image has no pytest, and no package is added to the Airflow
 # environment without need: the DAG tests use unittest and the interpreter of Airflow.
