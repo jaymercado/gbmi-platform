@@ -13,7 +13,7 @@ GDELT files → bronze (verified zips) → silver (Apache Iceberg) → ClickHous
 
 | | |
 |---|---|
-| What runs | `make demo`: the tracer DAG on four committed GDELT slots, then a chart and end-to-end assertions |
+| What runs | `make demo`: the tracer DAG on the twelve committed GDELT files of one hour (three feeds), each of the three GDELT DAGs once, then a chart and end-to-end assertions |
 | What it proves | 4,023 raw lines = 4,023 rows in silver = 4,023 events in the mart = the chart's total; a second run changes nothing |
 | Decided by spikes | How PyIceberg commits a unit, how ClickHouse reads one exact table version, how dbt replaces a partition, and that Cosmos runs dbt on Airflow 3.4 — see the [spike report](docs/reports/p0-spikes.md) |
 | Measured | [Memory](docs/reports/p0-memory.md): about 2 GB idle, 4 GB during the demo; a whole day of the largest feed builds in 7 seconds with a 0.5 GB peak |
@@ -21,7 +21,7 @@ GDELT files → bronze (verified zips) → silver (Apache Iceberg) → ClickHous
 | Labelled | The first 200 organisation strings of the entity-resolution gold set, by an AI model; a review by a person is open — see the [labelling README](config/labelling/README.md) |
 | Not done yet | Nothing is deployed: there is no host, no schedule and no monitoring |
 
-Nothing here is production data yet: there is no ledger, no SEC ingestion and no entity resolution. Those are phases P1 to P3 of the [blueprint](GLOBAL_BUSINESS_MARKET_INTELLIGENCE_PROJECT_BLUEPRINT.md).
+Nothing here is production data yet. Phase P1, GDELT at production quality, is in progress: the ledger, the ingestion, the parsers of the three feeds, the silver build and the three GDELT DAGs are on `main` — see the [P1 status report](docs/reports/p1-gdelt-production.md). SEC ingestion and entity resolution are phases P2 and P3 of the [blueprint](GLOBAL_BUSINESS_MARKET_INTELLIGENCE_PROJECT_BLUEPRINT.md).
 
 ## Run it
 
@@ -47,6 +47,7 @@ Other commands (`make help` lists them all):
 ```bash
 make lint test      # ruff, mypy, sqlfluff, lock files; unit, ledger, transformation and contract tests (the ledger tests use the PostgreSQL of the running stack)
 make up smoke       # start the core profile of the working stack and check the stack
+make test-dags      # the DAG tests, with the interpreter of Airflow inside the image; needs a running stack
 make integration    # the integration tests against the running stack: the three spikes, the ingestion and the silver build
 make integration-aws  # the Glue/S3 halves of the spikes; needs an AWS sign-in (infra/terraform/README.md)
 make tf-check       # Terraform format, validate, tflint and checkov, with no AWS access
