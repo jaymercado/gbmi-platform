@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: stg_ops__source_slot
+    description: >
+      The ledger of expected source files (ops.source_slot in PostgreSQL), read through the
+      ClickHouse named collection pg_ops as the read-only role gbmi_ro. One row per source, feed
+      and 15-minute slot, with the state of the slot (blueprint 8.2).
+    meta:
+      owner: data-engineering
+      layer: staging
+      grain: one row per source, feed and slot
+      sensitivity: internal
+    columns:
+      - name: source
+        description: The source system, for example gdelt.
+        data_tests:
+          - not_null
+      - name: feed
+        description: The feed of the source - export, mentions or gkg for GDELT.
+        data_tests:
+          - not_null
+      - name: slot_ts
+        description: Start of the 15-minute slot (UTC).
+        data_tests:
+          - not_null
+      - name: slot_date
+        description: UTC date of the slot.
+        data_tests:
+          - not_null
+      - name: state
+        description: The state of the slot in the ledger state machine.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - expected
+                  - listed
+                  - downloaded
+                  - verified
+                  - loaded
+                  - quarantined
+                  - confirmed_missing
+      - name: raw_lines
+        description: Raw lines of the file, for a loaded slot.
+      - name: parsed_rows
+        description: Lines which passed gate G2, for a loaded slot.
+      - name: quarantined_rows
+        description: Lines which gate G2 rejected, for a loaded slot.

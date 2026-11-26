@@ -204,6 +204,8 @@ _demo:
 	$(MAKE) smoke
 	@echo "== tracer DAG on the fixture hour $(DEMO_HOUR)"
 	$(TOOLBOX) python -m tests.e2e.airflow --hour $(DEMO_HOUR) --source fixture
+	@echo "== operational models: slot status and completeness from the ledger"
+	$(TOOLBOX) dbt build --project-dir dbt --profiles-dir dbt/profiles --select +ops_slot_status_daily
 	@echo "== Metabase: connection, question and dashboard"
 	$(TOOLBOX) python -m monitoring.metabase.provision
 	@echo "== end-to-end assertions"
