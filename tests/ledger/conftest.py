@@ -15,11 +15,14 @@ from pathlib import Path
 
 import pytest
 
+from gbmi.config import get_settings
 from gbmi.ledger.db import Connection, connect
+from gbmi.ledger.migrate import migrate
 from gbmi.ledger.repository import Ledger
 from gbmi.ledger.scratch import ADMIN_DSN_VARIABLE, scratch_database
 
 MIGRATIONS = Path(__file__).resolve().parents[2] / "db" / "postgres" / "migrations"
+FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "gdelt" / "v2"
 
 
 @pytest.fixture(scope="session")
@@ -56,6 +59,24 @@ def ops(ops_db: str) -> Iterator[Connection]:
     """An autocommit connection to the migrated database."""
     with connect(ops_db, autocommit=True) as connection:
         yield connection
+
+
+@pytest.fixture
+def stack(empty_db: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
+    """Settings which point at a new database, a new lake and the fixture files.
+
+    The task entry points and the commands work on the source ``gdelt`` and read the settings,
+    so a test of them takes a database of its own and a lake in a temporary directory.
+    """
+    migrate(empty_db, MIGRATIONS)
+    monkeypatch.setenv("GBMI_PG_DSN", empty_db)
+    monkeypatch.setenv("GBMI_LAKE_URI", f"file://{tmp_path}")
+    monkeypatch.setenv("GBMI_CATALOG_URI", f"sqlite:///{tmp_path}/catalog/catalog.db")
+    monkeypatch.setenv("GBMI_FIXTURES_DIR", str(FIXTURES))
+    monkeypatch.setenv("GBMI_PIPELINE_VERSION", "test-version")
+    get_settings.cache_clear()
+    yield empty_db
+    get_settings.cache_clear()
 
 
 @pytest.fixture

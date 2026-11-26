@@ -7,6 +7,7 @@ importable and testable without Airflow (blueprint 8.1).
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated
 
@@ -28,12 +29,14 @@ gdelt_app = typer.Typer(help="GDELT: land files and build silver tables.", no_ar
 ledger_app = typer.Typer(help="The ledger of expected source files.", no_args_is_help=True)
 lake_app = typer.Typer(help="The lake as the warehouse sees it.", no_args_is_help=True)
 quality_app = typer.Typer(help="Quality gates and reconciliation.", no_args_is_help=True)
+silver_app = typer.Typer(help="Silver: build units from verified files.", no_args_is_help=True)
 app.add_typer(config_app, name="config")
 app.add_typer(db_app, name="db")
 app.add_typer(gdelt_app, name="gdelt")
 app.add_typer(lake_app, name="lake")
 app.add_typer(ledger_app, name="ledger")
 app.add_typer(quality_app, name="quality")
+app.add_typer(silver_app, name="silver")
 
 HourArgument = Annotated[str, typer.Option("--hour", help="UTC slot-hour, YYYY-MM-DDTHH.")]
 FromDay = Annotated[str, typer.Option("--from", help="First UTC day of the range, YYYY-MM-DD.")]
@@ -338,6 +341,83 @@ def gdelt_build_silver(
     from gbmi.transforms.duckdb.gdelt_event import build_event_hour_task
 
     _print(build_event_hour_task(hour, run_id))
+
+
+def _build_feeds(command: str, feeds: list[str] | None, build: Callable[[str], object]) -> None:
+    """Build one unit for each feed. A feed which fails does not stop the feeds after it."""
+    from gbmi.core.gdelt import Feed
+    from gbmi.ledger.repository import StaleStateError
+    from gbmi.quality.audit import AuditError
+    from gbmi.transforms.build import BuildError
+
+    results: dict[str, object] = {}
+    failed = False
+    for name in feeds or [feed.value for feed in Feed]:
+        try:
+            Feed(name)
+            results[name] = build(name)
+        except (AuditError, BuildError, StaleStateError, ValueError) as error:
+            typer.echo(f"gbmi {command}: {name}: {error}", err=True)
+            failed = True
+    _print(results)
+    if failed:
+        raise typer.Exit(code=1)
+
+
+@silver_app.command("units")
+def silver_units(as_of: AsOf = None) -> None:
+    """List the units which the silver jobs have to build: hours, or whole days."""
+    from gbmi.transforms.tasks import pending_units_task
+
+    try:
+        _print(pending_units_task(as_of))
+    except ValueError as error:
+        raise _fail("silver units", error) from error
+
+
+@silver_app.command("build-hour")
+def silver_build_hour(
+    hour: HourArgument, feed: Feeds = None, as_of: AsOf = None, run_id: RunId = None
+) -> None:
+    """Build one slot-hour: parse the verified files, audit, commit, record."""
+    from gbmi.core.gdelt import parse_hour
+    from gbmi.transforms.tasks import build_hour_task
+
+    try:
+        parse_hour(hour)
+    except ValueError as error:
+        raise _fail("silver build-hour", error) from error
+    _build_feeds("silver build-hour", feed, lambda name: build_hour_task(hour, name, as_of, run_id))
+
+
+@silver_app.command("build-day")
+def silver_build_day(
+    day: Annotated[str, typer.Option("--day", help="UTC day, YYYY-MM-DD.")],
+    feed: Feeds = None,
+    accept_volume: Annotated[
+        str | None,
+        typer.Option(
+            "--accept-volume",
+            help="Accept a day whose row count is outside the volume band; the text is the "
+            "note which is stored with the check.",
+        ),
+    ] = None,
+    as_of: AsOf = None,
+    run_id: RunId = None,
+) -> None:
+    """Build one whole slot-date, which also replaces the hourly files of the day with one file."""
+    from gbmi.core.clock import parse_day
+    from gbmi.transforms.tasks import build_day_task
+
+    try:
+        parse_day(day)
+    except ValueError as error:
+        raise _fail("silver build-day", error) from error
+    _build_feeds(
+        "silver build-day",
+        feed,
+        lambda name: build_day_task(day, name, as_of, accept_volume, run_id),
+    )
 
 
 @lake_app.command("pin")

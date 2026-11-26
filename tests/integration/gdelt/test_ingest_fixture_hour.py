@@ -7,14 +7,12 @@ lake of the stack are not touched (week 2 plan 3.3).
 
 from __future__ import annotations
 
-from collections.abc import Iterator
 from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pytest
 
-from gbmi.ledger.repository import Ledger, open_ledger
-from gbmi.ledger.scratch import ADMIN_DSN_VARIABLE, scratch_database
+from gbmi.ledger.repository import Ledger
 from gbmi.ledger.states import State
 from gbmi.sources.gdelt import ingest, reconcile
 from gbmi.sources.gdelt.land import Bronze, FixtureFetcher
@@ -26,18 +24,6 @@ pytestmark = pytest.mark.integration
 FIXTURES = Path(__file__).resolve().parents[2] / "fixtures" / "gdelt" / "v2"
 DAY = date(2026, 11, 25)
 AS_OF = datetime(2026, 11, 25, 9, 0, tzinfo=UTC)
-
-
-@pytest.fixture
-def ledger() -> Iterator[Ledger]:
-    import os
-
-    if not os.environ.get(ADMIN_DSN_VARIABLE):
-        pytest.skip(
-            f"needs PostgreSQL: {ADMIN_DSN_VARIABLE} is not set (run with make integration)"
-        )
-    with scratch_database() as dsn, open_ledger(dsn, run_id="integration") as opened:
-        yield opened
 
 
 def test_twelve_slots_end_verified_and_a_second_run_writes_no_file(

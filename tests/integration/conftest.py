@@ -27,9 +27,12 @@ from pyiceberg.catalog import Catalog
 
 from gbmi.config import Environment, LakeBackend, Settings
 from gbmi.lake.catalog import ensure_silver_namespace, load_lake_catalog
+from gbmi.ledger.repository import Ledger, open_ledger
+from gbmi.ledger.scratch import ADMIN_DSN_VARIABLE, scratch_database
 from gbmi.warehouse.client import connect
 
 SHARED_LAKE = Path("/lake")
+POSTGRES_NEEDED = "needs PostgreSQL: {variable} is not set (run with make integration)"
 
 
 @dataclass(frozen=True)
@@ -108,6 +111,29 @@ def lake(request: pytest.FixtureRequest, tmp_path: Path) -> Iterator[Lake]:
 def local_lake(tmp_path: Path) -> Iterator[Lake]:
     """A lake on the local backend only."""
     yield from _local_lake(tmp_path)
+
+
+# --- PostgreSQL -----------------------------------------------------------------------------
+
+
+@pytest.fixture
+def scratch_dsn() -> Iterator[str]:
+    """A throwaway database with the schema ``ops`` (week 2 plan 3.3).
+
+    A test asks for the fixture by name: the workflow ``dbt`` collects this directory without
+    PostgreSQL. The database ``gbmi`` of the stack is never touched.
+    """
+    if not os.environ.get(ADMIN_DSN_VARIABLE):
+        pytest.skip(POSTGRES_NEEDED.format(variable=ADMIN_DSN_VARIABLE))
+    with scratch_database() as dsn:
+        yield dsn
+
+
+@pytest.fixture
+def ledger(scratch_dsn: str) -> Iterator[Ledger]:
+    """The ledger of the source ``gdelt`` in the throwaway database."""
+    with open_ledger(scratch_dsn, run_id="integration") as opened:
+        yield opened
 
 
 # --- ClickHouse -----------------------------------------------------------------------------
