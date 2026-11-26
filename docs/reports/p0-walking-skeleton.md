@@ -3,11 +3,11 @@
 | | |
 |---|---|
 | Phase | P0 — walking skeleton and de-risking (blueprint §11.2), as specified by the week 1 plan |
-| Run | 2026-11-25 (UTC), on one laptop: MacBook Pro M2 Pro, 16 GB, macOS 27, Docker Desktop 4.42.0 with a 7.65 GiB VM |
-| Verdict | **P0 is not complete.** Everything that can be shown on a laptop holds. Four exit-gate rows need AWS or GitHub and one needs labelling days. The tag `p0` has not been created |
-| Verified at | Local commit `a19dee0`, the last one that changes code. The commits after it change documentation only |
+| Run | 2026-11-25 (UTC), on one laptop: MacBook Pro M2 Pro, 16 GB, macOS 27, Docker Desktop 4.42.0 with a 7.65 GiB VM. Closed on 2026-11-26 with the repository on GitHub and an AWS account |
+| Verdict | **P0 is complete except for row 10.** Every other row of the exit gate holds; row 4 was removed. Row 10, 100 labelled strings, is open, and by the plan's rule (§11, D11) P1 may start while it is the only open row. The tag `p0` has not been created: it waits for row 10 |
+| Verified at | Laptop checks: commit `a19dee0`. GitHub: the four workflows on `main` at `6780771`. AWS: the baseline as applied on 2026-11-26 and the Glue/S3 test halves, run from the branch `p0-close-out` |
 
-**Scope of this run.** It was run local-only by choice: no AWS account and no Git remote were connected. Nothing was planned or applied on AWS, nothing was pushed, and no workflow has run on GitHub. The Terraform code is written and checked offline. The four workflows were rehearsed on Linux, which is not the same as running them. Every number below was measured in this run; anything not run is labelled *not run*.
+**Scope.** The first run, on 2026-11-25, was local-only by choice: no AWS account and no Git remote were connected. On 2026-11-26 the repository was pushed to GitHub, an AWS account was opened, the Terraform baseline was applied and the open rows were closed; the section "Closing the gate on 2026-11-26" records that work. Every number below was measured in one of the two runs; anything not run is labelled *not run*.
 
 ## Exit gate
 
@@ -15,64 +15,78 @@ The rows are those of the week 1 plan, §2.
 
 | # | Criterion | State | Evidence, or what is missing |
 |---|---|---|---|
-| 1 | `make demo` passes on the laptop and in CI | **Half** | Laptop: passes from nothing in 99 seconds, from a fresh clone, and in a Linux rehearsal of the `e2e` workflow (see Verification). CI: the workflow has never run, because there is no remote |
+| 1 | `make demo` passes on the laptop and in CI | **True** | Laptop: passes from nothing in 99 seconds, from a fresh clone, and in a Linux rehearsal of the `e2e` workflow (see Verification). CI: `e2e` passed on `main` at `6780771` on 2026-11-26, in 10 min 12 s, on its first run |
 | 2 | The chart's total equals source rows minus quarantined rows minus duplicate rows | **True** | `tests/e2e/test_demo.py::test_chart_total_equals_raw_minus_quarantined_minus_duplicates`. The Metabase card returns 4,023; the test counts 4,023 lines, 0 invalid rows and 0 repeated keys straight from the fixture zips, with code that shares nothing with the pipeline. Both subtracted terms are zero for this hour; the non-zero paths are tested with constructed rows in `tests/transforms/test_gdelt_event_parse.py` |
-| 3 | Each spike has a recorded pass or fallback | **Half** | Local: SK1 passed, SK2 passed, SK3 A took its fallback (ADR-006), SK3 B passed — [`p0-spikes.md`](p0-spikes.md); the tests stay in the suite. Not run: SK1 Q8 (Glue and S3) and SK2 Q6 (S3) |
-| 4 | A budget alert email has been received | **Open** | No AWS account was connected. The budget module is written; nothing exists in AWS |
-| 5 | CI is green | **Open** | No remote. The four workflows pass actionlint, and their commands pass when replayed on Linux |
-| 6 | The Terraform baseline is applied | **Open** | Not applied. `make tf-check` passes offline |
+| 3 | Each spike has a recorded pass or fallback | **True** | SK1 passed, SK2 passed, SK3 A took its fallback (ADR-006), SK3 B passed — [`p0-spikes.md`](p0-spikes.md); the tests stay in the suite. The AWS halves, SK1 Q8 and SK2 Q6, passed on Glue and S3 on 2026-11-26 |
+| 4 | ~~A budget alert email has been received~~ | **Removed** | Removed from the gate on 2026-11-26 (week 1 plan, D12). See "Decision of 2026-11-26" below |
+| 5 | CI is green | **True** | `ci`, `dbt`, `e2e` and `terraform` passed on `main` at `6780771` on 2026-11-26, on their first runs on GitHub, and on the pull request that carries this report. `main` now requires the four checks |
+| 6 | The Terraform baseline is applied | **True** | Applied on 2026-11-26 in `us-east-1`: 13 resources in `bootstrap`, 16 in `envs/prod`. `make plan` reports no changes for both |
 | 7 | Memory is measured | **True** | [`p0-memory.md`](p0-memory.md): idle, the demo and the GKG day probe, beside the blueprint's estimates |
-| 8 | ADR-001 and ADR-004 are drafted | **True** | [`docs/adr/`](../adr/). ADR-004 is provisional until row 3 closes |
+| 8 | ADR-001 and ADR-004 are drafted | **True** | [`docs/adr/`](../adr/). ADR-004 was accepted on 2026-11-26, when row 3 closed |
 | 9 | Version pins are re-verified on the start date | **True** | The pin table below. No pin moved |
 | 10 | Labelling has started | **Open** | The sheet exists with 200 strings; none is labelled yet. This row is Jay's: about 20 strings a day in `config/labelling/gold_sheet_v0.csv` |
 
-## Closing the open rows
+### Decision of 2026-11-26: an alert email is not a condition of P0
 
-Rows 1, 3, 4, 5 and 6 close in one further run, once the things only Jay can do are done.
+Jay removed exit-gate row 4 on 2026-11-26. The forced alert test (lower the limit, create about USD 0.03 of spend, wait up to a day for one email) is no longer needed for P0 or for the tag `p0`.
 
-| Jay does | Notes |
+- **What stays:** the budget `gbmi-prod-monthly` with notifications at 50, 80 and 100% of USD 30, and the hand-made zero-spend budget.
+- **What the decision gives up:** proof, before P1, that an alert email is delivered. The first real alert gives the same proof later.
+- **What still needs one look:** the status of the alert address on the budget's page in the Billing console. AWS Budgets sends nothing to an unverified address.
+- **Where the test went:** the procedure is optional and stays in [`infra/terraform/README.md`](../../infra/terraform/README.md), §3.
+
+The blueprint (§11.2) lists the alert email among the acceptance criteria of P0. The week 1 plan records the difference as D12.
+
+## Closing the gate on 2026-11-26
+
+Jay did the account work by hand, from a step-by-step guide; the checks after it were then run from the laptop.
+
+| What | Result |
 |---|---|
-| **GitHub:** `gh auth login` with the `workflow` scope, and create the repository `gbmi-platform` | The repository has to exist before the CI roles are applied: repositories created after 15 July 2026 put the owner id and the repository id into the OIDC subject. Decide first whether the two planning documents are published as they are — the week 1 plan contains his name and a home-folder path — and whether commits should carry a GitHub no-reply address; all history is still local, so both can be changed |
-| **AWS:** MFA on the root user; IAM Identity Center with one user and the `AdministratorAccess` permission set; CLI profile `gbmi` in `us-east-1` | Permission sets need an *organization* instance of Identity Center. Enabling it creates an AWS Organization, and on a free-plan account that ends the free credits. An 8-hour session avoids re-approving the login during the run |
-| **Budget email:** follow the verification link AWS sends to the alert address, then confirm when the alert arrives | The link lasts 12 hours and needs a console sign-in. Without it no alert is ever sent |
-| **Docker Desktop:** raise memory from 8 GB to 9 GB | Nothing ran short at 8 GB; the limits add up to 9.0 GB with Metabase |
-| **Labelling:** about 20 strings a day | Independent of everything else |
+| GitHub | The repository was pushed with its whole history, 18 commits. `ci`, `dbt`, `e2e` and `terraform` ran for the first time and passed without a change, in 35 s, 3 min 18 s, 10 min 12 s and 56 s. `main` is protected by the ruleset `protect-main`: changes arrive by pull request, the four checks are required, and force pushes and deletion are blocked. The environment `prod` has a required reviewer |
+| AWS account and access | A new AWS account on the paid plan, used in `us-east-1`. The root user does all AWS work (week 1 plan, D13): it has MFA, no access key exists, and there is no IAM user. `aws login` gives the CLI credentials that last 15 minutes and are renewed for up to 12 hours |
+| Terraform | `bootstrap` (13 resources) and `envs/prod` (16 resources) were applied by hand, in that order, with the state moved into the state bucket in between. `make plan` reports no changes for both |
+| Budget | `gbmi-prod-monthly` (USD 30, notifications at 50, 80 and 100%) and the hand-made zero-spend budget exist. No alert was forced (row 4) |
+| Spikes on AWS | `make integration-aws`: the 19 tests that run on AWS passed — 13 for SK1 and 6 for SK2 — and the 3 stretch tests of SK2 skipped themselves, as written. The run took 53 minutes, 18 of them spent waiting for new credentials |
+| Clean-up | The tests dropped the Glue database `gbmi_ci_silver` themselves. 52 objects were left under `ci/` and were deleted: 43 zero-byte directory markers and the 9 files of the snapshots that SK1 Q7 had expired. No current object remains under `ci/`; about a thousand non-current versions expire by the bucket's lifecycle rule |
 
-Then, in this order (the commands are in [`infra/terraform/README.md`](../../infra/terraform/README.md)):
+### What the first real runs showed
 
-1. Push `main`; `ci`, `dbt`, `e2e` and `terraform` run for the first time. Fix whatever the rehearsal could not show.
-2. Apply `bootstrap`, then `envs/prod`; `make plan` reports no changes (row 6).
-3. Lower the budget for the test, create about USD 0.03 of spend with 5,000 LIST requests, and wait for the email — up to a day, and not within a day of month end (row 4).
-4. `GBMI_TEST_AWS=1 make integration`: SK1 Q8, then SK2 Q6 (row 3). A failure reopens the decision in ADR-004; a pass makes it *accepted*.
-5. CI green on `main` (rows 1 and 5); protect `main` with the four checks.
-6. Drop `gbmi_ci_silver` and the objects under `ci/`, record the time of the alert here, and tag `p0`.
+| Finding | What was done |
+|---|---|
+| `envs/prod` never reported "No changes": the budget output read the limit back from AWS, which returns `30.0` | The output reads the variable (`da2cf16`). One apply with no resource change stored the new value |
+| `make tf-check` asked for credentials once a root had a real backend, because `init -backend=false` still opens it | Init runs only in a root that has never been initialised (`bb38c81`) |
+| Credentials from `aws login` last 15 minutes and cannot be renewed inside a container. The first attempt to run the AWS halves in one go lost its credentials after eight tests | `make integration-aws` runs them one test at a time, each with fresh credentials (`tests/integration/run_aws.sh`) |
+| On S3, `purge_table` leaves directory markers and the files of expired snapshots behind | Recorded in the spike report and in ADR-004; the file clean-up of phase P4 has to cover both |
+| On S3, from the laptop, the test of the hour-by-hour day (SK1 Q5, pattern a) took 471 s and the streamed day (pattern b) 194 s | Supports the choice of pattern (b) |
 
-Three statements in this section come from current AWS and GitHub documentation and have not been exercised: the Identity Center instance type, the recipient verification, and the format of the OIDC subject. Each is confirmed when it is first used.
+Two things in this section rest on documentation and have not been exercised. No workflow has assumed the roles `gbmi-ci-plan` or `gbmi-ci-deploy`, so the format of the OIDC subject is confirmed only by the trust policies that Terraform created; its first real test is the first workflow that needs AWS, in phase P2. And no budget alert has been delivered (row 4): the status of the alert address is checked by hand in the Billing console.
 
 ## Work packages
 
 | WP | Subject | State | Branch (local commit) |
 |---|---|---|---|
-| 01 | Preflight | Done, without the AWS and GitHub accounts | — |
-| 02 | Repository, tooling, first workflow, ADR-001 | Done locally; nothing pushed, `main` not protected | `wp-02-scaffold` (`9ae6641`) |
-| 03 | Terraform baseline and budget alert | **Code only**: written and checked offline; not applied, no alert | `wp-03-terraform-baseline` (`d5b9f0c`) |
+| 01 | Preflight | Done; the AWS and GitHub accounts followed on 2026-11-26 | — |
+| 02 | Repository, tooling, first workflow, ADR-001 | Done; pushed on 2026-11-26, `main` protected | `wp-02-scaffold` (`9ae6641`) |
+| 03 | Terraform baseline and budget alert | Done: applied on 2026-11-26. No alert was forced (D12) | `wp-03-terraform-baseline` (`d5b9f0c`) |
 | 04 | Labelling sheet | Done; labelling not started | `wp-04-labelling-sheet` (`c6c97f3`) |
 | 05 | Images and Compose core profile | Done | `wp-05-compose-stack` (`4902e47`, `fb0eba1`) |
-| 06 | Spike SK1 — PyIceberg contract | Local half done: passed. Q8 not run | `wp-06-sk1-pyiceberg` (`156964b`) |
-| 07 | Spike SK2 — ClickHouse pinned read; dialect checks | Local half done: passed. Q6 not run | `wp-07-sk2-pinned-read` (`a1af61b`) |
+| 06 | Spike SK1 — PyIceberg contract | Done: passed on both backends | `wp-06-sk1-pyiceberg` (`156964b`) |
+| 07 | Spike SK2 — ClickHouse pinned read; dialect checks | Done: passed locally and on S3 | `wp-07-sk2-pinned-read` (`a1af61b`) |
 | 08 | Spike SK3 — partition replace; Cosmos | Done: A took its fallback, B passed | `wp-08-sk3-partition-replace-cosmos` (`bbb9ffc`) |
-| 09 | Tracer DAG and `make demo` | Done locally; `e2e` workflow not run | `wp-09-tracer-demo` (`f2a949f`) |
+| 09 | Tracer DAG and `make demo` | Done; the `e2e` workflow is green | `wp-09-tracer-demo` (`f2a949f`) |
 | 10 | Memory under load | Done, including the GKG probe | `wp-10-memory` (`33f7179`, `3fabfab`) |
-| 11 | ADR-004, reports, close-out | Done, without the AWS clean-up and without the tag | `wp-11-close-out` (`a712cca`, `513736b`) |
+| 11 | ADR-004, reports, close-out | Done, with the AWS clean-up. The tag waits for row 10 | `wp-11-close-out` (`a712cca`, `513736b`) |
 | — | Found by the Linux rehearsal: the time-zone database is now a declared dependency | Done | `rehearsal-linux-fixes` (`1adcc69`) |
 | — | Stretch items: SK2 Q7 and Q8; ClickHouse reads PostgreSQL in the smoke check | Done, local backend only | `stretch-sk2-q7-q8-smoke` (`4da21d1`) |
 | — | The ClickHouse init container left an anonymous volume at every `make down` | Fixed, with a smoke check | `fix-init-volume-leak` (`a19dee0`) |
+| — | Close-out on GitHub and AWS: exit-gate row 4 removed, two fixes found by the first real runs, the runner for the AWS test halves, and this report | Done on 2026-11-26 | `p0-close-out` (`f217be4`, `da2cf16`, `bb38c81` and the commits after them) |
 
-Each branch was cut from `main`, and `main` was fast-forwarded when the package's "Done when" had been shown, so the history is linear and can be replayed as one pull request per package. WP-03 was moved behind the spikes, the reordering the plan allows for missing AWS access (§10).
+Each branch was cut from `main`, and `main` was fast-forwarded when the package's "Done when" had been shown, so the history is linear and can be replayed as one pull request per package. WP-03 was moved behind the spikes, the reordering the plan allows for missing AWS access (§10). The close-out of 2026-11-26 is the first change that reached `main` through a pull request.
 
 ## Verification
 
-Run on 2026-11-25 against local commit `a19dee0`, in three places: the working checkout on macOS, a fresh clone on macOS, and a fresh clone on Linux.
+Run on 2026-11-25 against local commit `a19dee0`, in three places: the working checkout on macOS, a fresh clone on macOS, and a fresh clone on Linux. The last four rows were run on 2026-11-26, on GitHub and against the AWS account.
 
 | Check | Command | Result |
 |---|---|---|
@@ -88,14 +102,14 @@ Run on 2026-11-25 against local commit `a19dee0`, in three places: the working c
 | Workflow syntax | actionlint on the four files | Clean |
 | Fresh clone, macOS | `git clone`, then `make setup lint test` and the commands of the `e2e` workflow | Clean, from 176 tracked files and nothing else: 91 tests; stack up in 43 s; `make integration` (50 passed) and `make demo` (78 s) pass |
 | Fresh clone, Linux | The `run` steps of all four workflows, replayed in order (see below) | All four jobs pass: `ci` (lint, 91 tests, the secret scan over 17 commits), `terraform` (27 s), `dbt` (95 s) and `e2e` (`make integration` 100 s, `make demo` 82 s) |
-| Spikes, AWS | `GBMI_TEST_AWS=1 make integration` | **Not run** |
-| CI | The four workflows on `main` | **Not run** |
-| Infrastructure | `make plan` | **Not run** |
-| Budget | Inbox; `aws budgets describe-budgets` | **Not run** |
+| Spikes, AWS | `make integration-aws` | 19 passed, 3 skipped by design, 0 failed, in 53 minutes. Afterwards `gbmi_ci_silver` is gone and no current object remains under `ci/` |
+| CI | The four workflows on `main` at `6780771` | All four passed on their first run: `ci` 35 s, `terraform` 56 s, `dbt` 3 min 18 s, `e2e` 10 min 12 s |
+| Infrastructure | `make plan` | "No changes" for `bootstrap` and for `envs/prod` |
+| Budget | `aws budgets describe-budgets` | `gbmi-prod-monthly` with a limit of 30.0, and the zero-spend budget |
 
 ### The Linux rehearsal
 
-The workflows have never run, and Docker Desktop for macOS hides the file-ownership rules of Linux. So their steps were rehearsed on Linux: an Ubuntu 24.04 container stood in for the runner, with a user of uid 1001 as on GitHub's runners and the tools the setup actions would install, and it drove a second, nested Docker daemon that started with no images. A script read each workflow file and executed its `run` steps in order with the declared environment; it started the `dbt` job's service container with the options the workflow gives, and built the image as the build action would.
+Before the repository had a remote the workflows could not run, and Docker Desktop for macOS hides the file-ownership rules of Linux. So their steps were rehearsed on Linux: an Ubuntu 24.04 container stood in for the runner, with a user of uid 1001 as on GitHub's runners and the tools the setup actions would install, and it drove a second, nested Docker daemon that started with no images. A script read each workflow file and executed its `run` steps in order with the declared environment; it started the `dbt` job's service container with the options the workflow gives, and built the image as the build action would.
 
 | | |
 |---|---|
@@ -104,7 +118,7 @@ The workflows have never run, and Docker Desktop for macOS hides the file-owners
 | From nothing | On the daemon without images, in the first rehearsal (three commits before `a19dee0`): building the image, base image included, took 63 s; the first start of the stack, pulling three more images, 72 s; `make demo` 88 s. Under four minutes in all, on a fast connection |
 | Not shown | The pinned actions themselves — checkout, setup-uv, the build action with its cache, setup-terraform, setup-tflint — did not run. Neither did GitHub's hardware, its preinstalled software or its network |
 
-The rehearsal script is not part of the repository.
+The rehearsal script is not part of the repository. On 2026-11-26 the four workflows ran on GitHub for the first time and passed without a change.
 
 ## The demo in numbers
 
@@ -171,6 +185,10 @@ Where the plan was silent, or where the run did something other than what it sai
 | `tzdata` is a dependency of the package | Found by the Linux rehearsal |
 | The smoke check that reads PostgreSQL from ClickHouse passes the password as a query parameter | A failing query is printed with its text; the first version would have printed the password with it |
 | The ClickHouse init container mounts a tmpfs where its image declares a volume | Otherwise every `make down` left an empty anonymous volume behind |
+| The root user does all AWS work, signed in with `aws login`; there is no IAM Identity Center and no second user | Decision of the owner on 2026-11-26 (week 1 plan, D13) |
+| An alert email is not a condition of P0 | Decision of the owner on 2026-11-26 (week 1 plan, D12) |
+| The AWS test halves run one test at a time (`make integration-aws`) | Credentials from `aws login` last 15 minutes, less than the halves take |
+| The budget output reads the variable; `make tf-check` initialises only a fresh root | Found by the first real plan and by the first check after a real `init` |
 
 ## What the evidence corrects in the blueprint
 
@@ -202,14 +220,16 @@ The blueprint was not edited. These are the places where a measurement or a test
 | A named collection for the PostgreSQL connection, so that no model carries a password; no nullable arrays in the operational tables | P1 |
 | SEC fixtures and the five demo companies | P2 |
 | The host column of the memory budget, including CPU credits; Metabase's allocation on the host; a ClickHouse role on AWS that cannot write to the lake | P2 |
-| Unreferenced files on the local backend; orphaned dbt staging tables; cost-allocation tags | P4 |
+| A workflow that assumes the two CI roles, the first real test of the OIDC subject | P2 |
+| Commit latency on S3, measured on the host | P1 |
+| Unreferenced files on the local backend and on S3, with the directory markers that `purge_table` leaves there; orphaned dbt staging tables; cost-allocation tags | P4 |
 
-**Stretch items of the plan (§6).** Taken after the reports were written: SK2 questions Q7 and Q8, and the `postgresql()` read in `make smoke`. Not taken, because they need a remote: a `plan` job in CI, and the Dependabot and `security` configuration.
+**Stretch items of the plan (§6).** Taken after the reports were written: SK2 questions Q7 and Q8, and the `postgresql()` read in `make smoke`. Not taken: a `plan` job in CI, and the Dependabot and `security` configuration. They needed a remote, which exists since 2026-11-26, and they stay stretch items.
 
 **Optional, from the plan's hand-off (§11):** saving `company_tickers_exchange.json` once a day to preserve ticker history ahead of P2 has not been started. It needs the declared SEC user agent, which is Jay's to supply.
 
 ## Hand-off to week 2
 
-By the plan's own rule (§11), P1 starts when the gate holds, or when rows 4 and 10 are the only ones open. Rows 1, 3, 5 and 6 are open as well, so **P1 does not start yet**. The recommendation is to connect AWS and GitHub first: it is one session plus the wait for the budget email, and the two spike halves that remain can still reopen decisions in ADR-004 that P1's writers are built on.
+By the plan's own rule (§11), P1 starts when the gate holds, or when row 10 is the only one open. Row 10 is the only one open, so **P1 may start**. The tag `p0` is created when 100 strings are labelled.
 
 When P1 starts, it inherits the catalog factory and the commit helper (`gbmi.lake`), the pin step (`gbmi.warehouse.pin`), the `partition_replace` materialisation, the Compose stack, the fixtures and the `export` schema. It should read SK1 questions Q2 and Q5 and the conclusions of the memory report first.
