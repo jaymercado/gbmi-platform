@@ -37,3 +37,16 @@ def parse_day(text: str) -> date:
         return date.fromisoformat(text)
     except ValueError as error:
         raise ValueError(f"a day is written YYYY-MM-DD, got {text!r}") from error
+
+
+def resolve_day(day: str | None, logical_date: str | None) -> date:
+    """The day a date-scoped run works on: the given day, or the UTC date of the logical date.
+
+    A scheduled run and a backfill run have a logical date. A run which is triggered by hand
+    without a logical date has to name the day.
+    """
+    if day:
+        return parse_day(day)
+    if logical_date:
+        return parse_instant(logical_date).date()
+    raise ValueError("the run has no logical date: name the day with the parameter day")

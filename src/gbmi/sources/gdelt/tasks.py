@@ -11,6 +11,7 @@ from typing import Any
 
 from gbmi.config import get_settings
 from gbmi.core.clock import parse_day, resolve_as_of
+from gbmi.core.gdelt import parse_hour
 from gbmi.ledger.repository import open_ledger
 from gbmi.ops.runs import recorded_run
 from gbmi.sources.gdelt import ingest, reconcile
@@ -45,6 +46,44 @@ def ingest_task(
         run.row_count = summary["verified"]
         run.byte_count = summary["bytes"]
         run.detail = summary
+    return summary
+
+
+def land_hour_task(
+    hour: str, source: str = "fixture", as_of: str | None = None, run_id: str | None = None
+) -> dict[str, Any]:
+    """Land the files of the hour ``YYYY-MM-DDTHH`` for the three feeds, through the ledger.
+
+    The entry point of the tracer. ``source`` is ``live`` for the GDELT servers or ``fixture``
+    for the recorded hour. Raises FileNotFoundError when the hour has no verified file at the
+    end: the source lists no file of the hour.
+    """
+    settings = get_settings()
+    moment = resolve_as_of(as_of)
+    slot_date, slot_hour = parse_hour(hour)
+    with (
+        open_ledger(run_id=run_id) as ledger,
+        recorded_run(
+            ledger.connection, f"{ledger.source}.land_hour", as_of=moment, run_id=run_id
+        ) as run,
+    ):
+        summary = ingest.land_hour(
+            slot_date,
+            slot_hour,
+            as_of=moment,
+            fetcher=fetcher_for(source, settings.fixtures_dir),
+            ledger=ledger,
+            bronze=Bronze(settings.lake_uri),
+            lake_uri=settings.lake_uri,
+            concurrency=settings.ingest_concurrency,
+        )
+        summary["source"] = source
+        run.row_count = summary["verified"]
+        run.byte_count = summary["bytes"]
+        run.detail = {name: value for name, value in summary.items() if name != "files"}
+        landed = summary["states"].get("verified", 0) + summary["states"].get("loaded", 0)
+        if not landed:
+            raise FileNotFoundError(f"the {source} source lists no file for {hour}")
     return summary
 
 
