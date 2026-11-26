@@ -186,7 +186,7 @@ Where the plan was silent, or where the run did something other than what it sai
 | `tzdata` is a dependency of the package | Found by the Linux rehearsal |
 | The smoke check that reads PostgreSQL from ClickHouse passes the password as a query parameter | A failing query is printed with its text; the first version would have printed the password with it |
 | The ClickHouse init container mounts a tmpfs where its image declares a volume | Otherwise every `make down` left an empty anonymous volume behind |
-| The root user does all AWS work, signed in with `aws login`; there is no IAM Identity Center and no second user | Decision of the owner on 2026-11-26 (week 1 plan, D13) |
+| The root user does all AWS work, signed in with `aws login`; there is no IAM Identity Center, no organization and no second user. An AWS Organization and an IAM Identity Center instance, created at 08:18 UTC on 2026-11-26 while the setup guide still used IAM Identity Center, were never used and were deleted at 13:22 UTC the same day | Decision of the owner on 2026-11-26 (week 1 plan, D13) |
 | An alert email is not a condition of P0 | Decision of the owner on 2026-11-26 (week 1 plan, D12) |
 | Claude labelled the 200 strings of the labelling sheet; the plan gave the task to Jay, at about 20 strings a day | Decision of the owner on 2026-11-26 (week 1 plan, D14) |
 | The AWS test halves run one test at a time (`make integration-aws`) | Credentials from `aws login` last 15 minutes, less than the halves take |
@@ -225,7 +225,7 @@ The blueprint was not edited. These are the places where a measurement or a test
 | A workflow that assumes the two CI roles, the first real test of the OIDC subject | P2 |
 | Commit latency on S3, measured on the host | P1 |
 | Unreferenced files on the local backend and on S3, with the directory markers that `purge_table` leaves there; orphaned dbt staging tables; cost-allocation tags | P4 |
-| The CIKs of the labelling sheet compared with the SEC reference data, once the SEC reference data is loaded | P1 |
+| The CIKs of the labelling sheet compared with the SEC reference data, once the SEC reference data is loaded | P2 |
 | A review of the labels by a person, before the precision gate is treated as binding | P3 |
 
 **Stretch items of the plan (§6).** Taken after the reports were written: SK2 questions Q7 and Q8, and the `postgresql()` read in `make smoke`. Not taken: a `plan` job in CI, and the Dependabot and `security` configuration. They needed a remote, which exists since 2026-11-26, and they stay stretch items.

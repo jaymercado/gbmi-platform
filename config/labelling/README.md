@@ -38,7 +38,7 @@ Rules:
 2. **Look up the CIK by hand** in EDGAR's company search (<https://www.sec.gov/edgar/searchedgar/companysearch>). No automated SEC request is made in week 1.
 3. **Brands, products and subsidiaries of a listed company:** label `company_in_universe`, give the *parent's* CIK, and start the note with `brand:` or `subsidiary:`. Whether such strings should count as matches is decided in phase P3 (ADR-008); the note keeps both choices open without relabelling.
 4. **If you cannot decide in about a minute**, choose `ambiguous` and say why in the note. An honest "ambiguous" is worth more than a guessed label.
-5. **A foreign company with only an over-the-counter ticker** in the SEC ticker list belongs to the universe. Label the string `company_in_universe` and write `otc:` in the note, after `brand:` or `subsidiary:` when rule 3 applies too. Phase P1 decides how the universe treats such companies; the marker keeps both choices open without relabelling.
+5. **A foreign company with only an over-the-counter ticker** in the SEC ticker list belongs to the universe. Label the string `company_in_universe` and write `otc:` in the note, after `brand:` or `subsidiary:` when rule 3 applies too. Blueprint §8.5 (pipeline PL-3, phase P2) defines the universe as the CIKs with a ticker in the SEC ticker file, and the file includes over-the-counter tickers. The marker keeps a narrower universe possible without relabelling.
 6. **What counts as a company:** an organisation whose main activity is to sell goods or services, whoever owns the organisation. A cooperative, a law firm, a hotel and a not-for-profit news agency count. A public body, a state news agency, a university, a hospital, a charity, an association, a political party, a church, a club, a venue and an airport are `not_a_company`.
 7. **Cut and joined strings.** GDELT cuts some names and joins others. A cut name gets the label of the organisation which the cut name belongs to, and the note starts with `truncated:` (after `brand:` when rule 3 applies). A string which joins several names, or which is no name, is `not_a_company`; the note starts with `parsing error:` or `generic:`.
 
@@ -64,7 +64,7 @@ Rules:
 **Limits**
 
 - **One labeller, and the labeller is an AI model.** The sheet has no second labeller, so the agreement between two labellers cannot be measured. A review by a person is open: the 26 rows with a CIK and a random sample of the other rows, before the precision gate of phase P3 is treated as binding.
-- **The copy of the SEC ticker list is 35 days older than the labels.** Phase P1 loads the SEC reference data. The CIKs of the sheet have to be compared with the SEC reference data then.
+- **The copy of the SEC ticker list is 35 days older than the labels.** Phase P2 loads the SEC reference data (pipeline PL-3). The CIKs of the sheet have to be compared with the SEC reference data then.
 - **The line between `company_not_in_universe` and `not_a_company` is a judgement** for news agencies, hotels and hospitals (rule 6). The line does not change precision or recall, because neither label is a match.
 
 ## What the labels show
@@ -73,7 +73,7 @@ Rules:
 |---|---|---|
 | Most strings do not name a company | 149 of 200. In the `random` stratum, 3 of 100 strings can belong to a universe company | The matcher rejects far more strings than the matcher accepts (P3) |
 | Half of the universe strings are brands or subsidiaries | 13 of 25, for example Instagram, YouTube, CNN, Reuters and Cessna. The company names in SEC data do not contain the brand names | Curated aliases and ADR-008 (P3) |
-| The SEC ticker list holds companies with only an over-the-counter ticker | 1,795 of the 8,029 CIKs in the copy. easyJet and Lufthansa are in the list; Hyundai, Subaru and Fujitsu are not | The definition of the universe (P1) |
+| The SEC ticker list holds companies with only an over-the-counter ticker | 1,795 of the 8,029 CIKs in the copy. easyJet and Lufthansa are in the list; Hyundai, Subaru and Fujitsu are not | The definition of the universe (P2, pipeline PL-3) |
 | Owners change | Two of the 25 universe strings changed owner or listing in 2026: CNN and Twitter | Aliases and labels need a date (P3) |
 | A few syndicated articles fill the `top` stratum | 30 of the 100 `top` strings show one title only. Seven articles with many copies produce the 30 strings, and one list of college campuses produces 19 of the 30 | Story collapsing before document counts are trusted (P3) |
 | GDELT cuts names and joins names | 23 strings are cut names, 16 are joined names or page text, and 16 are generic words | Normalisation and the negative list (P3) |
