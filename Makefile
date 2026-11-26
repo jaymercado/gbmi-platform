@@ -36,8 +36,10 @@ TF := infra/terraform
 TF_ROOTS := $(TF)/bootstrap $(TF)/envs/prod
 TF_MODULES := $(TF)/modules/lake_s3 $(TF)/modules/glue_catalog $(TF)/modules/budgets
 
-# The Glue/S3 halves of the integration tests run only on request:
-#   eval "$(aws configure export-credentials --profile gbmi --format env)"
+# The Glue/S3 halves of the integration tests run only on request. Credentials from `aws login`
+# last 15 minutes, less than the AWS halves take, so they run one test at a time:
+#   GBMI_TEST_AWS_LAKE_BUCKET=<lake bucket> make integration-aws
+# With longer-lived credentials in the environment everything can run at once:
 #   GBMI_TEST_AWS=1 GBMI_TEST_AWS_LAKE_BUCKET=<lake bucket> make integration
 INTEGRATION_MARK := integration and not aws
 ifeq ($(GBMI_TEST_AWS),1)
@@ -48,7 +50,7 @@ endif
 DEMO_HOUR := 2026-11-25T08
 TOOLBOX := $(COMPOSE_BI) --profile tools run --rm toolbox
 
-.PHONY: help setup fmt lint test env images up up-bi down reset ps logs smoke toolbox integration \
+.PHONY: help setup fmt lint test env images up up-bi down reset ps logs smoke toolbox integration integration-aws \
 	dbt-build demo e2e logs-dump tf-check plan
 
 help: ## List the available targets
@@ -120,6 +122,9 @@ toolbox: ## Run a command on the Compose network: make toolbox CMD="gbmi config 
 
 integration: ## Integration tests on the Compose network (spikes SK1 to SK3); needs make up
 	$(TOOLBOX) pytest tests/integration -m "$(INTEGRATION_MARK)" -p no:cacheprovider $(PYTEST_ARGS)
+
+integration-aws: ## The Glue/S3 halves of the spikes, one test at a time with fresh credentials; needs make up and aws login
+	tests/integration/run_aws.sh
 
 dbt-build: ## Build and test every dbt model against the Compose ClickHouse (full refresh)
 	$(TOOLBOX) dbt build --project-dir dbt --profiles-dir dbt/profiles --full-refresh
