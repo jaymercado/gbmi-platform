@@ -1,7 +1,8 @@
 name: e2e
 
 # The acceptance criterion of phase P0 (blueprint 11.2): `make demo` passes in CI. The whole
-# stack runs on the runner: integration tests first (spikes SK1 to SK3), then the tracer on the
+# stack runs on the runner: the DAG tests with the interpreter of Airflow, the integration tests
+# (spikes SK1 to SK3, ingestion, silver build), then the tracer and the three GDELT DAGs on the
 # committed fixtures with one chart and the end-to-end assertions.
 on:
   pull_request:
@@ -52,7 +53,10 @@ jobs:
           make env
           make up-bi
 
-      - name: Integration tests (spikes SK1, SK2 and SK3)
+      - name: DAG tests (the interpreter of Airflow inside the image)
+        run: make test-dags
+
+      - name: Integration tests (spikes SK1 to SK3, ingestion, silver build)
         run: make integration
 
       - name: make demo

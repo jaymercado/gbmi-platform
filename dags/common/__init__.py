@@ -9,6 +9,8 @@ import os
 from datetime import timedelta
 from typing import Any
 
+from airflow.sdk import Param
+
 #: Pools with one slot each, created by the airflow-init service.
 POOL_SEC_API = "sec_api"
 POOL_SILVER_WRITER = "silver_writer"
@@ -35,3 +37,30 @@ DEFAULT_ARGS: dict[str, Any] = {
     # Three times the expected duration of a task on one hour of events (blueprint 8.1).
     "execution_timeout": timedelta(minutes=10),
 }
+#: The jobs which commit to silver have two retries (blueprint 8.4).
+SILVER_ARGS: dict[str, Any] = {**DEFAULT_ARGS, "retries": min(TASK_RETRIES, 2)}
+
+#: The clock of a run (week 2 plan 3.3): the parameter as_of of a manual run, or the time from
+#: which the run may start. Every run has run_after; a run which is triggered by hand without a
+#: logical date has no logical date, and a template which names one fails.
+AS_OF = "{{ params.as_of or dag_run.run_after.isoformat() }}"
+#: The logical date of a run, or an empty text for a run without one.
+LOGICAL_DATE = "{{ dag_run.logical_date.isoformat() if dag_run.logical_date else '' }}"
+
+
+def as_of_param() -> Param:
+    """The optional parameter as_of of a manual run."""
+    return Param(
+        None,
+        type=["null", "string"],
+        description="The clock to work with, ISO 8601 with a time zone. Empty: the run's time.",
+    )
+
+
+def schedule[Schedule](timetable: Schedule) -> Schedule | None:
+    """The schedule of a DAG, or no schedule on a stack which runs its DAGs by hand only.
+
+    The demo stack sets GBMI_DAG_SCHEDULES=off: its DAGs run on recorded files with a fixed
+    clock, and an unpaused DAG must not start a run against the live source by the clock.
+    """
+    return None if os.environ.get("GBMI_DAG_SCHEDULES", "on") == "off" else timetable

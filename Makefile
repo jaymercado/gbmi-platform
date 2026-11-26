@@ -21,9 +21,13 @@ STACK ?= $(WORKING_STACK)
 ifeq ($(STACK),$(WORKING_STACK))
 LAKE_DIR := data/lake
 OTHER_STACK := $(DEMO_STACK)
+DAG_SCHEDULES := on
 else ifeq ($(STACK),$(DEMO_STACK))
 LAKE_DIR := data/demo/lake
 OTHER_STACK := $(WORKING_STACK)
+# The demo stack runs its DAGs by hand only, on the recorded files and with a fixed clock. An
+# unpaused DAG must not start a run against the live source by the clock (dags/common).
+DAG_SCHEDULES := off
 else
 $(error STACK is "$(STACK)"; use $(WORKING_STACK) for the working stack or $(DEMO_STACK) for the demo stack)
 endif
@@ -32,6 +36,7 @@ endif
 export STACK
 export COMPOSE_PROJECT_NAME := $(STACK)
 export GBMI_LAKE_DIR := ./$(LAKE_DIR)
+export GBMI_DAG_SCHEDULES := $(DAG_SCHEDULES)
 
 # Compose files live in compose/, so the project directory and the env file are always passed
 # explicitly; otherwise relative paths and .env would resolve from compose/.
@@ -73,8 +78,8 @@ endif
 DEMO_HOUR := 2026-11-25T08
 TOOLBOX := $(COMPOSE_BI) --profile tools run --rm toolbox
 
-.PHONY: help setup fmt lint test env images up up-bi down reset ps logs smoke toolbox integration integration-aws \
-	dbt-build demo e2e logs-dump tf-check plan _other-stack-stopped _lake-dir _demo _e2e
+.PHONY: help setup fmt lint test test-dags env images up up-bi down reset ps logs smoke toolbox integration \
+	integration-aws dbt-build demo e2e logs-dump tf-check plan _other-stack-stopped _lake-dir _demo _e2e
 
 help: ## List the available targets
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-14s %s\n", $$1, $$2}'
@@ -176,6 +181,11 @@ smoke: ## Check the running stack (health, pools, versions, shared lake)
 
 toolbox: _other-stack-stopped _lake-dir ## Run a command on the Compose network: make toolbox CMD="gbmi config show"
 	$(TOOLBOX) $(CMD)
+
+# The Airflow environment of the image has no pytest, and no package is added to the Airflow
+# environment without need: the DAG tests use unittest and the interpreter of Airflow.
+test-dags: _other-stack-stopped _lake-dir ## DAG tests with the interpreter of Airflow inside the image; needs make up
+	$(TOOLBOX) /home/airflow/.local/bin/python -m unittest discover --start-directory tests/dags --top-level-directory .
 
 integration: _other-stack-stopped _lake-dir ## Integration tests on the Compose network (spikes SK1 to SK3, ingestion, silver build); needs make up
 	$(TOOLBOX) pytest tests/integration -m "$(INTEGRATION_MARK)" -p no:cacheprovider $(PYTEST_ARGS)
