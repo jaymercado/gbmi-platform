@@ -12,7 +12,8 @@
 # Targets:
 #   dev      Used by Compose on the laptop and in CI. gbmi is installed in editable mode together
 #            with the development group; src/, dags/ and dbt/ are bind-mounted under /opt/gbmi.
-#   runtime  The default. For deployment: the gbmi wheel, dags/ and dbt/ (with its manifest) baked in.
+#   runtime  The default. For deployment: the gbmi wheel, dags/, dbt/ (with its manifest) and the
+#            migration files of the operational database baked in.
 #
 # Base images are pinned by digest; the tags are kept for readability.
 
@@ -84,7 +85,8 @@ RUN cd /opt/gbmi \
 FROM base AS runtime
 
 ARG GIT_SHA=unknown
-ENV GBMI_PIPELINE_VERSION=${GIT_SHA}
+ENV GBMI_PIPELINE_VERSION=${GIT_SHA} \
+    GBMI_MIGRATIONS_DIR=/opt/gbmi/db/postgres/migrations
 
 COPY --chown=airflow:0 src /opt/build/gbmi/src
 RUN cd /opt/build/gbmi \
@@ -93,6 +95,8 @@ RUN cd /opt/build/gbmi \
 
 COPY --chown=airflow:0 dags /opt/gbmi/dags
 COPY --chown=airflow:0 dbt /opt/gbmi/dbt
+# The deploy workflow runs `gbmi db migrate` from the image (blueprint 9.7).
+COPY --chown=airflow:0 db/postgres/migrations /opt/gbmi/db/postgres/migrations
 # The manifest is built here so that DAG files never call dbt when they are parsed (blueprint 5.5).
 RUN cd /opt/gbmi/dbt \
  && /opt/venvs/dbt/bin/dbt parse --profiles-dir profiles --target local \

@@ -4,7 +4,11 @@
 # Every check prints PASS or FAIL; the script exits non-zero if any check failed.
 set -uo pipefail
 
-COMPOSE=(docker compose --project-directory . --env-file .env -f compose/compose.yaml)
+# The Makefile exports STACK, the Compose project of the stack to check (week 2 plan 3.3).
+# Run by hand, the script checks the working stack.
+STACK="${STACK:-gbmi}"
+COMPOSE=(docker compose --project-name "$STACK" --project-directory . --env-file .env -f compose/compose.yaml)
+echo "smoke: stack $STACK"
 failures=0
 
 check() {
@@ -50,7 +54,7 @@ services_healthy() {
 
 one_shots_succeeded() {
   local service code bad=0
-  for service in clickhouse-init airflow-init dbt-manifest; do
+  for service in clickhouse-init ops-migrate airflow-init dbt-manifest; do
     code="$("${COMPOSE[@]}" ps --all --format '{{.ExitCode}}' "$service" 2>/dev/null)"
     if [ "$code" != "0" ]; then
       echo "$service: exit code ${code:-unknown}"
@@ -143,6 +147,16 @@ postgres_databases() {
   return "$bad"
 }
 
+migrations_applied() {
+  # The newest migration file of the repository is applied in the database gbmi (week 2 plan,
+  # WP-02): the service ops-migrate ran on this start, with the files of this checkout.
+  local newest applied
+  newest="$(find db/postgres/migrations -name '[0-9][0-9][0-9][0-9]_*.sql' -exec basename {} \; | sort | tail -1 | cut -c1-4)"
+  [ -n "$newest" ] || { echo "no migration file under db/postgres/migrations"; return 1; }
+  applied="$("${COMPOSE[@]}" exec -T postgres psql -U postgres -d gbmi -At -c 'SELECT max(version) FROM ops.schema_migration')" || { echo "$applied"; return 1; }
+  [ "$((10#$newest))" = "$applied" ] || { echo "the newest file is $newest, the database holds ${applied:-nothing}"; return 1; }
+}
+
 clickhouse_reads_postgres() {
   # dbt will read the operational tables through postgresql() (blueprint 7.1). The gbmi
   # database has no tables before phase P1, so this reads a system view over the same path:
@@ -186,7 +200,7 @@ environments_are_isolated() {
 }
 
 check "long-running services are healthy" services_healthy
-check "clickhouse-init, airflow-init and dbt-manifest finished with exit code 0" one_shots_succeeded
+check "clickhouse-init, ops-migrate, airflow-init and dbt-manifest finished with exit code 0" one_shots_succeeded
 check "no container has restarted" no_restarts
 check "no service uses an anonymous volume" no_anonymous_volumes
 check "no DAG import errors" no_import_errors
@@ -195,6 +209,7 @@ check "ClickHouse reports version 26.8" clickhouse_version
 check "ClickHouse databases and roles exist" clickhouse_objects
 check "ClickHouse users dbt, bi and gbmi can log in" clickhouse_users_can_log_in
 check "PostgreSQL databases airflow, gbmi and metabase exist" postgres_databases
+check "the newest migration file is applied in the schema ops" migrations_applied
 check "ClickHouse reads PostgreSQL through postgresql()" clickhouse_reads_postgres
 check "Airflow writes /lake, ClickHouse reads it read-only" lake_is_shared
 check "Airflow, gbmi and dbt environments are isolated" environments_are_isolated

@@ -4,8 +4,10 @@
 # published on 127.0.0.1 only, memory limits from the blueprint's budget, and two helper services.
 #
 # Always run through the Makefile, which passes
-#   --project-directory . --env-file .env
-# so that every relative path below is relative to the repository root.
+#   --project-name $(STACK) --project-directory . --env-file .env
+# so that every relative path below is relative to the repository root. The Makefile also
+# chooses the stack: the working stack (project gbmi, the default below) or the demo stack
+# (project gbmi-demo). The project name of the command line wins over the line "name:".
 #
 # Images other than the one built here are pinned by digest; tags are kept for readability.
 name: gbmi
@@ -40,6 +42,7 @@ x-airflow-common: &airflow-common
     GBMI_CATALOG_URI: sqlite:////lake/catalog/catalog.db
     GBMI_CH_URL: http://gbmi:${CH_GBMI_PASSWORD:?run make setup}@clickhouse:8123
     GBMI_PG_DSN: postgresql://gbmi:${GBMI_DB_PASSWORD:?run make setup}@postgres:5432/gbmi
+    GBMI_MIGRATIONS_DIR: /opt/gbmi/db/postgres/migrations
     # dbt profile (dbt/profiles/profiles.yml).
     DBT_TARGET: ${DBT_TARGET:-local}
     DBT_CH_HOST: clickhouse
@@ -50,10 +53,13 @@ x-airflow-common: &airflow-common
     - ./src:/opt/gbmi/src:ro
     - ./dags:/opt/gbmi/dags:ro
     - ./dbt:/opt/gbmi/dbt
+    # The migration files of the operational database; the service ops-migrate applies them.
+    - ./db:/opt/gbmi/db:ro
     - airflow-logs:/opt/airflow/logs
     # The lake is mounted at the same path in every container, so that the file URIs inside
     # Iceberg metadata resolve identically for writers and for ClickHouse (blueprint 9.1).
-    - ./data/lake:/lake
+    # Each stack has a lake directory of its own; the Makefile sets GBMI_LAKE_DIR (week 2 plan 3.3).
+    - ${GBMI_LAKE_DIR:-./data/lake}:/lake
     - ./tests/fixtures:/fixtures:ro
   # On Linux the Makefile sets AIRFLOW_UID to the caller's id so that bind-mounted files stay
   # readable and writable on both sides.
@@ -64,6 +70,8 @@ x-airflow-common: &airflow-common
     postgres:
       condition: service_healthy
     clickhouse-init:
+      condition: service_completed_successfully
+    ops-migrate:
       condition: service_completed_successfully
     airflow-init:
       condition: service_completed_successfully
@@ -110,7 +118,7 @@ services:
       - clickhouse-data:/var/lib/clickhouse
       - ./docker/clickhouse/config.d/gbmi.xml:/etc/clickhouse-server/config.d/gbmi.xml:ro
       # Read-only: ClickHouse reads Iceberg tables from the lake and never writes to it.
-      - ./data/lake:/lake:ro
+      - ${GBMI_LAKE_DIR:-./data/lake}:/lake:ro
     ports:
       - "127.0.0.1:8123:8123"
     ulimits:
@@ -159,6 +167,18 @@ services:
     restart: "no"
     depends_on:
       clickhouse:
+        condition: service_healthy
+
+  # One-shot: apply db/postgres/migrations/*.sql to the database gbmi as the role gbmi (schema
+  # ops; week 2 plan 3.3). The runner records each file, so the service runs on every start and
+  # a change reaches an existing volume without `make reset`.
+  ops-migrate:
+    <<: *airflow-common
+    entrypoint: []
+    command: ["/opt/venvs/gbmi/bin/gbmi", "db", "migrate"]
+    restart: "no"
+    depends_on:
+      postgres:
         condition: service_healthy
 
   # One-shot: migrate the metadata database, create the administrator and the three pools.
@@ -277,6 +297,9 @@ services:
       METABASE_URL: http://metabase:3000
       METABASE_ADMIN_EMAIL: ${METABASE_ADMIN_EMAIL:-admin@example.com}
       METABASE_ADMIN_PASSWORD: ${METABASE_ADMIN_PASSWORD}
+      # Tests, drills and scratch runs work in throwaway databases, which only an administrator
+      # can create (week 2 plan 3.3). The database gbmi of the stack is never their target.
+      GBMI_TEST_PG_ADMIN_DSN: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
       # The Glue/S3 halves of the spikes: short-lived credentials are passed through only
       # when GBMI_TEST_AWS=1 is set for make integration (week 1 plan 3.3).
       GBMI_TEST_AWS: ${GBMI_TEST_AWS:-0}
@@ -287,13 +310,15 @@ services:
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
     volumes:
       - .:/opt/gbmi
-      - ./data/lake:/lake
+      - ${GBMI_LAKE_DIR:-./data/lake}:/lake
       - ./tests/fixtures:/fixtures:ro
     restart: "no"
     depends_on:
       postgres:
         condition: service_healthy
       clickhouse-init:
+        condition: service_completed_successfully
+      ops-migrate:
         condition: service_completed_successfully
 
 volumes:
