@@ -141,11 +141,14 @@ demo: ## The whole pipeline on committed fixtures, with one chart; needs no clou
 e2e: ## End-to-end assertions against a stack on which the demo has run
 	$(TOOLBOX) pytest tests/e2e -m e2e -p no:cacheprovider $(PYTEST_ARGS)
 
+# A root that is already initialised keeps its S3 backend, and `init -backend=false` would then
+# ask for credentials. `validate` needs only the installed providers, so init runs only in a
+# root that has never been initialised (a fresh clone, CI).
 tf-check: ## Terraform checks that need no AWS access: fmt, validate, tflint, checkov
 	terraform fmt -check -recursive $(TF)
 	@for root in $(TF_ROOTS); do \
 		echo "== validate $$root"; \
-		terraform -chdir=$$root init -backend=false -input=false >/dev/null || exit 1; \
+		test -d $$root/.terraform || terraform -chdir=$$root init -backend=false -input=false >/dev/null || exit 1; \
 		terraform -chdir=$$root validate || exit 1; \
 	done
 	@tflint --init --config "$(CURDIR)/$(TF)/.tflint.hcl" >/dev/null
