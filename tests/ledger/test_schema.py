@@ -15,6 +15,7 @@ import pytest
 
 from gbmi.ledger.db import Connection
 from gbmi.ledger.migrate import status
+from gbmi.ledger.states import ALLOWED, State
 
 from .conftest import MIGRATIONS
 
@@ -141,6 +142,12 @@ def test_a_missing_slot_is_confirmed_by_somebody(ops: Connection, source: str) -
         slot(ops, source, "confirmed_missing")
 
     slot(ops, source, "confirmed_missing", decided_by="auto")
+
+
+def test_the_state_table_of_the_code_is_the_state_table_of_the_database() -> None:
+    # The test below shows what the database accepts; the lists here are the same lists.
+    assert set(STATES) == {state.value for state in State}
+    assert {(a.value, b.value) for a, b in ALLOWED} == TRANSITIONS
 
 
 def test_only_the_twelve_transitions_can_be_stored(ops: Connection, source: str) -> None:

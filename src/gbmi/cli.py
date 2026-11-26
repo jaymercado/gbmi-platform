@@ -25,15 +25,36 @@ app = typer.Typer(
 config_app = typer.Typer(help="Inspect the active configuration.", no_args_is_help=True)
 db_app = typer.Typer(help="The operational database: schema migrations.", no_args_is_help=True)
 gdelt_app = typer.Typer(help="GDELT: land files and build silver tables.", no_args_is_help=True)
+ledger_app = typer.Typer(help="The ledger of expected source files.", no_args_is_help=True)
 lake_app = typer.Typer(help="The lake as the warehouse sees it.", no_args_is_help=True)
 quality_app = typer.Typer(help="Quality gates and reconciliation.", no_args_is_help=True)
 app.add_typer(config_app, name="config")
 app.add_typer(db_app, name="db")
 app.add_typer(gdelt_app, name="gdelt")
 app.add_typer(lake_app, name="lake")
+app.add_typer(ledger_app, name="ledger")
 app.add_typer(quality_app, name="quality")
 
 HourArgument = Annotated[str, typer.Option("--hour", help="UTC slot-hour, YYYY-MM-DDTHH.")]
+FromDay = Annotated[str, typer.Option("--from", help="First UTC day of the range, YYYY-MM-DD.")]
+ToDay = Annotated[str, typer.Option("--to", help="Last UTC day of the range, YYYY-MM-DD.")]
+AsOf = Annotated[
+    str | None,
+    typer.Option(
+        "--as-of", help="The clock to work with, ISO 8601 with a time zone (default: now)."
+    ),
+]
+Feeds = Annotated[
+    list[str] | None,
+    typer.Option("--feed", help="export, mentions or gkg; repeat the option (default: all three)."),
+]
+Note = Annotated[
+    str, typer.Option("--note", help="Why the slots are changed; stored in the ledger.")
+]
+DecidedBy = Annotated[
+    str,
+    typer.Option("--decided-by", envvar="GBMI_OPERATOR", help="The name of the operator."),
+]
 MigrationsDirectory = Annotated[
     Path | None,
     typer.Option("--dir", help="Directory of the migration files (default: GBMI_MIGRATIONS_DIR)."),
@@ -103,6 +124,127 @@ def db_status(directory: MigrationsDirectory = None) -> None:
         typer.echo(f"gbmi db status: {error}", err=True)
         raise typer.Exit(code=1) from error
     _print(report)
+
+
+def _fail(command: str, error: Exception) -> typer.Exit:
+    """One line on standard error and exit code 1, for a wrong argument or a refused request."""
+    typer.echo(f"gbmi {command}: {error}", err=True)
+    return typer.Exit(code=1)
+
+
+@ledger_app.command("status")
+def ledger_status(first: FromDay, last: ToDay) -> None:
+    """Count the slots in each state, for each feed and UTC day of the range."""
+    from gbmi.core.clock import parse_day
+    from gbmi.ledger.repository import open_ledger
+
+    try:
+        first_day, last_day = parse_day(first), parse_day(last)
+    except ValueError as error:
+        raise _fail("ledger status", error) from error
+    with open_ledger() as ledger:
+        _print(ledger.status(first_day, last_day))
+
+
+@ledger_app.command("completeness")
+def ledger_completeness(first: FromDay, last: ToDay) -> None:
+    """Completeness of each UTC day: loaded slots ÷ (expected slots - confirmed-missing slots)."""
+    from gbmi.core.clock import parse_day
+    from gbmi.ledger.repository import open_ledger
+
+    try:
+        first_day, last_day = parse_day(first), parse_day(last)
+    except ValueError as error:
+        raise _fail("ledger completeness", error) from error
+    with open_ledger() as ledger:
+        _print(ledger.completeness(first_day, last_day))
+
+
+@ledger_app.command("overdue")
+def ledger_overdue(as_of: AsOf = None) -> None:
+    """List the slots which are still not verified six hours after their time."""
+    from gbmi.core.clock import resolve_as_of
+    from gbmi.ledger.repository import open_ledger
+
+    try:
+        moment = resolve_as_of(as_of)
+    except ValueError as error:
+        raise _fail("ledger overdue", error) from error
+    with open_ledger() as ledger:
+        _print(
+            [
+                {"slot": record.key.label, "state": record.state.value, "attempts": record.attempts}
+                for record in ledger.overdue(moment)
+            ]
+        )
+
+
+@ledger_app.command("confirm-missing")
+def ledger_confirm_missing(
+    first: FromDay,
+    last: ToDay,
+    note: Note,
+    state: Annotated[
+        list[str],
+        typer.Option("--state", help="expected, listed or quarantined; repeat the option."),
+    ],
+    feed: Feeds = None,
+    decided_by: DecidedBy = "operator",
+    as_of: AsOf = None,
+) -> None:
+    """Decide: no file will come for the slots of the range which are in the named states."""
+    from gbmi.core.clock import parse_day, resolve_as_of
+    from gbmi.core.gdelt import Feed
+    from gbmi.ledger import operator
+    from gbmi.ledger.repository import open_ledger
+    from gbmi.ledger.states import State
+
+    try:
+        with open_ledger() as ledger:
+            confirmed = operator.confirm_missing(
+                ledger,
+                first_day=parse_day(first),
+                last_day=parse_day(last),
+                states=[State(name) for name in state],
+                feeds=[Feed(name) for name in feed] if feed else None,
+                decided_by=decided_by,
+                note=note,
+                as_of=resolve_as_of(as_of),
+            )
+    except ValueError as error:
+        raise _fail("ledger confirm-missing", error) from error
+    _print({"confirmed_missing": confirmed})
+
+
+@ledger_app.command("requeue")
+def ledger_requeue(
+    first: FromDay,
+    last: ToDay,
+    note: Note,
+    feed: Feeds = None,
+    decided_by: DecidedBy = "operator",
+    as_of: AsOf = None,
+) -> None:
+    """Send the quarantined slots of the range back to the download."""
+    from gbmi.core.clock import parse_day, resolve_as_of
+    from gbmi.core.gdelt import Feed
+    from gbmi.ledger import operator
+    from gbmi.ledger.repository import open_ledger
+
+    try:
+        with open_ledger() as ledger:
+            requeued = operator.requeue(
+                ledger,
+                first_day=parse_day(first),
+                last_day=parse_day(last),
+                feeds=[Feed(name) for name in feed] if feed else None,
+                decided_by=decided_by,
+                note=note,
+                as_of=resolve_as_of(as_of),
+            )
+    except ValueError as error:
+        raise _fail("ledger requeue", error) from error
+    _print({"requeued": requeued})
 
 
 @gdelt_app.command("land")

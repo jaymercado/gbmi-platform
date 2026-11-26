@@ -13,7 +13,8 @@ The order follows change C1 of the week 2 plan (§3.5). Every time is UTC. The w
 | WP | Subject | Start | End | Pull request | State |
 |---|---|---|---|---|---|
 | 01 | Start: checks, pins, plan in the repository | 2026-11-26 16:09 | 2026-11-26 16:28 | [#4](https://github.com/jaymercado/gbmi-platform/pull/4) | Done. Working time about 10 minutes; the GitHub checks took about 10 minutes |
-| 02 | Operational database: migrations, the schema `ops`, two stacks | 2026-11-26 16:29 | | | In progress |
+| 02 | Operational database: migrations, the schema `ops`, two stacks | 2026-11-26 16:29 | 2026-11-26 16:58 | [#5](https://github.com/jaymercado/gbmi-platform/pull/5) | Done. Working time about 20 minutes; the GitHub checks took about 10 minutes |
+| 03 | Ledger: state machine, calendar, operator commands | 2026-11-26 16:48 | | | In progress |
 
 ## Version pins
 
@@ -76,3 +77,7 @@ On 2026-11-26, before the first work package, one independent review agent (a se
 | 8 | WP-02 | The coverage gate is a second report (`coverage report --include … --fail-under=80`) after the test run | `make test` keeps the coverage table of every module, as in phase P0 |
 | 9 | WP-02 | `make reset` removes `dbt/target` only while the other stack is down | Both stacks read the dbt manifest from the same directory |
 | 10 | WP-02 | A test found a defect before the first migration was applied: a check constraint let an hour unit without an hour pass, because a comparison with `NULL` is `NULL` | The constraint now names `IS NOT NULL`. Every other constraint was read again for the same trap |
+| 11 | WP-03 | Each change of state is one SQL statement: the guarded update and the insert of the log rows | The slot and the log cannot differ, also when a process stops between two statements |
+| 12 | WP-03 | A function for one slot raises `StaleStateError` when the slot is not in the assumed state. A function for many slots returns the slots which moved | The ingest job and the reconciliation work on sets; a set call which moves a part of the set is normal there |
+| 13 | WP-03 | `gbmi ledger confirm-missing` asks for the option `--state` (`expected`, `listed` or `quarantined`) beside the range and the note | A slot which only waits for its download is not confirmed by accident |
+| 14 | WP-03 | `gbmi.core.clock` is the only module which reads the real clock | Week 2 plan, §3.3: every function takes the time as the argument `as_of` |
