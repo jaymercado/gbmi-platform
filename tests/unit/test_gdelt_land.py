@@ -3,21 +3,31 @@
 from __future__ import annotations
 
 import io
+import os
+import signal
+import subprocess
+import sys
 import zipfile
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import httpx
 import pytest
 import tenacity
 
+from gbmi.core.failpoint import failpoint
 from gbmi.core.gdelt import Feed, Slot
-from gbmi.sources.gdelt.index import IndexLine
+from gbmi.sources.gdelt import land
+from gbmi.sources.gdelt.index import IndexLine, IndexTail
 from gbmi.sources.gdelt.land import (
     Bronze,
+    Fetched,
+    FileUnavailableError,
     FixtureFetcher,
     HttpFetcher,
+    RateLimitedError,
     VerificationError,
+    fetcher_for,
     land_file,
     land_hour,
     md5_hex,
@@ -26,6 +36,8 @@ from gbmi.sources.gdelt.land import (
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "gdelt" / "v2"
 SLOT = Slot.parse("20261125084500")
+#: GDELT uploads a file about ten minutes before the time in the file name.
+UPLOADED = datetime(2026, 11, 25, 8, 35, 12, tzinfo=UTC)
 
 
 def zipped(text: str, member: str = "20261125084500.export.CSV") -> bytes:
@@ -50,12 +62,15 @@ class CountingFetcher:
         self.index = index
         self.fetched: list[str] = []
 
-    def index_text(self) -> str:
+    def last_update(self) -> str:
         return self.index
 
-    def fetch(self, line: IndexLine) -> bytes:
+    def master_tail(self, tail_bytes: int) -> IndexTail:
+        return IndexTail(self.index, complete=True)
+
+    def fetch(self, line: IndexLine) -> Fetched:
         self.fetched.append(line.file_name)
-        return self.files[line.file_name]
+        return Fetched(self.files[line.file_name], UPLOADED)
 
 
 def test_verify_accepts_a_matching_zip() -> None:
@@ -146,45 +161,210 @@ def test_fixture_hour_lands_four_verified_files(tmp_path: Path) -> None:
     assert land_hour(bronze, FixtureFetcher(FIXTURES), date(2026, 11, 25), 9) == ([], [])
 
 
-def test_http_fetcher_retries_transient_errors_and_reads_the_list_tail(
+def no_waiting(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No waiting between attempts in a unit test."""
+    for method in (HttpFetcher._get, HttpFetcher.last_update, HttpFetcher.master_tail):
+        monkeypatch.setattr(method.retry, "wait", tenacity.wait_none())  # type: ignore[attr-defined]
+
+
+def test_http_fetcher_retries_a_server_error_and_returns_the_upload_time(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     content = zipped("row\n")
     line = line_for(content)
+    answers = [503, 502, 200]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        status = answers.pop(0)
+        if status != 200:
+            return httpx.Response(status)
+        headers = {"Last-Modified": "Wed, 25 Nov 2026 08:35:12 GMT"}
+        return httpx.Response(200, content=content, headers=headers)
+
+    no_waiting(monkeypatch)
+    fetcher = HttpFetcher(httpx.Client(transport=httpx.MockTransport(handler)))
+
+    assert fetcher.fetch(line) == Fetched(content, UPLOADED)
+    assert answers == []
+
+
+def test_http_fetcher_reads_both_lists_and_knows_a_cut_tail(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     requests: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
-        if request.url.path.endswith("masterfilelist.txt"):
-            return httpx.Response(206, text=line.render())
-        # The first two answers for the file are transient failures.
-        failures = {1: 503, 2: 429}
-        attempt = sum(1 for seen in requests if seen.url == request.url)
-        if attempt in failures:
-            return httpx.Response(failures[attempt])
-        return httpx.Response(200, content=content)
+        if request.url.path.endswith("lastupdate.txt"):
+            return httpx.Response(429) if len(requests) == 1 else httpx.Response(200, text="new")
+        asked = request.headers["Range"]
+        if asked == "bytes=-1000":
+            return httpx.Response(
+                206, text="tail", headers={"Content-Range": "bytes 500-1499/1500"}
+            )
+        if asked == "bytes=-2000":
+            return httpx.Response(206, text="all", headers={"Content-Range": "bytes 0-1499/1500"})
+        return httpx.Response(200, text="all")  # a server which ignores the range
 
-    # No waiting between attempts in a unit test.
-    monkeypatch.setattr(HttpFetcher.fetch.retry, "wait", tenacity.wait_none())  # type: ignore[attr-defined]
-    fetcher = HttpFetcher(httpx.Client(transport=httpx.MockTransport(handler)), tail_bytes=1000)
+    no_waiting(monkeypatch)
+    fetcher = HttpFetcher(httpx.Client(transport=httpx.MockTransport(handler)))
 
-    assert fetcher.index_text() == line.render()
-    assert requests[0].headers["Range"] == "bytes=-1000"
-    assert fetcher.fetch(line) == content
-    assert [request.url.path for request in requests].count(f"/{line.file_name}") == 3
+    assert fetcher.last_update() == "new"  # a list request waits out HTTP 429
+    assert fetcher.master_tail(1000) == IndexTail("tail", complete=False)
+    assert fetcher.master_tail(2000) == IndexTail("all", complete=True)
+    assert fetcher.master_tail(3000) == IndexTail("all", complete=True)
 
 
-def test_http_fetcher_does_not_retry_a_missing_file(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize(
+    ("status", "headers", "error", "retry_after"),
+    [
+        (404, {}, FileUnavailableError, None),
+        (429, {}, RateLimitedError, None),
+        (429, {"Retry-After": "7"}, RateLimitedError, 7.0),
+        (429, {"Retry-After": "soon"}, RateLimitedError, None),
+        (403, {}, httpx.HTTPStatusError, None),
+    ],
+)
+def test_http_fetcher_does_not_retry_a_refused_file(
+    monkeypatch: pytest.MonkeyPatch,
+    status: int,
+    headers: dict[str, str],
+    error: type[Exception],
+    retry_after: float | None,
+) -> None:
     calls = 0
 
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal calls
         calls += 1
-        return httpx.Response(404)
+        return httpx.Response(status, headers=headers)
 
-    monkeypatch.setattr(HttpFetcher.fetch.retry, "wait", tenacity.wait_none())  # type: ignore[attr-defined]
+    no_waiting(monkeypatch)
     fetcher = HttpFetcher(httpx.Client(transport=httpx.MockTransport(handler)))
 
-    with pytest.raises(httpx.HTTPStatusError):
+    with pytest.raises(error) as raised:
         fetcher.fetch(line_for(zipped("x")))
+
+    # The run decides what follows a 404 or a 429; the fetcher asks once.
     assert calls == 1
+    if error is RateLimitedError:
+        assert raised.value.retry_after == retry_after  # type: ignore[attr-defined]
+
+
+def test_retry_after_can_be_a_date(monkeypatch: pytest.MonkeyPatch) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(429, headers={"Retry-After": "Wed, 25 Nov 2026 08:00:30 GMT"})
+
+    monkeypatch.setattr(land, "utc_now", lambda: datetime(2026, 11, 25, 8, 0, 0, tzinfo=UTC))
+    fetcher = HttpFetcher(httpx.Client(transport=httpx.MockTransport(handler)))
+
+    with pytest.raises(RateLimitedError) as raised:
+        fetcher.fetch(line_for(zipped("x")))
+
+    assert raised.value.retry_after == 30.0
+
+
+def test_a_missing_or_odd_upload_time_is_none() -> None:
+    content = zipped("row\n")
+    line = line_for(content)
+
+    for headers in ({}, {"Last-Modified": "not a date"}):
+        transport = httpx.MockTransport(
+            lambda request, headers=headers: httpx.Response(200, content=content, headers=headers)
+        )
+        assert HttpFetcher(httpx.Client(transport=transport)).fetch(line).published_at is None
+
+
+def test_the_landed_file_carries_the_upload_time_only_when_fetched(tmp_path: Path) -> None:
+    content = zipped("row\n")
+    line = line_for(content)
+    fetcher = CountingFetcher({line.file_name: content})
+    bronze = Bronze(f"file://{tmp_path}")
+
+    assert land_file(bronze, fetcher, line).published_at == UPLOADED
+    assert land_file(bronze, fetcher, line).published_at is None  # nothing was fetched
+
+
+def test_a_rejected_file_hands_its_bytes_back(tmp_path: Path) -> None:
+    content = zipped("row\n")
+    line = line_for(content)
+    damaged = content[:-3]
+
+    with pytest.raises(VerificationError) as raised:
+        land_file(Bronze(f"file://{tmp_path}"), CountingFetcher({line.file_name: damaged}), line)
+
+    assert raised.value.content == damaged
+
+
+def test_bronze_lists_finished_objects_and_gives_their_uri(tmp_path: Path) -> None:
+    bronze = Bronze(f"file://{tmp_path}/")
+    key = SLOT.bronze_key(Feed.EXPORT)
+    bronze.write(key, b"12345")
+    (tmp_path / "raw/gdelt/v2/export/dt=2026-11-25/half.zip.part").write_bytes(b"1")
+
+    assert bronze.sizes("raw/gdelt/v2/export/dt=2026-11-25") == {key: 5}
+    assert bronze.sizes("raw/gdelt/v2/") == {key: 5}
+    assert bronze.sizes("raw/gdelt/v2/gkg") == {}
+    assert bronze.uri(key) == f"file://{tmp_path}/{key}"
+
+
+def test_the_fixture_fetcher_serves_both_lists_and_knows_a_missing_file() -> None:
+    fetcher = FixtureFetcher(FIXTURES)
+
+    newest = fetcher.last_update().splitlines()
+    assert [line.rsplit("/", 1)[-1].split(".")[1] for line in newest] == [
+        "export",
+        "mentions",
+        "gkg",
+    ]
+    assert all("/20261125084500." in line for line in newest)
+    tail = fetcher.master_tail(10)
+    assert tail.complete and len(tail.text.splitlines()) == 12
+    missing = line_for(zipped("x"), Slot.parse("20261125090000"))
+    with pytest.raises(FileUnavailableError, match="not among the recorded files"):
+        fetcher.fetch(missing)
+
+
+def test_a_source_is_live_or_fixture() -> None:
+    assert isinstance(fetcher_for("live"), HttpFetcher)
+    assert isinstance(fetcher_for("fixture", str(FIXTURES)), FixtureFetcher)
+    with pytest.raises(ValueError, match="'fixture' or 'live'"):
+        fetcher_for("tape")
+
+
+def test_a_crash_before_the_move_leaves_no_object_and_a_rerun_lands_the_file(
+    tmp_path: Path,
+) -> None:
+    # The process kills itself between the write of the temporary file and the move.
+    program = (
+        "import sys; from gbmi.sources.gdelt.land import Bronze; "
+        "Bronze(sys.argv[1]).write(sys.argv[2], b'12345')"
+    )
+    key = SLOT.bronze_key(Feed.EXPORT)
+    crashed = subprocess.run(
+        [sys.executable, "-c", program, f"file://{tmp_path}", key],
+        env={**os.environ, "GBMI_FAILPOINT": "bronze.before_move"},
+        capture_output=True,
+        check=False,
+    )
+
+    assert crashed.returncode == -signal.SIGKILL
+    bronze = Bronze(f"file://{tmp_path}")
+    assert bronze.read(key) is None  # a reader never sees half a file
+    assert [path.name for path in tmp_path.rglob("*.part")] == [
+        f"{SLOT.file_name(Feed.EXPORT)}.part"
+    ]
+
+    content = zipped("row\n")
+    line = line_for(content)
+    landed = land_file(bronze, CountingFetcher({line.file_name: content}), line)
+
+    assert landed.written and bronze.read(key) == content
+    assert not list(tmp_path.rglob("*.part"))
+
+
+def test_an_unknown_failpoint_is_a_programming_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GBMI_FAILPOINT", "nowhere")
+    failpoint("bronze.before_move")  # another point is named: nothing happens
+    with pytest.raises(ValueError, match="unknown failpoint"):
+        failpoint("nowhere")

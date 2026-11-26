@@ -4,9 +4,15 @@ A unit's rejected rows are one Parquet file under a deterministic key, so a reru
 and a rerun that rejects nothing removes it:
 
     quarantine/<source>/<feed>/dt=<slot date>/hour=<HH>/rows.parquet
+
+A whole file which a gate rejected is kept beside the rows, under its own name:
+
+    quarantine/<source>/<feed>/dt=<slot date>/<file name>
 """
 
 from __future__ import annotations
+
+from datetime import date
 
 import pyarrow as pa
 import pyarrow.fs as pafs
@@ -47,4 +53,22 @@ def write_quarantine(
         return None
     filesystem.create_dir(path.rsplit("/", 1)[0], recursive=True)
     pq.write_table(rows.cast(QUARANTINE_SCHEMA), path, filesystem=filesystem, compression="zstd")
+    return key
+
+
+def quarantined_file_key(source: str, feed: str, slot_date: date, file_name: str) -> str:
+    """Key of a rejected file, relative to the lake root."""
+    return f"quarantine/{source}/{feed}/dt={slot_date.isoformat()}/{file_name}"
+
+
+def write_quarantined_file(
+    lake_uri: str, source: str, feed: str, slot_date: date, file_name: str, content: bytes
+) -> str:
+    """Keep the bytes of a rejected file; returns the key. A later rejection replaces the bytes."""
+    filesystem, root = pafs.FileSystem.from_uri(lake_uri)
+    key = quarantined_file_key(source, feed, slot_date, file_name)
+    path = f"{root.rstrip('/')}/{key}"
+    filesystem.create_dir(path.rsplit("/", 1)[0], recursive=True)
+    with filesystem.open_output_stream(path) as stream:
+        stream.write(content)
     return key
