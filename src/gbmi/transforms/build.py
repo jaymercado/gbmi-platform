@@ -60,7 +60,14 @@ from gbmi.lake.tables import (
     TABLE_KEYS,
     create_table_if_missing,
 )
-from gbmi.ledger.repository import Accounting, Ledger, SlotKey, SlotRecord, fileset_hash
+from gbmi.ledger.repository import (
+    Accounting,
+    Ledger,
+    PendingUnit,
+    SlotKey,
+    SlotRecord,
+    fileset_hash,
+)
 from gbmi.ledger.states import State
 from gbmi.logging import get_logger
 from gbmi.ops.partitions import PartitionVersion, day_rows, record_versions
@@ -714,25 +721,22 @@ def build_unit(
     }
 
 
-def build_pending(
+def build_units(
+    units: Sequence[PendingUnit],
     *,
     as_of: datetime,
     ledger: Ledger,
     settings: Settings | None = None,
     run_id: str | None = None,
-    max_units: int | None = None,
 ) -> dict[str, Any]:
-    """Build the pending units, oldest first, ``max_units`` at most (blueprint 8.1).
+    """Build the given units one after the other.
 
     A unit which fails does not stop the units after it. The summary names each failed unit;
     the caller decides how to report the failure.
     """
-    settings = settings or get_settings()
-    pending = ledger.pending_units(as_of)
-    selected = pending[: max_units or settings.silver_max_units]
     built: list[dict[str, Any]] = []
     failed: list[dict[str, Any]] = []
-    for item in selected:
+    for item in units:
         unit = Unit(item.slot_date, item.slot_hour)
         try:
             summary = build_unit(
@@ -759,12 +763,27 @@ def build_pending(
         )
     return {
         "as_of": as_of.isoformat(),
-        "pending": len(pending),
-        "selected": len(selected),
+        "selected": len(units),
         "built": built,
         "failed": failed,
         "rows": sum(item["committed"] for item in built),
         "mart_partitions": sorted(
-            {unit.slot_date.year * 100 + unit.slot_date.month for unit in selected}
+            {unit.slot_date.year * 100 + unit.slot_date.month for unit in units}
         ),
     }
+
+
+def build_pending(
+    *,
+    as_of: datetime,
+    ledger: Ledger,
+    settings: Settings | None = None,
+    run_id: str | None = None,
+    max_units: int | None = None,
+) -> dict[str, Any]:
+    """Build the pending units, oldest first, ``max_units`` at most (blueprint 8.1)."""
+    settings = settings or get_settings()
+    pending = ledger.pending_units(as_of)
+    selected = pending[: max_units or settings.silver_max_units]
+    summary = build_units(selected, as_of=as_of, ledger=ledger, settings=settings, run_id=run_id)
+    return {**summary, "pending": len(pending)}
