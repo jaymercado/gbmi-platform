@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from gbmi.ledger.db import Connection, connect
+from gbmi.ledger.repository import Ledger
 from gbmi.ledger.scratch import ADMIN_DSN_VARIABLE, scratch_database
 
 MIGRATIONS = Path(__file__).resolve().parents[2] / "db" / "postgres" / "migrations"
@@ -61,3 +62,9 @@ def ops(ops_db: str) -> Iterator[Connection]:
 def source() -> str:
     """A source name which no other test uses."""
     return f"test-{uuid.uuid4().hex[:12]}"
+
+
+@pytest.fixture
+def ledger(ops: Connection, source: str) -> Ledger:
+    """A ledger which sees only the slots of the test."""
+    return Ledger(ops, source=source, run_id="test-run")
