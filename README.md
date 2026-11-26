@@ -4,7 +4,7 @@ An entity-resolved company-intelligence lakehouse: it ingests GDELT 2.0 news met
 
 ## Status
 
-**Phase P0 — walking skeleton and de-risking — is done except for its labelling task.** One hour of GDELT Events flows end to end with one command:
+**Phase P0 — walking skeleton and de-risking — is done; the tag `p0` marks the commit.** One hour of GDELT Events flows end to end with one command:
 
 ```text
 GDELT files → bronze (verified zips) → silver (Apache Iceberg) → ClickHouse (pinned read)
@@ -18,7 +18,8 @@ GDELT files → bronze (verified zips) → silver (Apache Iceberg) → ClickHous
 | Decided by spikes | How PyIceberg commits a unit, how ClickHouse reads one exact table version, how dbt replaces a partition, and that Cosmos runs dbt on Airflow 3.4 — see the [spike report](docs/reports/p0-spikes.md) |
 | Measured | [Memory](docs/reports/p0-memory.md): about 2 GB idle, 4 GB during the demo; a whole day of the largest feed builds in 7 seconds with a 0.5 GB peak |
 | On GitHub and AWS | The four workflows are green on `main`. The Terraform baseline is applied in `us-east-1`, and the spike tests pass on Glue and S3 — see the [status report](docs/reports/p0-walking-skeleton.md) |
-| Not done yet | 100 labelled organisation strings, the last condition of P0. Nothing is deployed: there is no host, no schedule and no monitoring |
+| Labelled | The first 200 organisation strings of the entity-resolution gold set, by an AI model; a review by a person is open — see the [labelling README](config/labelling/README.md) |
+| Not done yet | Nothing is deployed: there is no host, no schedule and no monitoring |
 
 Nothing here is production data yet: there is no ledger, no SEC ingestion and no entity resolution. Those are phases P1 to P3 of the [blueprint](GLOBAL_BUSINESS_MARKET_INTELLIGENCE_PROJECT_BLUEPRINT.md).
 

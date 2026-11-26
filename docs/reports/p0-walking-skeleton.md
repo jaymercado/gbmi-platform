@@ -4,10 +4,10 @@
 |---|---|
 | Phase | P0 — walking skeleton and de-risking (blueprint §11.2), as specified by the week 1 plan |
 | Run | 2026-11-25 (UTC), on one laptop: MacBook Pro M2 Pro, 16 GB, macOS 27, Docker Desktop 4.42.0 with a 7.65 GiB VM. Closed on 2026-11-26 with the repository on GitHub and an AWS account |
-| Verdict | **P0 is complete except for row 10.** Every other row of the exit gate holds; row 4 was removed. Row 10, 100 labelled strings, is open, and by the plan's rule (§11, D11) P1 may start while it is the only open row. The tag `p0` has not been created: it waits for row 10 |
-| Verified at | Laptop checks: commit `a19dee0`. GitHub: the four workflows on `main` at `6780771`. AWS: the baseline as applied on 2026-11-26 and the Glue/S3 test halves, run from the branch `p0-close-out` |
+| Verdict | **P0 is complete.** Every row of the exit gate holds; row 4 was removed. The tag `p0` marks the merge commit of the pull request which closed row 10, the last open row |
+| Verified at | Laptop checks: commit `a19dee0`. GitHub: the four workflows on `main` at `6780771`. AWS: the baseline as applied on 2026-11-26 and the Glue/S3 test halves, run from the branch `p0-close-out`. Labels: the sheet at the commit with the tag `p0` |
 
-**Scope.** The first run, on 2026-11-25, was local-only by choice: no AWS account and no Git remote were connected. On 2026-11-26 the repository was pushed to GitHub, an AWS account was opened, the Terraform baseline was applied and the open rows were closed; the section "Closing the gate on 2026-11-26" records that work. Every number below was measured in one of the two runs; anything not run is labelled *not run*.
+**Scope.** The first run, on 2026-11-25, was local-only by choice: no AWS account and no Git remote were connected. On 2026-11-26 the repository was pushed to GitHub, an AWS account was opened, the Terraform baseline was applied and the open rows were closed; the section "Closing the gate on 2026-11-26" records that work. The labelling sheet was labelled on the same day (row 10). Every number below was measured in one of the two runs; anything not run is labelled *not run*.
 
 ## Exit gate
 
@@ -24,7 +24,7 @@ The rows are those of the week 1 plan, §2.
 | 7 | Memory is measured | **True** | [`p0-memory.md`](p0-memory.md): idle, the demo and the GKG day probe, beside the blueprint's estimates |
 | 8 | ADR-001 and ADR-004 are drafted | **True** | [`docs/adr/`](../adr/). ADR-004 was accepted on 2026-11-26, when row 3 closed |
 | 9 | Version pins are re-verified on the start date | **True** | The pin table below. No pin moved |
-| 10 | Labelling has started | **Open** | The sheet exists with 200 strings; none is labelled yet. This row is Jay's: about 20 strings a day in `config/labelling/gold_sheet_v0.csv` |
+| 10 | Labelling has started | **True** | All 200 strings of `config/labelling/gold_sheet_v0.csv` have a label since 2026-11-26; the row asks for 100. Claude, the AI model which works in the repository, labelled the strings after Jay handed the task over (week 1 plan, D14). No person has reviewed the labels. Method, results and limits: [`config/labelling/README.md`](../../config/labelling/README.md). `tests/unit/test_gold_sheet.py` checks the format |
 
 ### Decision of 2026-11-26: an alert email is not a condition of P0
 
@@ -49,6 +49,7 @@ Jay did the account work by hand, from a step-by-step guide; the checks after it
 | Budget | `gbmi-prod-monthly` (USD 30, notifications at 50, 80 and 100%) and the hand-made zero-spend budget exist. No alert was forced (row 4) |
 | Spikes on AWS | `make integration-aws`: the 19 tests that run on AWS passed — 13 for SK1 and 6 for SK2 — and the 3 stretch tests of SK2 skipped themselves, as written. The run took 53 minutes, 18 of them spent waiting for new credentials |
 | Clean-up | The tests dropped the Glue database `gbmi_ci_silver` themselves. 52 objects were left under `ci/` and were deleted: 43 zero-byte directory markers and the 9 files of the snapshots that SK1 Q7 had expired. No current object remains under `ci/`; about a thousand non-current versions expire by the bucket's lifecycle rule |
+| Labelling | Jay handed the labelling of the sheet to Claude (week 1 plan, D14). Claude labelled all 200 strings in one session, with no matching system to look at: 25 `company_in_universe`, 25 `company_not_in_universe`, 149 `not_a_company`, 1 `ambiguous`. The universe and the CIKs come from a copy of the SEC ticker list dated 2026-10-22; no request went to the SEC (D7). Twelve names were checked with web searches |
 
 ### What the first real runs showed
 
@@ -69,14 +70,14 @@ Two things in this section rest on documentation and have not been exercised. No
 | 01 | Preflight | Done; the AWS and GitHub accounts followed on 2026-11-26 | — |
 | 02 | Repository, tooling, first workflow, ADR-001 | Done; pushed on 2026-11-26, `main` protected | `wp-02-scaffold` (`9ae6641`) |
 | 03 | Terraform baseline and budget alert | Done: applied on 2026-11-26. No alert was forced (D12) | `wp-03-terraform-baseline` (`d5b9f0c`) |
-| 04 | Labelling sheet | Done; labelling not started | `wp-04-labelling-sheet` (`c6c97f3`) |
+| 04 | Labelling sheet | Done; all 200 strings labelled on 2026-11-26 (D14) | `wp-04-labelling-sheet` (`c6c97f3`); `p0-labels` |
 | 05 | Images and Compose core profile | Done | `wp-05-compose-stack` (`4902e47`, `fb0eba1`) |
 | 06 | Spike SK1 — PyIceberg contract | Done: passed on both backends | `wp-06-sk1-pyiceberg` (`156964b`) |
 | 07 | Spike SK2 — ClickHouse pinned read; dialect checks | Done: passed locally and on S3 | `wp-07-sk2-pinned-read` (`a1af61b`) |
 | 08 | Spike SK3 — partition replace; Cosmos | Done: A took its fallback, B passed | `wp-08-sk3-partition-replace-cosmos` (`bbb9ffc`) |
 | 09 | Tracer DAG and `make demo` | Done; the `e2e` workflow is green | `wp-09-tracer-demo` (`f2a949f`) |
 | 10 | Memory under load | Done, including the GKG probe | `wp-10-memory` (`33f7179`, `3fabfab`) |
-| 11 | ADR-004, reports, close-out | Done, with the AWS clean-up. The tag waits for row 10 | `wp-11-close-out` (`a712cca`, `513736b`) |
+| 11 | ADR-004, reports, close-out | Done, with the AWS clean-up and the tag `p0` | `wp-11-close-out` (`a712cca`, `513736b`) |
 | — | Found by the Linux rehearsal: the time-zone database is now a declared dependency | Done | `rehearsal-linux-fixes` (`1adcc69`) |
 | — | Stretch items: SK2 Q7 and Q8; ClickHouse reads PostgreSQL in the smoke check | Done, local backend only | `stretch-sk2-q7-q8-smoke` (`4da21d1`) |
 | — | The ClickHouse init container left an anonymous volume at every `make down` | Fixed, with a smoke check | `fix-init-volume-leak` (`a19dee0`) |
@@ -187,6 +188,7 @@ Where the plan was silent, or where the run did something other than what it sai
 | The ClickHouse init container mounts a tmpfs where its image declares a volume | Otherwise every `make down` left an empty anonymous volume behind |
 | The root user does all AWS work, signed in with `aws login`; there is no IAM Identity Center and no second user | Decision of the owner on 2026-11-26 (week 1 plan, D13) |
 | An alert email is not a condition of P0 | Decision of the owner on 2026-11-26 (week 1 plan, D12) |
+| Claude labelled the 200 strings of the labelling sheet; the plan gave the task to Jay, at about 20 strings a day | Decision of the owner on 2026-11-26 (week 1 plan, D14) |
 | The AWS test halves run one test at a time (`make integration-aws`) | Credentials from `aws login` last 15 minutes, less than the halves take |
 | The budget output reads the variable; `make tf-check` initialises only a fresh root | Found by the first real plan and by the first check after a real `init` |
 
@@ -223,6 +225,8 @@ The blueprint was not edited. These are the places where a measurement or a test
 | A workflow that assumes the two CI roles, the first real test of the OIDC subject | P2 |
 | Commit latency on S3, measured on the host | P1 |
 | Unreferenced files on the local backend and on S3, with the directory markers that `purge_table` leaves there; orphaned dbt staging tables; cost-allocation tags | P4 |
+| The CIKs of the labelling sheet compared with the SEC reference data, once the SEC reference data is loaded | P1 |
+| A review of the labels by a person, before the precision gate is treated as binding | P3 |
 
 **Stretch items of the plan (§6).** Taken after the reports were written: SK2 questions Q7 and Q8, and the `postgresql()` read in `make smoke`. Not taken: a `plan` job in CI, and the Dependabot and `security` configuration. They needed a remote, which exists since 2026-11-26, and they stay stretch items.
 
@@ -230,6 +234,6 @@ The blueprint was not edited. These are the places where a measurement or a test
 
 ## Hand-off to week 2
 
-By the plan's own rule (§11), P1 starts when the gate holds, or when row 10 is the only one open. Row 10 is the only one open, so **P1 may start**. The tag `p0` is created when 100 strings are labelled.
+By the plan's own rule (§11), P1 starts when the gate holds. The gate holds since 2026-11-26, and the tag `p0` marks the commit. **P1 starts from the tag `p0`.**
 
 When P1 starts, it inherits the catalog factory and the commit helper (`gbmi.lake`), the pin step (`gbmi.warehouse.pin`), the `partition_replace` materialisation, the Compose stack, the fixtures and the `export` schema. It should read SK1 questions Q2 and Q5 and the conclusions of the memory report first.

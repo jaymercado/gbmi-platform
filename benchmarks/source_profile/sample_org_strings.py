@@ -12,7 +12,10 @@ Data: The GDELT Project, https://www.gdeltproject.org/ - article titles are meta
 no article text is fetched.
 
 Usage:
-    uv run python benchmarks/source_profile/sample_org_strings.py
+    uv run python benchmarks/source_profile/sample_org_strings.py --out data/scratch/sheet.csv
+
+The default output is the sheet of the repository. A sheet with labels is not overwritten;
+a new draw equals the committed sheet in the first eight columns.
 """
 
 from __future__ import annotations
@@ -202,6 +205,14 @@ def write_sheet(
     path.write_text(buffer.getvalue(), encoding="utf-8")
 
 
+def holds_labels(path: Path) -> bool:
+    """True when a sheet exists at ``path`` and at least one row has a label."""
+    if not path.exists():
+        return False
+    with path.open(encoding="utf-8", newline="") as handle:
+        return any(row.get("label") for row in csv.DictReader(handle))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument("--out", type=Path, default=Path("config/labelling/gold_sheet_v0.csv"))
@@ -209,6 +220,8 @@ def main() -> None:
     parser.add_argument("--tail-bytes", type=int, default=2_000_000,
                         help="how much of the end of the master list to read")  # fmt: skip
     args = parser.parse_args()
+    if holds_labels(args.out):
+        parser.error(f"{args.out} holds labels and is not overwritten; pass another path to --out")
 
     args.scratch.mkdir(parents=True, exist_ok=True)
     with httpx.Client(timeout=120, follow_redirects=True) as client:

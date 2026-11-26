@@ -47,7 +47,7 @@ Nothing exists to reuse: the project folder holds only the blueprint and the one
 
 ## 2. Exit gate
 
-The week is done when every row is true. Rows 1–3 are the blueprint's acceptance criteria for P0; rows 5–10 are its deliverables and the week-1 steps of BP §16.7. Row 4, the blueprint's fourth criterion, was removed on 2026-11-26 (D12). Row 10 depends on elapsed days, not effort; §11 says what may start while row 10 is open.
+The week is done when every row is true. Rows 1–3 are the blueprint's acceptance criteria for P0; rows 5–10 are its deliverables and the week-1 steps of BP §16.7. Row 4, the blueprint's fourth criterion, was removed on 2026-11-26 (D12). Row 10 depends on elapsed days, not effort; §11 says what may start while row 10 is open. Row 10 is true since 2026-11-26 (D14).
 
 | # | Criterion | Evidence |
 |---|---|---|
@@ -135,6 +135,7 @@ The blueprint leaves these open, and week 1 cannot start without them.
 | D11 | §16.4: a phase does not start until the previous one's acceptance criteria are met | P1 may start while exit-gate row 10 is still open, if elapsed time is the only thing missing | Labelling days are not effort |
 | D12 | §11.2 lists "budget alert email received" among the acceptance criteria of P0 | Since 2026-11-26 an alert email is not a condition of P0 or of the tag `p0`. The budget and its notifications stay (WP-03). The forced alert test stays available as an optional procedure (`infra/terraform/README.md`, §3) | Decision of the owner. The test costs up to a day of waiting for one email. The budget notifies a verified address, and the zero-spend budget (H2) reports the first real cost, so the first real alert gives the same proof |
 | D13 | §16.7 step 2 sets up SSO with multi-factor authentication; H1 planned IAM Identity Center with one user | Since 2026-11-26 the root user of the AWS account does all AWS work: MFA on the root user, no access key, and short-lived credentials from `aws login` (profile `gbmi-login`, handed on by the process profile `gbmi`). There is no IAM Identity Center, no organization and no second user | Decision of the owner, for an account with one person: fewer parts to set up and to keep. AWS advises against the root user for everyday tasks; a second user can be added later, because every resource belongs to the account and not to a user. Credentials last 15 minutes and are renewed for up to 12 hours, so the AWS test halves run one test at a time (`make integration-aws`) |
+| D14 | H7 gives the labelling to Jay, at about 20 organisation strings a day; rule 2 of the sheet looks up each CIK by hand in EDGAR's company search | On 2026-11-26 Jay handed the labelling to Claude, the AI model which works in the repository. Claude labelled all 200 strings of `config/labelling/gold_sheet_v0.csv` in one session. The universe and the CIKs come from a copy of the SEC ticker list dated 2026-10-22, and no request went to the SEC (D7). Exit-gate row 10 is true since 2026-11-26 | Decision of the owner. The labels have one labeller, an AI model, and no review by a person. `config/labelling/README.md` lists the limits and the two checks which stay open: a review by a person, and the CIKs against the SEC reference data of P1 |
 
 ---
 
@@ -184,7 +185,7 @@ The arm64 variants of the ClickHouse, PostgreSQL and Metabase images were not in
 | H4 | Docker Desktop: start it and set memory to 9 GB (BP §9.1) | WP-01 | `docker info` |
 | H5 | Supply, outside the repository: the alert email (`TF_VAR_alert_email`), the repository slug (`TF_VAR_github_repository`) and a git identity (a GitHub no-reply address suits a public repository) | WP-01, WP-03 | — |
 | H6 | *Removed on 2026-11-26 with exit gate row 4 (D12).* Was: confirm that the budget alert email arrived and note the time | — | — |
-| H7 | Label about 20 organisation strings a day | From WP-04 | Exit gate row 10 |
+| H7 | *Handed to Claude on 2026-11-26 (D14); all 200 strings have a label.* Was: label about 20 organisation strings a day | From WP-04 | Exit gate row 10 |
 | H8 | Run `aws login --remote --profile gbmi-login` whenever the session has expired (after 12 hours at the latest; D13) | WP-03; the AWS halves of WP-06 and WP-07; the clean-up in WP-11 | `aws sts get-caller-identity --profile gbmi` |
 
 Everything else in this plan can be executed without him.
@@ -499,7 +500,7 @@ Directories of BP §10 that have no content yet (`drills/`, `docs/runbooks/`, `s
 
 ## 11. Hand-off to week 2
 
-P1 starts when §2 holds. It may also start while row 10 is the only thing open and elapsed time is the only thing missing (D11); every other row has to be true.
+P1 starts when §2 holds. It may also start while row 10 is the only thing open and elapsed time is the only thing missing (D11); every other row has to be true. §2 holds since 2026-11-26; the tag `p0` marks the commit.
 
 - **P1 inherits** the catalog factory and commit helper (SK1), the pin step (SK2), the chosen incremental strategy (SK3), the Compose stack, the fixtures and the `export` schema.
 - **P1 must read first** SK1 questions Q2 and Q5 — the overwrite unit and the bounded-memory pattern decide how `gdelt_silver_hourly` and `gdelt_silver_daily` write — and the conclusion of the memory report.
