@@ -59,6 +59,7 @@ _LOCATIONS = f"f[{GKG.position('V1LOCATIONS')}]"
 _V1_ORGS = f"f[{GKG.position('V1ORGANIZATIONS')}]"
 _V2_ORGS = f"f[{GKG.position('V2ENHANCEDORGANIZATIONS')}]"
 _EXTRAS = f"f[{GKG.position('V2EXTRASXML')}]"
+_WORD_COUNT = f"string_split({_TONE}, ',')[{len(TONE_FIELDS)}]"
 
 #: The checks of gate G2 which a single typed field cannot express.
 EXTRA_CHECKS: tuple[Check, ...] = (
@@ -66,14 +67,19 @@ EXTRA_CHECKS: tuple[Check, ...] = (
         f"not regexp_full_match({_RECORD_ID}, '{RECORD_ID_PATTERN}')",
         "gkg_record_id (GKGRECORDID): not 14 digits, a hyphen and a number",
     ),
+    # A text can have the form of a number and still be too large for the type: try_cast gives
+    # NULL for an integer and infinity for a double. With both checks the cast of the typed
+    # step can never fail, and no infinity reaches silver.
     (
         f"len(string_split({_TONE}, ',')) <> {len(TONE_FIELDS)} "
         f"or len(list_filter(string_split({_TONE}, ','), "
-        f"lambda x: not regexp_full_match(x, '{DOUBLE}'))) > 0",
+        f"lambda x: not regexp_full_match(x, '{DOUBLE}') or try_cast(x as double) is null "
+        f"or not isfinite(try_cast(x as double)))) > 0",
         "tone (V1.5TONE): not seven numbers",
     ),
     (
-        f"not regexp_full_match(string_split({_TONE}, ',')[{len(TONE_FIELDS)}], '{INTEGER}')",
+        f"not regexp_full_match({_WORD_COUNT}, '{INTEGER}') "
+        f"or try_cast({_WORD_COUNT} as integer) is null",
         "word_count (V1.5TONE): not an integer",
     ),
 )

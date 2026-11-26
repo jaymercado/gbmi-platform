@@ -153,6 +153,10 @@ def test_a_good_row_becomes_one_document_and_its_organisations() -> None:
         (gkg_row(tone=""), "tone (V1.5TONE): not seven numbers"),
         (gkg_row(tone="0,0,0,high,27.1,3.4,96"), "tone (V1.5TONE): not seven numbers"),
         (gkg_row(tone="0,0,0,0,27.1,3.4,96.5"), "word_count (V1.5TONE): not an integer"),
+        # The form of a number, and too large for the type: the row is quarantined, and the
+        # build of the unit goes on.
+        (gkg_row(tone="0,0,0,0,27.1,3.4,3000000000"), "word_count (V1.5TONE): not an integer"),
+        (gkg_row(tone="1e999,0,0,0,27.1,3.4,96"), "tone (V1.5TONE): not seven numbers"),
     ],
 )
 def test_each_failure_of_gate_g2_is_quarantined_with_its_reason(line: str, reason: str) -> None:
