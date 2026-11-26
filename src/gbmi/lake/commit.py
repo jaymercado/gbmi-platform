@@ -17,15 +17,17 @@ from __future__ import annotations
 import contextlib
 import uuid
 import warnings
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from datetime import date
 
 import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
+from pyiceberg.exceptions import CommitFailedException, ValidationException
 from pyiceberg.expressions import And, BooleanExpression, EqualTo, Reference
 from pyiceberg.expressions.literals import literal
+from pyiceberg.io import OutputStream
 from pyiceberg.table import Table
 
 COMMIT_ID_PROPERTY = "gbmi.commit-id"
@@ -35,6 +37,9 @@ PIPELINE_VERSION_PROPERTY = "gbmi.pipeline-version"
 
 SLOT_DATE = "slot_date"
 SLOT_HOUR = "slot_hour"
+
+#: A commit which loses a conflict is tried again up to three times (blueprint 8.4).
+COMMIT_RETRIES = 3
 
 Audit = Callable[[pa.Table], None]
 
@@ -132,6 +137,99 @@ def overwrite_unit(
     )
 
 
+class DayFile:
+    """One Parquet file with a whole day of a table, written batch by batch, then committed.
+
+    PyIceberg 0.12 cannot stream into a partitioned table. Instead, the batches are written one
+    row group at a time into a single Parquet file which carries the table's field ids, and
+    the day is then replaced in one catalog commit: delete the day, add the file. Memory is
+    bounded by one batch, and the day ends as one file, which also compacts its hourly files
+    (blueprint 8.4).
+
+    Staging and committing are two steps, so a caller can stage the files of several tables in
+    one pass over the source and audit the totals before anything is committed. Until the
+    commit nothing is visible; a staged file which is never committed is an unreferenced file.
+    """
+
+    def __init__(self, table: Table, slot_date: date) -> None:
+        self.table = table
+        self.unit = Unit(slot_date)
+        self.commit_id = uuid.uuid4().hex
+        directory = f"{table.location()}/data/{SLOT_DATE}={slot_date.isoformat()}"
+        self.path = f"{directory}/{self.commit_id}-day.parquet"
+        self.rows = 0
+        self._schema = table.schema().as_arrow()
+        self._codec = table.properties.get("write.parquet.compression-codec", "zstd")
+        # The file is created by the first batch with rows: a day without rows leaves no file.
+        self._stream: OutputStream | None = None
+        self._writer: pq.ParquetWriter | None = None
+        self._closed = False
+        self._on_storage = False
+
+    def write(self, batch: pa.Table) -> None:
+        """Append one batch as one row group. Rows of another day are refused."""
+        if self._closed:
+            raise RuntimeError("the day file is closed")
+        if batch.num_rows == 0:
+            return
+        self.unit.check(batch)
+        if self._writer is None:
+            self._stream = self.table.io.new_output(self.path).create(overwrite=True)
+            self._writer = pq.ParquetWriter(self._stream, self._schema, compression=self._codec)
+            self._on_storage = True
+        self._writer.write_table(batch.select(self._schema.names).cast(self._schema))
+        self.rows += batch.num_rows
+
+    def close(self) -> None:
+        """Finish the file. Calling it twice is harmless."""
+        if self._writer is not None and self._stream is not None and not self._closed:
+            self._writer.close()
+            self._stream.close()
+        self._closed = True
+
+    def read(self, columns: Sequence[str]) -> pa.Table:
+        """Columns of the staged file, read back: an audit checks what the commit will add."""
+        self.close()
+        if not self._on_storage:
+            return self._schema.empty_table().select(list(columns))
+        with self.table.io.new_input(self.path).open() as stream:
+            return pq.read_table(stream, columns=list(columns))
+
+    def discard(self) -> None:
+        """Remove the staged file: nothing of it was ever visible. Only before a commit."""
+        self.close()
+        if self._on_storage:
+            self.table.io.delete(self.path)
+            self._on_storage = False
+
+    def commit(
+        self,
+        table: Table | None = None,
+        *,
+        run_id: str | None = None,
+        pipeline_version: str | None = None,
+    ) -> CommitResult:
+        """Replace the day with the staged file in one catalog commit.
+
+        ``table`` is a freshly loaded copy of the table for a further attempt after a commit
+        conflict; the staged file stays the same. A day without rows is emptied.
+        """
+        self.close()
+        table = table or self.table
+        properties = _properties(self.commit_id, self.unit, run_id, pipeline_version)
+        previous = table.current_snapshot()
+        with _expected_empty_delete(), table.transaction() as transaction:
+            if previous is not None:
+                transaction.delete(
+                    delete_filter=self.unit.row_filter, snapshot_properties=properties
+                )
+            if self.rows:
+                transaction.add_files([self.path], snapshot_properties=properties)
+        return _result(
+            table, self.unit, self.commit_id, previous.snapshot_id if previous else None, self.rows
+        )
+
+
 def overwrite_day_streaming(
     table: Table,
     slot_date: date,
@@ -143,48 +241,52 @@ def overwrite_day_streaming(
 ) -> CommitResult:
     """Replace one whole day from a stream of batches, with memory bounded by one batch.
 
-    PyIceberg 0.12 cannot stream into a partitioned table. Instead, the batches are written
-    one row group at a time into a single Parquet file that carries the table's field ids, and
-    the day is then replaced in one catalog commit: delete the day, add the file. A failure
-    before the commit leaves an unreferenced file and no visible change. Because the day ends
-    as one file, this also compacts its hourly files (blueprint 8.4).
+    The batches are staged in a ``DayFile`` and committed in one catalog commit. A failure
+    before the commit removes the staged file and leaves no visible change.
 
     ``audit_totals`` receives the number of rows written and raises to stop the commit.
     """
-    unit = Unit(slot_date)
-    commit_id, properties = _commit_properties(unit, run_id, pipeline_version)
-    arrow_schema = table.schema().as_arrow()
-    path = f"{table.location()}/data/{SLOT_DATE}={slot_date.isoformat()}/{commit_id}-day.parquet"
-    codec = table.properties.get("write.parquet.compression-codec", "zstd")
-
-    rows = 0
-    output = table.io.new_output(path)
-    with (
-        output.create(overwrite=True) as stream,
-        pq.ParquetWriter(stream, arrow_schema, compression=codec) as writer,
-    ):
+    day = DayFile(table, slot_date)
+    try:
         for batch in batches:
-            if batch.num_rows == 0:
-                continue
-            unit.check(batch)
-            writer.write_table(batch.select(arrow_schema.names).cast(arrow_schema))
-            rows += batch.num_rows
-    if audit_totals is not None:
-        try:
-            audit_totals(rows)
-        except Exception:
-            table.io.delete(path)
-            raise
+            day.write(batch)
+        day.close()
+        if audit_totals is not None:
+            audit_totals(day.rows)
+    except BaseException:
+        day.discard()
+        raise
+    return day.commit(run_id=run_id, pipeline_version=pipeline_version)
 
-    previous = table.current_snapshot()
-    with _expected_empty_delete(), table.transaction() as transaction:
-        if previous is not None:
-            transaction.delete(delete_filter=unit.row_filter, snapshot_properties=properties)
-        if rows:
-            transaction.add_files([path], snapshot_properties=properties)
-    if not rows:
-        table.io.delete(path)
-    return _result(table, unit, commit_id, previous.snapshot_id if previous else None, rows)
+
+def unit_rows(table: Table, unit: Unit) -> int:
+    """The rows which the table holds for a unit now."""
+    if table.current_snapshot() is None:
+        return 0
+    return int(table.scan(row_filter=unit.row_filter).count())
+
+
+def commit_with_retry(
+    load: Callable[[], Table],
+    commit: Callable[[Table], CommitResult],
+    *,
+    retries: int = COMMIT_RETRIES,
+) -> CommitResult:
+    """Run a commit on a freshly loaded table; after a commit conflict, load and commit again.
+
+    PyIceberg 0.12 repeats a commit by itself when another commit came first and touched other
+    data. PyIceberg gives up with CommitFailedException after its own attempts, and with
+    ValidationException when the other commit changed the same unit. A transaction which failed
+    cannot be used again. So each attempt here starts from the catalog: a new copy of the table
+    and a new transaction (blueprint 8.4). Both exceptions say: the commit did not land.
+    """
+    for attempt in range(retries + 1):
+        try:
+            return commit(load())
+        except (CommitFailedException, ValidationException):
+            if attempt == retries:
+                raise
+    raise RuntimeError("unreachable: the loop returns or raises")
 
 
 @contextlib.contextmanager
@@ -201,16 +303,22 @@ def _equals(column: str, value: str | int) -> BooleanExpression:
     return EqualTo(term=Reference(column), value=literal(value))
 
 
-def _commit_properties(
-    unit: Unit, run_id: str | None, pipeline_version: str | None
-) -> tuple[str, dict[str, str]]:
-    commit_id = uuid.uuid4().hex
+def _properties(
+    commit_id: str, unit: Unit, run_id: str | None, pipeline_version: str | None
+) -> dict[str, str]:
     properties = {COMMIT_ID_PROPERTY: commit_id, UNIT_PROPERTY: unit.label}
     if run_id:
         properties[RUN_ID_PROPERTY] = run_id
     if pipeline_version:
         properties[PIPELINE_VERSION_PROPERTY] = pipeline_version
-    return commit_id, properties
+    return properties
+
+
+def _commit_properties(
+    unit: Unit, run_id: str | None, pipeline_version: str | None
+) -> tuple[str, dict[str, str]]:
+    commit_id = uuid.uuid4().hex
+    return commit_id, _properties(commit_id, unit, run_id, pipeline_version)
 
 
 def _result(
@@ -225,6 +333,11 @@ def _result(
         key=lambda snapshot: snapshot.sequence_number or 0,
     )
     current = table.current_snapshot()
+    # PyIceberg retries a commit which lost a race against another unit, on the refreshed
+    # table. The snapshot before the commit is therefore read from the commit itself: the parent
+    # of its first snapshot. A commit without a snapshot changed nothing.
+    if created:
+        previous_snapshot_id = created[0].parent_snapshot_id
     return CommitResult(
         table=".".join(table.name()),
         unit=unit.label,

@@ -11,7 +11,7 @@ Columns that change on every run by design are left out unless they are named ex
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 import duckdb
@@ -37,6 +37,26 @@ class ContentChecksum:
 
     def __str__(self) -> str:
         return f"{self.rows} rows, digest {self.digest}"
+
+
+def combine_checksums(parts: Iterable[ContentChecksum]) -> ContentChecksum:
+    """The checksum of the rows of every part together.
+
+    The digest is a sum over the rows, so the checksum of a whole equals the combination of
+    the checksums of its parts. A day which is built hour by hour gets its checksum without
+    ever being held in memory as a whole.
+    """
+    rows = 0
+    digest = 0
+    columns: tuple[str, ...] | None = None
+    for part in parts:
+        if columns is None:
+            columns = part.columns
+        elif part.columns != columns:
+            raise ValueError("the parts were checksummed over different columns")
+        rows += part.rows
+        digest = (digest + int(part.digest, 16)) % _MODULUS
+    return ContentChecksum(rows=rows, digest=f"{digest:016x}", columns=columns or ())
 
 
 def business_columns(table: pa.Table) -> tuple[str, ...]:

@@ -7,7 +7,13 @@ from datetime import UTC, datetime, timedelta, timezone
 import pyarrow as pa
 import pytest
 
-from gbmi.core.checksum import VOLATILE_COLUMNS, business_columns, content_checksum
+from gbmi.core.checksum import (
+    VOLATILE_COLUMNS,
+    ContentChecksum,
+    business_columns,
+    combine_checksums,
+    content_checksum,
+)
 
 
 def _table(rows: list[dict[str, object]]) -> pa.Table:
@@ -131,3 +137,33 @@ def test_empty_table_has_a_checksum() -> None:
 def test_unknown_column_is_an_error() -> None:
     with pytest.raises(KeyError):
         content_checksum(_table(ROWS), ["id", "missing"])
+
+
+@pytest.mark.parametrize("cut", [0, 1, 2, 3])
+def test_the_checksum_of_a_whole_is_the_combination_of_its_parts(cut: int) -> None:
+    whole = content_checksum(_table(ROWS))
+
+    parts = [content_checksum(_table(ROWS[:cut])), content_checksum(_table(ROWS[cut:]))]
+
+    assert combine_checksums(parts) == whole
+    assert combine_checksums(reversed(parts)) == whole
+
+
+def test_a_part_which_is_counted_twice_changes_the_combination() -> None:
+    part = content_checksum(_table(ROWS))
+
+    twice = combine_checksums([part, part])
+
+    assert twice.rows == 6
+    assert twice == content_checksum(_table(ROWS + ROWS))
+
+
+def test_parts_over_different_columns_do_not_combine() -> None:
+    table = _table(ROWS)
+
+    with pytest.raises(ValueError, match="different columns"):
+        combine_checksums([content_checksum(table), content_checksum(table, ["id"])])
+
+
+def test_no_part_combines_to_no_rows() -> None:
+    assert combine_checksums([]) == ContentChecksum(rows=0, digest="0" * 16, columns=())
