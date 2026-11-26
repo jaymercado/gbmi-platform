@@ -14,12 +14,13 @@ from __future__ import annotations
 import argparse
 import json
 import time
-from datetime import date
+from datetime import UTC, date, datetime
 
 from gbmi.config import get_settings
-from gbmi.core.gdelt import Feed
+from gbmi.core.clock import utc_now
+from gbmi.core.gdelt import Feed, Slot
 from gbmi.logging import configure_logging
-from gbmi.sources.gdelt.index import lines_for_hour, parse_index
+from gbmi.sources.gdelt.index import lines_for_hour, read_master_list
 from gbmi.sources.gdelt.land import Bronze, HttpFetcher, land_file
 
 
@@ -33,7 +34,8 @@ def main() -> None:
     fetcher = HttpFetcher()
     bronze = Bronze(get_settings().lake_uri)
     started = time.perf_counter()
-    index = parse_index(fetcher.index_text())
+    first = Slot(datetime(day.year, day.month, day.day, tzinfo=UTC))
+    index = read_master_list(fetcher, oldest=first, as_of=utc_now())
     landed = [
         land_file(bronze, fetcher, line)
         for hour in range(24)

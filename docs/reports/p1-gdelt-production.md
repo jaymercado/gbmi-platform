@@ -14,7 +14,8 @@ The order follows change C1 of the week 2 plan (§3.5). Every time is UTC. The w
 |---|---|---|---|---|---|
 | 01 | Start: checks, pins, plan in the repository | 2026-11-26 16:09 | 2026-11-26 16:28 | [#4](https://github.com/jaymercado/gbmi-platform/pull/4) | Done. Working time about 10 minutes; the GitHub checks took about 10 minutes |
 | 02 | Operational database: migrations, the schema `ops`, two stacks | 2026-11-26 16:29 | 2026-11-26 16:58 | [#5](https://github.com/jaymercado/gbmi-platform/pull/5) | Done. Working time about 20 minutes; the GitHub checks took about 10 minutes |
-| 03 | Ledger: state machine, calendar, operator commands | 2026-11-26 16:48 | | | In progress |
+| 03 | Ledger: state machine, calendar, operator commands | 2026-11-26 16:48 | 2026-11-26 17:12 | [#6](https://github.com/jaymercado/gbmi-platform/pull/6) | Done. Working time about 12 minutes; the GitHub checks took about 11 minutes |
+| 04 | Ingestion: fixtures, index, verified download, gate G1, reconciliation | 2026-11-26 16:59 | | | In progress |
 
 ## Version pins
 
@@ -50,7 +51,7 @@ On 2026-11-26, before the first work package, one independent review agent (a se
 | R2 | `compose/smoke.sh` built a Compose command without a project, and the Makefile created only `data/lake` | WP-02: the Makefile exports `STACK` and the lake directory of the stack, and creates the directory before a container starts |
 | R3 | The migration runner refuses a changed file, so an edit of an applied file fails only where the file is applied: on the laptop | WP-02: columns which a unit can leave empty are nullable from the first file on; every later change is a new file; the working stack received the migrations as the last step |
 | R4 | `--cov-fail-under` would measure the whole package; pytest fails for a test path which does not exist | WP-02: the gate is a second coverage report over three packages; `tests/ledger` joined `make test`. `tests/contract` joins in WP-05 |
-| R5 | `HttpFetcher.fetch` retries HTTP 429 five times, so an ingest run never sees the first 429 | Open: WP-04 |
+| R5 | `HttpFetcher.fetch` retries HTTP 429 five times, so an ingest run never sees the first 429 | WP-04: a file request is not repeated after HTTP 429; the run goes on with one download at a time and honours `Retry-After`. The two list requests still wait out HTTP 429 |
 | R6 | DuckDB 2.0.1 returns a list with one empty string for an empty field | Open: WP-05 |
 | R7 | PyIceberg 0.12.0 already retries a failed commit four times and raises a second exception type for a conflict on the same unit | Open: WP-06 |
 | R8 | A day build leaves the quarantine files of the hour units of the same day | Open: WP-06 |
@@ -81,3 +82,11 @@ On 2026-11-26, before the first work package, one independent review agent (a se
 | 12 | WP-03 | A function for one slot raises `StaleStateError` when the slot is not in the assumed state. A function for many slots returns the slots which moved | The ingest job and the reconciliation work on sets; a set call which moves a part of the set is normal there |
 | 13 | WP-03 | `gbmi ledger confirm-missing` asks for the option `--state` (`expected`, `listed` or `quarantined`) beside the range and the note | A slot which only waits for its download is not confirmed by accident |
 | 14 | WP-03 | `gbmi.core.clock` is the only module which reads the real clock | Week 2 plan, §3.3: every function takes the time as the argument `as_of` |
+| 15 | WP-04 | The first line of a cut tail of the master list is dropped. The reader of phase P0 trusted the line | A range request can cut a line inside its size. The rest still looks like a line, with a wrong size (`tests/unit/test_gdelt_index.py`) |
+| 16 | WP-04 | A file which fails gate G1 is fetched again in the same run. The third failure quarantines the file and keeps the bytes under `quarantine/<source>/<feed>/dt=…/` | Blueprint §8.3: "fetch again up to three times, then quarantined". A cut transfer is repaired within one run |
+| 17 | WP-04 | An ingest run works as if the clock showed `as_of`: a line of `lastupdate.txt` for a later slot waits for a later run | A run with a controlled clock gives the same result on every day (week 2 plan, §3.3) |
+| 18 | WP-04 | The reconciliation counts an expected slot as absent only when the master list holds a newer slot | The list has not reached a slot which is newer than the newest slot of the list |
+| 19 | WP-04 | After HTTP 429 a run waits at most 600 seconds in total (60 seconds for an answer without `Retry-After`). Slots which are left stay `listed` for the next run | A run every 15 minutes has to end; the ledger keeps the state (week 2 plan, §10) |
+| 20 | WP-04 | `ops.dq_result` gets one row for each file of gate G1, one row for each reconciliation (ledger against bronze, recorded under gate G6) and one row for each overdue report | Blueprint §7.3: one row for each execution of a check. An overdue report with one row for each slot and run would write 96 rows a day for one missing file |
+| 21 | WP-04 | `gbmi.core.failpoint` and `gbmi.quality.results` arrive in WP-04. The week 2 plan lists both under WP-06 | The failpoint before the bronze move and the results of gate G1 belong to the ingest code |
+| 22 | WP-04 | `benchmarks/source_profile/live_ingest_once.py` is the live check of WP-04 as a script: two ingest runs against the GDELT servers in a throwaway database and a scratch lake | The check can be repeated, and benchmark B1 of WP-10 measures the same code path |

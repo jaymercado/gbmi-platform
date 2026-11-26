@@ -247,6 +247,72 @@ def ledger_requeue(
     _print({"requeued": requeued})
 
 
+Source = Annotated[str, typer.Option(help="live (the GDELT servers) or fixture (recorded files).")]
+RunId = Annotated[str | None, typer.Option(envvar="GBMI_RUN_ID")]
+
+
+@gdelt_app.command("ingest")
+def gdelt_ingest(
+    source: Source = "live",
+    as_of: AsOf = None,
+    batch_limit: Annotated[
+        int | None, typer.Option(help="Files of one run at most (default: 200).")
+    ] = None,
+    concurrency: Annotated[
+        int | None, typer.Option(help="Parallel downloads (default: 4).")
+    ] = None,
+    run_id: RunId = None,
+) -> None:
+    """One ingest run: expect, list, download, verify and record the newest GDELT files."""
+    from gbmi.sources.gdelt.tasks import ingest_task
+
+    try:
+        _print(ingest_task(as_of, source, batch_limit, concurrency, run_id))
+    except ValueError as error:
+        raise _fail("gdelt ingest", error) from error
+
+
+@gdelt_app.command("enqueue")
+def gdelt_enqueue(
+    first: FromDay,
+    last: ToDay,
+    source: Source = "live",
+    reserve: Annotated[
+        str | None,
+        typer.Option(
+            help="Claim for the new rows, for example spark_backfill; silver jobs skip them."
+        ),
+    ] = None,
+    as_of: AsOf = None,
+    run_id: RunId = None,
+) -> None:
+    """Create the ledger rows of a range of UTC days from the master list, for a backfill."""
+    from gbmi.sources.gdelt.tasks import enqueue_task
+
+    try:
+        _print(enqueue_task(first, last, source, reserve, as_of, run_id))
+    except ValueError as error:
+        raise _fail("gdelt enqueue", error) from error
+
+
+@gdelt_app.command("reconcile")
+def gdelt_reconcile(
+    source: Source = "live",
+    as_of: AsOf = None,
+    force: Annotated[
+        bool, typer.Option("--force", help="Reconcile also when no reconciliation is due.")
+    ] = False,
+    run_id: RunId = None,
+) -> None:
+    """Reconcile the trailing seven days of the ledger against the master list."""
+    from gbmi.sources.gdelt.tasks import reconcile_task
+
+    try:
+        _print(reconcile_task(as_of, source, force, run_id))
+    except ValueError as error:
+        raise _fail("gdelt reconcile", error) from error
+
+
 @gdelt_app.command("land")
 def gdelt_land(
     hour: HourArgument,

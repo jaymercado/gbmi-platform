@@ -1,4 +1,12 @@
 81069 975f7f000c2774fc12108a1d06d34c7a http://data.gdeltproject.org/gdeltv2/20261125080000.export.CSV.zip
+80526 22fe3f8483c5700de99aba701b3f9432 http://data.gdeltproject.org/gdeltv2/20261125080000.mentions.CSV.zip
+259082 24a93eb01bb466955e7c831a8953f044 http://data.gdeltproject.org/gdeltv2/20261125080000.gkg.csv.zip
 47061 93b152dd0eca74bf2ec82a4697d18451 http://data.gdeltproject.org/gdeltv2/20261125081500.export.CSV.zip
+63095 9a46a052f1ecdf79b9d9f5ac767262ca http://data.gdeltproject.org/gdeltv2/20261125081500.mentions.CSV.zip
+224377 bb57c3f5cad78b9e8134f2756b88fe5c http://data.gdeltproject.org/gdeltv2/20261125081500.gkg.csv.zip
 58856 d9aeb7b4cda9a6c69505e04305ffbb30 http://data.gdeltproject.org/gdeltv2/20261125083000.export.CSV.zip
+71167 faa8000b31dba4f9a856dcfbe1b46e9a http://data.gdeltproject.org/gdeltv2/20261125083000.mentions.CSV.zip
+244128 a94f68f0ec71df4fa88dc9fa321e8627 http://data.gdeltproject.org/gdeltv2/20261125083000.gkg.csv.zip
 76194 ef823dc41a6cd740f4ccdb42cf144b26 http://data.gdeltproject.org/gdeltv2/20261125084500.export.CSV.zip
+73457 3d815841060b9f69455eb00b9fec0581 http://data.gdeltproject.org/gdeltv2/20261125084500.mentions.CSV.zip
+211392 191d5baa3b99461388e500e50ea52dc2 http://data.gdeltproject.org/gdeltv2/20261125084500.gkg.csv.zip
