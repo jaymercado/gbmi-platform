@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Date** | 2026-11-25 |
-| **Status** | **Provisional** — the local backend is proven; the Glue/S3 backend has not been run (see Evidence) |
+| **Status** | **Accepted** on 2026-11-26 — proven on the local backend and on Glue and S3 (see Evidence) |
 | **Sources** | Blueprint §5.4, §5.6, §5.12, §7.1, §7.4, §7.9; week 1 plan WP-06 and WP-07 |
 | **Related** | TD-05, TD-06 (blueprint §6.2); risks R1 and R3; ADR-006 |
 
@@ -56,7 +56,7 @@ Two further constraints shape the choice. The platform must run **offline** — 
 
 - Maintenance is the operator's job. Expiry removes metadata entries only; unreferenced files stay until Athena `VACUUM` removes them on AWS. For the local backend there is no clean-up yet (open item for phase P4).
 - An hourly overwrite inside a day that has already been compacted rewrites that day's file. It is correct; the cost on real GKG days is measured in phase P1.
-- The local backend does not exercise S3 semantics (consistency, permissions, request cost). The blueprint answers this with integration tests against real S3 on a schedule; until an AWS account is connected those tests are skipped.
+- The local backend does not exercise S3 semantics (consistency, permissions, request cost). The blueprint answers this with integration tests against real S3 on a schedule. They ran once, by hand, on 2026-11-26 (`make integration-aws`); they are skipped wherever no AWS credentials are present, and no schedule exists yet.
 - ClickHouse needs three things to read the local lake that its documentation does not mention: `user_files_path` set to the lake mount, `CLICKHOUSE_DO_NOT_CHOWN=1` because that mount is read-only, and for the pinning role `TABLE ENGINE` grants plus `INSERT` on `lake.*`.
 - An Iceberg list that is NULL reads as an empty array in ClickHouse.
 
@@ -79,8 +79,8 @@ Local backend, run on 2026-11-25 with PyIceberg 0.12.0, PyArrow 26.0.1 and Click
 | A filter on `slot_date` reads only that partition's files | `test_q8_slot_date_filter_reads_only_that_partition` | Pass: 3 of 4 files pruned by partition |
 | The whole path works end to end | `make demo`, `tests/e2e/test_demo.py` | Pass: 4,023 rows in silver, in the pinned table, in the mart and in the chart |
 
-**Not run:** SK1 question Q8 (the same tests on Glue and S3) and SK2 question Q6 (ClickHouse reading S3 with short-lived credentials). No AWS account was connected during week 1's first run. Both are parametrised in the suite and run with `GBMI_TEST_AWS=1`.
+**Glue and S3**, run on 2026-11-26 in `us-east-1` with the same versions, from the toolbox container on the laptop (`make integration-aws`): the 13 tests of `test_sk1_pyiceberg.py` (SK1 question Q8) and six tests of `test_sk2_pinned_read.py` (SK2 question Q6: Q1 to Q5 and the `add_files` read) passed. The three stretch tests of SK2 (Q7 and Q8) skip themselves on AWS. `purge_table` left zero-byte directory markers and the files of expired snapshots behind, which matches the consequence about maintenance above.
 
 ## Status
 
-**Provisional.** Decisions 1 to 8 are proven on the local backend. The record becomes *accepted* when Q8 and Q6 pass on AWS; if either fails, the affected decision is reopened (week 1 plan §6).
+**Accepted.** Decisions 1 to 8 are proven on the local backend (2026-11-25) and on Glue and S3 (2026-11-26). The record was provisional until SK1 question Q8 and SK2 question Q6 had passed on AWS.

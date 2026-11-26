@@ -2,7 +2,7 @@
 
 Terraform for the AWS side of the platform (blueprint §9.2, §9.4). Week 1 creates the baseline only: the state bucket and CI identities (`bootstrap/`), and the two buckets, the Glue database and the budget (`envs/prod/`).
 
-> **Status: written and checked offline, not applied.** `make tf-check` passes (format, validate against AWS provider 6.74, tflint, checkov). No `plan` or `apply` has run against an AWS account yet, so the first apply is also the first real test of this code.
+> **Status: applied on 2026-11-26** in `us-east-1`: 13 resources in `bootstrap/` and 16 in `envs/prod/`. `make plan` reports no changes for both configurations, and `make tf-check` passes (format, validate against AWS provider 6.74, tflint, checkov).
 
 ```text
 infra/terraform/
@@ -24,16 +24,25 @@ make tf-check   # terraform fmt, validate, tflint, checkov
 
 ## Before the first apply
 
-1. **AWS access.** A CLI profile with short-lived credentials (blueprint §5.9). Permission sets need an *organization* instance of IAM Identity Center; enabling it creates an AWS Organization, and on a free-plan account that ends the free credits. Decide that knowingly.
+1. **AWS access.** A CLI profile with short-lived credentials (blueprint §5.9). This project signs in as the root user of the account with `aws login` (week 1 plan, D13): the profile `gbmi-login` holds the sign-in, and the profile `gbmi` hands its credentials to Terraform and to every other program. The root user has MFA and no access key.
 2. **The repository has to exist on GitHub first.** Repositories created after 15 July 2026 put the owner id and the repository id into the OIDC subject, and the CI roles trust exactly that subject.
 3. **Local values.** Copy `local.env.example` to `local.env` (git-ignored) and fill it in. Look the ids up with `gh api repos/OWNER/gbmi-platform --jq '{owner_id: .owner.id, repository_id: .id}'`.
 4. **Existing OIDC provider.** An account holds one provider per issuer. If `aws iam list-open-id-connect-providers` already shows `token.actions.githubusercontent.com`, apply the bootstrap with `-var create_github_oidc_provider=false`.
 
-Every command below assumes credentials in the environment:
+The two profiles are created once:
 
 ```bash
-aws sso login --profile gbmi
-eval "$(aws configure export-credentials --profile gbmi --format env)"
+aws configure set region us-east-1 --profile gbmi-login
+aws login --remote --profile gbmi-login   # open the printed address in a browser where the root user is signed in
+aws configure set credential_process \
+    "aws configure export-credentials --profile gbmi-login --format process" --profile gbmi
+aws configure set region us-east-1 --profile gbmi
+```
+
+A sign-in lasts 12 hours at the latest; after that, `aws login --remote --profile gbmi-login` again. Every command below assumes:
+
+```bash
+export AWS_PROFILE=gbmi
 export AWS_DEFAULT_REGION=us-east-1
 set -a; . infra/terraform/local.env; set +a
 ```

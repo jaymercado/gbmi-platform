@@ -108,7 +108,7 @@ The blueprint leaves these open, and week 1 cannot start without them.
 | Tracer mart | `fct_gdelt_event_daily` (BP §7.6), partition-replaced by month | The tracer then exercises the incremental contract, not a throwaway model |
 | Lake commit primitive | `overwrite` with an explicit unit filter, for the hour and for the day alike. `dynamic_partition_overwrite` is not used | The unit comes from the task, not from the rows; the alternative infers partitions from the data and does nothing on empty input (F5), so it cannot empty a unit |
 | Form of a spike | An integration test that stays in the suite, plus a section of the spike report written in the same work package. A rejected option is kept as a strict expected failure, so a later version that fixes it is noticed | Evidence that keeps guarding the decision |
-| Laptop access to AWS | Short-lived credentials exported from the SSO profile into environment variables (`aws configure export-credentials --profile gbmi --format env`), with `AWS_DEFAULT_REGION=us-east-1` | F6. Environment credentials behave the same for PyIceberg, boto3 and ClickHouse, and nothing long-lived is stored |
+| Laptop access to AWS | Short-lived credentials from `aws login` (D13). Terraform and the AWS CLI read them through the profile `gbmi`; the AWS test halves get them as environment variables (`aws configure export-credentials --profile gbmi`), with `AWS_DEFAULT_REGION=us-east-1` | F6. Environment credentials behave the same for PyIceberg, boto3 and ClickHouse, and nothing long-lived is stored |
 | Glue database location | `gbmi_prod_silver` is created with location `s3://<lake>/warehouse/silver.db` | F6; gives the BP §7.1 layout |
 | Namespace naming | `silver` on the local catalog; `gbmi_<env>_silver` on Glue; resolved in the catalog factory | BP §7.1; application code does not branch on environment (BP §5.1) |
 | AWS test namespace | Glue database `gbmi_ci_silver` at `s3://<lake>/ci/warehouse/silver.db`, created and dropped by a test fixture shared by SK1 and SK2 | BP §9.5 reserves the `ci/` prefix; production names stay untouched |
@@ -134,6 +134,7 @@ The blueprint leaves these open, and week 1 cannot start without them.
 | D10 | §6.2 (TD-09) and §10 commit Metabase dashboard exports | A provisioning script is the committed definition | Metabase OSS is assumed to have no file export of dashboards **[A]** |
 | D11 | §16.4: a phase does not start until the previous one's acceptance criteria are met | P1 may start while exit-gate row 10 is still open, if elapsed time is the only thing missing | Labelling days are not effort |
 | D12 | §11.2 lists "budget alert email received" among the acceptance criteria of P0 | Since 2026-11-26 an alert email is not a condition of P0 or of the tag `p0`. The budget and its notifications stay (WP-03). The forced alert test stays available as an optional procedure (`infra/terraform/README.md`, §3) | Decision of the owner. The test costs up to a day of waiting for one email. The budget notifies a verified address, and the zero-spend budget (H2) reports the first real cost, so the first real alert gives the same proof |
+| D13 | §16.7 step 2 sets up SSO with multi-factor authentication; H1 planned IAM Identity Center with one user | Since 2026-11-26 the root user of the AWS account does all AWS work: MFA on the root user, no access key, and short-lived credentials from `aws login` (profile `gbmi-login`, handed on by the process profile `gbmi`). There is no IAM Identity Center, no organization and no second user | Decision of the owner, for an account with one person: fewer parts to set up and to keep. AWS advises against the root user for everyday tasks; a second user can be added later, because every resource belongs to the account and not to a user. Credentials last 15 minutes and are renewed for up to 12 hours, so the AWS test halves run one test at a time (`make integration-aws`) |
 
 ---
 
@@ -177,14 +178,14 @@ The arm64 variants of the ClickHouse, PostgreSQL and Metabase images were not in
 
 | # | Action | When | Check |
 |---|---|---|---|
-| H1 | AWS access: MFA on the root user; IAM Identity Center with one user, the `AdministratorAccess` permission set and MFA; CLI profile `gbmi` (`aws configure sso`, region `us-east-1`) | WP-01 (may slip — §10) | `aws sts get-caller-identity --profile gbmi` |
+| H1 | AWS access (as done on 2026-11-26, D13): an AWS account; MFA on the root user; `aws login --remote --profile gbmi-login` as the root user; the process profile `gbmi`, region `us-east-1`. *Planned before D13:* IAM Identity Center with one user and the `AdministratorAccess` permission set | WP-01 (may slip — §10) | `aws sts get-caller-identity --profile gbmi` |
 | H2 | In the Billing console, create a budget from the "Zero spend budget" template with the alert email — before any resource exists (BP §16.7 step 2) | Before WP-03 | Budget listed |
 | H3 | GitHub: `gh auth login`; create the public repository `gbmi-platform`; after the first green run, protect `main` and create environment `prod` with a required reviewer | WP-01, WP-02 | `gh repo view` |
 | H4 | Docker Desktop: start it and set memory to 9 GB (BP §9.1) | WP-01 | `docker info` |
 | H5 | Supply, outside the repository: the alert email (`TF_VAR_alert_email`), the repository slug (`TF_VAR_github_repository`) and a git identity (a GitHub no-reply address suits a public repository) | WP-01, WP-03 | — |
 | H6 | *Removed on 2026-11-26 with exit gate row 4 (D12).* Was: confirm that the budget alert email arrived and note the time | — | — |
 | H7 | Label about 20 organisation strings a day | From WP-04 | Exit gate row 10 |
-| H8 | Approve `aws sso login --profile gbmi` in the browser whenever the session has expired | WP-03; the AWS halves of WP-06 and WP-07; the clean-up in WP-11 | `aws sts get-caller-identity --profile gbmi` |
+| H8 | Run `aws login --remote --profile gbmi-login` whenever the session has expired (after 12 hours at the latest; D13) | WP-03; the AWS halves of WP-06 and WP-07; the clean-up in WP-11 | `aws sts get-caller-identity --profile gbmi` |
 
 Everything else in this plan can be executed without him.
 
@@ -269,7 +270,7 @@ Rules for the sequence:
    - `lake_s3` — buckets `gbmi-prod-lake-<account>` and `gbmi-prod-ops-<account>`: versioning, server-side encryption, public access blocked, a TLS-only bucket policy, `prevent_destroy`. Lifecycle: `quarantine/` expires at 180 days, non-current versions at 30 days, `athena-results/` at 7 days, `tmp/` at 1 day. The Glacier rule for GKG files is defined but disabled until P5 (BP §7.9).
    - `glue_catalog` — database `gbmi_prod_silver` with the location given in §3.3.
    - `budgets` — one monthly cost budget whose amount is the variable `monthly_budget_usd` (default 30), with email notifications at 50, 80 and 100% of actual spend. The stop action is P4 work.
-3. `terraform apply` in `envs/prod` with the SSO profile (H8).
+3. `terraform apply` in `envs/prod` with the profile `gbmi` (H8).
 4. **Budget alert test** (optional since 2026-11-26, D12; it was exit gate row 4). Put `monthly_budget_usd = 0.02` in the git-ignored `budget-test.auto.tfvars` and apply. Then create real spend of about USD 0.03 **[E]**: upload 5,000 empty objects under `s3://gbmi-prod-ops-<account>/tmp/budget-test/` and delete them. Billing data lags by hours, so the email is expected within about a day **[A]**; work continues meanwhile. When it arrives, delete the file and apply again. The hand-made zero-spend budget (H2) should fire on the same spend and is a second confirmation.
 5. `.github/workflows/terraform.yml`: `fmt -check`, `validate`, tflint and checkov. A committed `.checkov.yaml` lists each skipped check with its reason — at this budget there is no KMS key, replication or access logging. `make plan` runs the plan locally.
 
@@ -461,7 +462,7 @@ Directories of BP §10 that have no content yet (`drills/`, `docs/runbooks/`, `s
 | Tooling | `make setup lint test` | Clean on a fresh clone |
 | Stack | `make up && make smoke` | All services healthy; every smoke check passes |
 | Spikes, local | `make integration` | SK1 and SK2 tests pass; rejected options show as expected failures |
-| Spikes, AWS | `aws sso login --profile gbmi`, then `eval "$(aws configure export-credentials --profile gbmi --format env)" && GBMI_TEST_AWS=1 make integration` | The AWS halves pass. After WP-11, `gbmi_ci_silver` is gone and no current objects remain under `ci/` |
+| Spikes, AWS | `aws login --remote --profile gbmi-login`, then `GBMI_TEST_AWS_LAKE_BUCKET=<lake bucket> make integration-aws` (D13) | The AWS halves pass. After WP-11, `gbmi_ci_silver` is gone and no current objects remain under `ci/` |
 | Incremental contract | The SK3 suite, in the `dbt` workflow or locally against the Compose ClickHouse | T1–T6 pass for the chosen strategy, by day and by month |
 | End to end | `make demo`, twice | Passes; the second run leaves checksums unchanged; the dashboard shows one chart and the attribution |
 | From nothing | `make reset && make demo` | Passes in under ten minutes **[E]** (BP §15.3) |

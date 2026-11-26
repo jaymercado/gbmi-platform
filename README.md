@@ -4,7 +4,7 @@ An entity-resolved company-intelligence lakehouse: it ingests GDELT 2.0 news met
 
 ## Status
 
-**Phase P0 — walking skeleton and de-risking — works on a laptop.** One hour of GDELT Events flows end to end with one command:
+**Phase P0 — walking skeleton and de-risking — is done except for its labelling task.** One hour of GDELT Events flows end to end with one command:
 
 ```text
 GDELT files → bronze (verified zips) → silver (Apache Iceberg) → ClickHouse (pinned read)
@@ -17,7 +17,8 @@ GDELT files → bronze (verified zips) → silver (Apache Iceberg) → ClickHous
 | What it proves | 4,023 raw lines = 4,023 rows in silver = 4,023 events in the mart = the chart's total; a second run changes nothing |
 | Decided by spikes | How PyIceberg commits a unit, how ClickHouse reads one exact table version, how dbt replaces a partition, and that Cosmos runs dbt on Airflow 3.4 — see the [spike report](docs/reports/p0-spikes.md) |
 | Measured | [Memory](docs/reports/p0-memory.md): about 2 GB idle, 4 GB during the demo; a whole day of the largest feed builds in 7 seconds with a 0.5 GB peak |
-| Not done yet | Nothing has run on AWS or in GitHub Actions. The Terraform code is checked offline only, and the four workflows have been rehearsed on Linux but have never run — see the [status report](docs/reports/p0-walking-skeleton.md) |
+| On GitHub and AWS | The four workflows are green on `main`. The Terraform baseline is applied in `us-east-1`, and the spike tests pass on Glue and S3 — see the [status report](docs/reports/p0-walking-skeleton.md) |
+| Not done yet | 100 labelled organisation strings, the last condition of P0. Nothing is deployed: there is no host, no schedule and no monitoring |
 
 Nothing here is production data yet: there is no ledger, no SEC ingestion and no entity resolution. Those are phases P1 to P3 of the [blueprint](GLOBAL_BUSINESS_MARKET_INTELLIGENCE_PROJECT_BLUEPRINT.md).
 
@@ -44,6 +45,7 @@ Other commands (`make help` lists them all):
 make lint test      # ruff, mypy, sqlfluff, lock files; unit and transformation tests
 make up smoke       # start the core stack and check it
 make integration    # the three spikes, against the running stack
+make integration-aws  # the Glue/S3 halves of the spikes; needs an AWS sign-in (infra/terraform/README.md)
 make tf-check       # Terraform format, validate, tflint and checkov, with no AWS access
 ```
 
@@ -58,7 +60,7 @@ To run the pipeline on live data instead of the fixtures, trigger the DAG `trace
 | Warehouse | ClickHouse reads a table pinned to one Iceberg metadata file, so a build never sees a table that is being written | `src/gbmi/warehouse/` |
 | Marts | dbt models; large facts are rebuilt one partition at a time with the `partition_replace` materialisation | `dbt/` |
 | Orchestration | Airflow 3.4 with LocalExecutor; one image, three isolated Python environments (Airflow, `gbmi`, dbt) | `dags/`, `docker/airflow/`, `compose/` |
-| Infrastructure | Terraform for the AWS baseline (not applied yet) | `infra/terraform/` |
+| Infrastructure | Terraform for the AWS baseline: state, CI identities, two buckets, the Glue database and a budget | `infra/terraform/` |
 
 Decisions and their evidence are in [docs/adr](docs/adr/).
 
@@ -66,7 +68,7 @@ Decisions and their evidence are in [docs/adr](docs/adr/).
 
 - **One feed, one hour.** Only GDELT Events is parsed. Mentions, the Global Knowledge Graph and all SEC data come in phases P1 and P2.
 - **No ledger.** A missing source file is simply absent; tracking every expected slot through a state machine is phase P1.
-- **Local backend only.** The lake is a directory and the catalog is SQLite. The same code is written for S3 and Glue, but that half of the tests has not been run.
+- **The demo runs on the local backend.** The lake is a directory and the catalog is SQLite. The same code passes its tests on S3 and Glue, but no pipeline runs there yet.
 - **No deployment.** There is no host, no schedule and no monitoring yet.
 
 ## Data sources and attribution
