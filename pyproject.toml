@@ -30,6 +30,7 @@ gbmi = "gbmi.cli:app"
 dev = [
     "pytest>=9.2,<10",
     "pytest-cov>=7.1",
+    "hypothesis>=6.170,<7",
     "ruff>=0.17.6,<0.18",
     "mypy>=2.4,<3",
     "pre-commit>=4.7,<5",
