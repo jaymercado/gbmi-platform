@@ -18,7 +18,7 @@ The rows are those of the week 1 plan, §2.
 | 1 | `make demo` passes on the laptop and in CI | **Half** | Laptop: passes from nothing in 99 seconds, from a fresh clone, and in a Linux rehearsal of the `e2e` workflow (see Verification). CI: the workflow has never run, because there is no remote |
 | 2 | The chart's total equals source rows minus quarantined rows minus duplicate rows | **True** | `tests/e2e/test_demo.py::test_chart_total_equals_raw_minus_quarantined_minus_duplicates`. The Metabase card returns 4,023; the test counts 4,023 lines, 0 invalid rows and 0 repeated keys straight from the fixture zips, with code that shares nothing with the pipeline. Both subtracted terms are zero for this hour; the non-zero paths are tested with constructed rows in `tests/transforms/test_gdelt_event_parse.py` |
 | 3 | Each spike has a recorded pass or fallback | **Half** | Local: SK1 passed, SK2 passed, SK3 A took its fallback (ADR-006), SK3 B passed — [`p0-spikes.md`](p0-spikes.md); the tests stay in the suite. Not run: SK1 Q8 (Glue and S3) and SK2 Q6 (S3) |
-| 4 | A budget alert email has been received | **Open** | No AWS account was connected. The budget module is written; nothing exists in AWS |
+| 4 | ~~A budget alert email has been received~~ | **Removed** | Removed from the gate on 2026-11-26 (week 1 plan, D12). See "Decision of 2026-11-26" below |
 | 5 | CI is green | **Open** | No remote. The four workflows pass actionlint, and their commands pass when replayed on Linux |
 | 6 | The Terraform baseline is applied | **Open** | Not applied. `make tf-check` passes offline |
 | 7 | Memory is measured | **True** | [`p0-memory.md`](p0-memory.md): idle, the demo and the GKG day probe, beside the blueprint's estimates |
@@ -26,15 +26,26 @@ The rows are those of the week 1 plan, §2.
 | 9 | Version pins are re-verified on the start date | **True** | The pin table below. No pin moved |
 | 10 | Labelling has started | **Open** | The sheet exists with 200 strings; none is labelled yet. This row is Jay's: about 20 strings a day in `config/labelling/gold_sheet_v0.csv` |
 
+### Decision of 2026-11-26: an alert email is not a condition of P0
+
+Jay removed exit-gate row 4 on 2026-11-26. The forced alert test (lower the limit, create about USD 0.03 of spend, wait up to a day for one email) is no longer needed for P0 or for the tag `p0`.
+
+- **What stays:** the budget `gbmi-prod-monthly` with notifications at 50, 80 and 100% of USD 30, and the hand-made zero-spend budget.
+- **What the decision gives up:** proof, before P1, that an alert email is delivered. The first real alert gives the same proof later.
+- **What still needs one look:** the status of the alert address on the budget's page in the Billing console. AWS Budgets sends nothing to an unverified address.
+- **Where the test went:** the procedure is optional and stays in [`infra/terraform/README.md`](../../infra/terraform/README.md), §3.
+
+The blueprint (§11.2) lists the alert email among the acceptance criteria of P0. The week 1 plan records the difference as D12.
+
 ## Closing the open rows
 
-Rows 1, 3, 4, 5 and 6 close in one further run, once the things only Jay can do are done.
+Rows 1, 3, 5 and 6 close in one further run, once the things only Jay can do are done.
 
 | Jay does | Notes |
 |---|---|
 | **GitHub:** `gh auth login` with the `workflow` scope, and create the repository `gbmi-platform` | The repository has to exist before the CI roles are applied: repositories created after 15 July 2026 put the owner id and the repository id into the OIDC subject. Decide first whether the two planning documents are published as they are — the week 1 plan contains his name and a home-folder path — and whether commits should carry a GitHub no-reply address; all history is still local, so both can be changed |
 | **AWS:** MFA on the root user; IAM Identity Center with one user and the `AdministratorAccess` permission set; CLI profile `gbmi` in `us-east-1` | Permission sets need an *organization* instance of Identity Center. Enabling it creates an AWS Organization, and on a free-plan account that ends the free credits. An 8-hour session avoids re-approving the login during the run |
-| **Budget email:** follow the verification link AWS sends to the alert address, then confirm when the alert arrives | The link lasts 12 hours and needs a console sign-in. Without it no alert is ever sent |
+| **Budget email:** follow the verification link AWS sends to the alert address | The link lasts 12 hours and needs a console sign-in. Without it no alert is ever sent |
 | **Docker Desktop:** raise memory from 8 GB to 9 GB | Nothing ran short at 8 GB; the limits add up to 9.0 GB with Metabase |
 | **Labelling:** about 20 strings a day | Independent of everything else |
 
@@ -42,10 +53,9 @@ Then, in this order (the commands are in [`infra/terraform/README.md`](../../inf
 
 1. Push `main`; `ci`, `dbt`, `e2e` and `terraform` run for the first time. Fix whatever the rehearsal could not show.
 2. Apply `bootstrap`, then `envs/prod`; `make plan` reports no changes (row 6).
-3. Lower the budget for the test, create about USD 0.03 of spend with 5,000 LIST requests, and wait for the email — up to a day, and not within a day of month end (row 4).
-4. `GBMI_TEST_AWS=1 make integration`: SK1 Q8, then SK2 Q6 (row 3). A failure reopens the decision in ADR-004; a pass makes it *accepted*.
-5. CI green on `main` (rows 1 and 5); protect `main` with the four checks.
-6. Drop `gbmi_ci_silver` and the objects under `ci/`, record the time of the alert here, and tag `p0`.
+3. `GBMI_TEST_AWS=1 make integration`: SK1 Q8, then SK2 Q6 (row 3). A failure reopens the decision in ADR-004; a pass makes it *accepted*.
+4. CI green on `main` (rows 1 and 5); protect `main` with the four checks.
+5. Drop `gbmi_ci_silver` and the objects under `ci/`, and tag `p0`.
 
 Three statements in this section come from current AWS and GitHub documentation and have not been exercised: the Identity Center instance type, the recipient verification, and the format of the OIDC subject. Each is confirmed when it is first used.
 
@@ -91,7 +101,7 @@ Run on 2026-11-25 against local commit `a19dee0`, in three places: the working c
 | Spikes, AWS | `GBMI_TEST_AWS=1 make integration` | **Not run** |
 | CI | The four workflows on `main` | **Not run** |
 | Infrastructure | `make plan` | **Not run** |
-| Budget | Inbox; `aws budgets describe-budgets` | **Not run** |
+| Budget | `aws budgets describe-budgets` | **Not run** |
 
 ### The Linux rehearsal
 
@@ -210,6 +220,6 @@ The blueprint was not edited. These are the places where a measurement or a test
 
 ## Hand-off to week 2
 
-By the plan's own rule (§11), P1 starts when the gate holds, or when rows 4 and 10 are the only ones open. Rows 1, 3, 5 and 6 are open as well, so **P1 does not start yet**. The recommendation is to connect AWS and GitHub first: it is one session plus the wait for the budget email, and the two spike halves that remain can still reopen decisions in ADR-004 that P1's writers are built on.
+By the plan's own rule (§11), P1 starts when the gate holds, or when row 10 is the only one open. Rows 1, 3, 5 and 6 are open as well, so **P1 does not start yet**. The recommendation is to connect AWS and GitHub first: it is one session, and the two spike halves that remain can still reopen decisions in ADR-004 that P1's writers are built on.
 
 When P1 starts, it inherits the catalog factory and the commit helper (`gbmi.lake`), the pin step (`gbmi.warehouse.pin`), the `partition_replace` materialisation, the Compose stack, the fixtures and the `export` schema. It should read SK1 questions Q2 and Q5 and the conclusions of the memory report first.

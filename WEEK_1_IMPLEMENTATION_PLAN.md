@@ -26,7 +26,7 @@ The blueprint is finished and nothing has been built. Week 1 (phase P0) does two
 
 It also lays the baseline every later phase assumes: repository, tooling, CI, the Compose stack, Terraform state, the lake buckets and a spend limit.
 
-**Intended outcome:** `make demo` passes locally and in CI on committed fixtures; the Terraform baseline is applied and a budget alert has been received; each spike has a decision backed by a test that stays in the suite; memory use is measured.
+**Intended outcome:** `make demo` passes locally and in CI on committed fixtures; the Terraform baseline is applied, with a budget that notifies a verified address; each spike has a decision backed by a test that stays in the suite; memory use is measured.
 
 Preparing this plan turned up eight facts that shape how the week has to be run. They are why the plan is more specific than BP §11.2. All are **[V]**.
 
@@ -47,14 +47,14 @@ Nothing exists to reuse: the project folder holds only the blueprint and the one
 
 ## 2. Exit gate
 
-The week is done when every row is true. Rows 1–4 are the blueprint's acceptance criteria for P0; rows 5–10 are its deliverables and the week-1 steps of BP §16.7. Rows 4 and 10 depend on elapsed days, not effort; §11 says what may start while they are open.
+The week is done when every row is true. Rows 1–3 are the blueprint's acceptance criteria for P0; rows 5–10 are its deliverables and the week-1 steps of BP §16.7. Row 4, the blueprint's fourth criterion, was removed on 2026-11-26 (D12). Row 10 depends on elapsed days, not effort; §11 says what may start while row 10 is open.
 
 | # | Criterion | Evidence |
 |---|---|---|
 | 1 | `make demo` passes on the laptop and in CI | Local run log; `e2e` green on `main` after the last merge |
 | 2 | The chart's total equals source rows minus quarantined rows minus duplicate rows | `tests/e2e/test_demo.py`: the Metabase card result equals a count computed independently from the fixture zips; duplicates are counted, not assumed to be zero |
 | 3 | Each spike has a recorded pass or fallback | `docs/reports/p0-spikes.md`; the spike tests stay in the suite; a fallback is also written into its decision record |
-| 4 | A budget alert email has been received | Date and time noted in `docs/reports/p0-walking-skeleton.md` |
+| 4 | *Removed on 2026-11-26 (D12).* Was: a budget alert email has been received | — |
 | 5 | CI is green | Workflows `ci`, `dbt`, `e2e` and `terraform` on `main` |
 | 6 | The Terraform baseline is applied | `terraform plan` reports no changes for `bootstrap` and `envs/prod`, run locally |
 | 7 | Memory is measured | `docs/reports/p0-memory.md`: the BP §9.1 table with measured laptop values for idle, the tracer run and the GKG probe — or the probe recorded as moved to P1 |
@@ -76,7 +76,7 @@ The week is done when every row is true. Rows 1–4 are the blueprint's acceptan
 | (4) Spike SK2 — ClickHouse pinned read | WP-07 |
 | (5) Spike SK3 — partition replace; Cosmos | WP-08 (and the image build in WP-05) |
 | (6) Tracer DAG: four slots → bronze → silver → ClickHouse → one mart → one chart | WP-09 |
-| (7) Terraform bootstrap, buckets, Glue database, budget with test alert | WP-03 |
+| (7) Terraform bootstrap, buckets, Glue database, budget (the test alert is optional, D12) | WP-03 |
 | (8) Draft ADR-001 and ADR-004; record spike outcomes | WP-02 (ADR-001), WP-06 to WP-08, WP-11 |
 | §16.7 steps 2, 10 and 11 — tools and accounts, labelling, pin check | WP-01, WP-04 |
 
@@ -132,7 +132,8 @@ The blueprint leaves these open, and week 1 cannot start without them.
 | D8 | §5.6 and §8.4 expect one Iceberg snapshot per overwrite | One catalog commit, up to two snapshots. ADR-004 records the consequences: a rollback goes to the snapshot before the commit, expiry counts commits, and `_silver_snapshot_id` is the commit's last snapshot | F5 |
 | D9 | §11.2: the chart's row count equals source rows minus quarantined rows | Minus duplicate rows as well, each term counted | Silver deduplicates on the logical key (BP §8.4) |
 | D10 | §6.2 (TD-09) and §10 commit Metabase dashboard exports | A provisioning script is the committed definition | Metabase OSS is assumed to have no file export of dashboards **[A]** |
-| D11 | §16.4: a phase does not start until the previous one's acceptance criteria are met | P1 may start while exit-gate row 4 or row 10 is still open, if elapsed time is the only thing missing | Billing lag and labelling days are not effort |
+| D11 | §16.4: a phase does not start until the previous one's acceptance criteria are met | P1 may start while exit-gate row 10 is still open, if elapsed time is the only thing missing | Labelling days are not effort |
+| D12 | §11.2 lists "budget alert email received" among the acceptance criteria of P0 | Since 2026-11-26 an alert email is not a condition of P0 or of the tag `p0`. The budget and its notifications stay (WP-03). The forced alert test stays available as an optional procedure (`infra/terraform/README.md`, §3) | Decision of the owner. The test costs up to a day of waiting for one email. The budget notifies a verified address, and the zero-spend budget (H2) reports the first real cost, so the first real alert gives the same proof |
 
 ---
 
@@ -181,7 +182,7 @@ The arm64 variants of the ClickHouse, PostgreSQL and Metabase images were not in
 | H3 | GitHub: `gh auth login`; create the public repository `gbmi-platform`; after the first green run, protect `main` and create environment `prod` with a required reviewer | WP-01, WP-02 | `gh repo view` |
 | H4 | Docker Desktop: start it and set memory to 9 GB (BP §9.1) | WP-01 | `docker info` |
 | H5 | Supply, outside the repository: the alert email (`TF_VAR_alert_email`), the repository slug (`TF_VAR_github_repository`) and a git identity (a GitHub no-reply address suits a public repository) | WP-01, WP-03 | — |
-| H6 | Confirm that the budget alert email arrived and note the time | After WP-03 | Exit gate row 4 |
+| H6 | *Removed on 2026-11-26 with exit gate row 4 (D12).* Was: confirm that the budget alert email arrived and note the time | — | — |
 | H7 | Label about 20 organisation strings a day | From WP-04 | Exit gate row 10 |
 | H8 | Approve `aws sso login --profile gbmi` in the browser whenever the session has expired | WP-03; the AWS halves of WP-06 and WP-07; the clean-up in WP-11 | `aws sts get-caller-identity --profile gbmi` |
 
@@ -195,7 +196,7 @@ Everything else in this plan can be executed without him.
 |---|---|---|---|---|
 | 1 | WP-01 Preflight and accounts | 1.5 | H1–H5 | Working toolchain; AWS and GitHub access |
 | 2 | WP-02 Repository, tooling, first CI, ADR-001 | 4 | WP-01 | Skeleton, locks, hooks, `ci` green |
-| 3 | WP-03 Terraform baseline and budget alert | 4.5 | WP-01, WP-02 | State, buckets, Glue database, budget; alert in flight |
+| 3 | WP-03 Terraform baseline and budget alert | 4.5 | WP-01, WP-02 | State, buckets, Glue database, budget |
 | 4 | WP-04 Labelling sheet | 1 | WP-02 | Sheet; daily labelling begins |
 | 5 | WP-05 Images and Compose core profile | 5 | WP-02 | Stack up; idle memory |
 | 6 | WP-06 Spike SK1 — PyIceberg | 3.5 | WP-05; WP-03 for the AWS half | Lake contract decision |
@@ -261,7 +262,7 @@ Rules for the sequence:
 
 ### WP-03 — Terraform baseline and budget alert (4.5 h)
 
-**Goal.** State, CI identity, the two buckets, the Glue database and the budget exist as code (BP §9.2, §9.4), and a real alert email is on its way.
+**Goal.** State, CI identity, the two buckets, the Glue database and the budget exist as code (BP §9.2, §9.4).
 
 1. `infra/terraform/bootstrap/`, applied by hand (BP §9.4): the state bucket `gbmi-tfstate-<account>` (versioned, encrypted, public access blocked, `prevent_destroy`); the GitHub OIDC provider; role `gbmi-ci-plan` (trusted for this repository's pull requests; read-only plus state access) and role `gbmi-ci-deploy` (trusted for environment `prod`; state access only until P2). Apply with local state, then add the S3 backend with `use_lockfile = true` and run `terraform init -migrate-state -backend-config=backend.hcl`.
 2. Modules `lake_s3`, `glue_catalog` and `budgets`, composed in `envs/prod` (S3 backend, provider `aws ~> 6.74`, default tags `project=gbmi` and `env=prod`):
@@ -269,12 +270,12 @@ Rules for the sequence:
    - `glue_catalog` — database `gbmi_prod_silver` with the location given in §3.3.
    - `budgets` — one monthly cost budget whose amount is the variable `monthly_budget_usd` (default 30), with email notifications at 50, 80 and 100% of actual spend. The stop action is P4 work.
 3. `terraform apply` in `envs/prod` with the SSO profile (H8).
-4. **Budget alert test** (exit gate row 4). Put `monthly_budget_usd = 0.02` in the git-ignored `budget-test.auto.tfvars` and apply. Then create real spend of about USD 0.03 **[E]**: upload 5,000 empty objects under `s3://gbmi-prod-ops-<account>/tmp/budget-test/` and delete them. Billing data lags by hours, so the email is expected within about a day **[A]**; work continues meanwhile. When it arrives (H6), delete the file and apply again. The hand-made zero-spend budget (H2) should fire on the same spend and is a second confirmation.
+4. **Budget alert test** (optional since 2026-11-26, D12; it was exit gate row 4). Put `monthly_budget_usd = 0.02` in the git-ignored `budget-test.auto.tfvars` and apply. Then create real spend of about USD 0.03 **[E]**: upload 5,000 empty objects under `s3://gbmi-prod-ops-<account>/tmp/budget-test/` and delete them. Billing data lags by hours, so the email is expected within about a day **[A]**; work continues meanwhile. When it arrives, delete the file and apply again. The hand-made zero-spend budget (H2) should fire on the same spend and is a second confirmation.
 5. `.github/workflows/terraform.yml`: `fmt -check`, `validate`, tflint and checkov. A committed `.checkov.yaml` lists each skipped check with its reason — at this budget there is no KMS key, replication or access logging. `make plan` runs the plan locally.
 
-**Done when.** Both configurations plan clean locally; `aws s3 ls`, `aws glue get-database --name gbmi_prod_silver` and `aws budgets describe-budgets` show the resources; the `terraform` workflow is green; the budget test is started and its time noted.
+**Done when.** Both configurations plan clean locally; `aws s3 ls`, `aws glue get-database --name gbmi_prod_silver` and `aws budgets describe-budgets` show the resources; the `terraform` workflow is green.
 
-**If it fails.** If no alert has arrived 48 hours after the spend, compare the budget's actual amount in the console with its threshold and leave the test amount in place. Row 4 stays open (§11).
+**If it fails.** Only when the optional alert test is run: if no alert has arrived 48 hours after the spend, compare the budget's actual amount in the console with its threshold and leave the test amount in place.
 
 ### WP-04 — Labelling sheet (1 h)
 
@@ -411,7 +412,7 @@ Each test runs for a model partitioned by day (`slot_date`) and for one partitio
 
 1. `docs/adr/004-iceberg-glue-local-backend.md` with SK1 and SK2 as its evidence, including the consequences listed in D8. A decision without evidence is marked provisional (BP §15.4). Drafts of ADR-006 and ADR-010 exist only where SK2 or SK3 took a fallback (BP §16.4).
 2. `docs/reports/p0-spikes.md`: assemble the sections written during the spikes — for each question the result, the evidence (test name and versions), the decision and any follow-up.
-3. `docs/reports/p0-walking-skeleton.md`: the exit gate table with links to evidence; the pin table; rows, bytes and durations of the demo; the time of the budget alert; open items.
+3. `docs/reports/p0-walking-skeleton.md`: the exit gate table with links to evidence; the pin table; rows, bytes and durations of the demo; open items.
 4. README: what works now, how to run `make demo`, the limits of the week-1 slice, attribution.
 5. Drop `gbmi_ci_silver` and the current objects under `ci/` (H8); confirm `terraform plan` is clean; tag the commit `p0`.
 
@@ -466,7 +467,7 @@ Directories of BP §10 that have no content yet (`drills/`, `docs/runbooks/`, `s
 | From nothing | `make reset && make demo` | Passes in under ten minutes **[E]** (BP §15.3) |
 | CI | Merge the last pull request | `ci`, `dbt`, `e2e` and `terraform` are green on `main` |
 | Infrastructure | `make plan` | No changes |
-| Budget | Inbox; `aws budgets describe-budgets` | Alert received; the default amount is restored |
+| Budget | `aws budgets describe-budgets` | `gbmi-prod-monthly` is listed with the default amount |
 
 ---
 
@@ -475,7 +476,7 @@ Directories of BP §10 that have no content yet (`drills/`, `docs/runbooks/`, `s
 | Risk | Signal | Response |
 |---|---|---|
 | A spike overruns | Its time box passes without a pass | Take the documented fallback and record it; where the package names none, stop and escalate (BP §16.4) |
-| AWS access is not ready on day 1 | H1 incomplete | Do WP-02, WP-04, WP-05 and the local halves of the spikes first; WP-09 may start on the local decisions. WP-03 and the AWS halves follow, and the budget email then becomes the critical path |
+| AWS access is not ready on day 1 | H1 incomplete | Do WP-02, WP-04, WP-05 and the local halves of the spikes first; WP-09 may start on the local decisions. WP-03 and the AWS halves follow |
 | The stack does not fit in 9 GB | Out-of-memory kills during `make demo` | Start Metabase only for the chart step; lower ClickHouse's limit; record it in the memory report (R4) |
 | CI is slow or unreliable on the arm64 runner | `e2e` takes over 20 minutes or fails intermittently | Layer cache; run the DAG with `airflow dags test` in CI |
 | macOS and Linux differ on paths or permissions | The lake mount is unreadable in CI | `AIRFLOW_UID`; a world-readable lake directory in CI |
@@ -497,7 +498,7 @@ Directories of BP §10 that have no content yet (`drills/`, `docs/runbooks/`, `s
 
 ## 11. Hand-off to week 2
 
-P1 starts when §2 holds. It may also start while row 4 or row 10 is the only thing open and elapsed time is the only thing missing (D11); every other row has to be true.
+P1 starts when §2 holds. It may also start while row 10 is the only thing open and elapsed time is the only thing missing (D11); every other row has to be true.
 
 - **P1 inherits** the catalog factory and commit helper (SK1), the pin step (SK2), the chosen incremental strategy (SK3), the Compose stack, the fixtures and the `export` schema.
 - **P1 must read first** SK1 questions Q2 and Q5 — the overwrite unit and the bounded-memory pattern decide how `gdelt_silver_hourly` and `gdelt_silver_daily` write — and the conclusion of the memory report.

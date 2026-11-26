@@ -71,7 +71,7 @@ Afterwards `make plan` (from the repository root) must report no changes for bot
 
 ## 3. Budget alert test
 
-The acceptance criterion is a real alert email (week 1 plan, exit gate row 4).
+The test is optional. Since 2026-11-26 an alert email is not a condition of P0 (week 1 plan, D12). The test proves that an alert email is delivered.
 
 1. **Confirm the recipient.** AWS sends a verification email after the first apply; follow its link (it expires after 12 hours and needs a console sign-in). Unverified recipients get no alerts.
 2. **Lower the limit for the test:** `cp budget-test.auto.tfvars.example budget-test.auto.tfvars && terraform apply`.
