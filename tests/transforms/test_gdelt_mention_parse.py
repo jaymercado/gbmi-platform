@@ -83,6 +83,8 @@ def test_a_good_row_becomes_a_typed_row_in_utc_with_provenance() -> None:
         (mention_row(MentionType="web"), "mention_type (MentionType): not an integer"),
         (mention_row(Confidence="high"), "confidence (Confidence): not an integer"),
         (mention_row(MentionDocTone="sad"), "mention_doc_tone (MentionDocTone): not a number"),
+        # The form of a number, read as infinity: not a number of the column.
+        (mention_row(MentionDocTone="1e999"), "mention_doc_tone (MentionDocTone): not a number"),
     ],
 )
 def test_each_failure_of_gate_g2_is_quarantined_with_its_reason(line: str, reason: str) -> None:

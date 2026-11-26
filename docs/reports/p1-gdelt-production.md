@@ -20,7 +20,8 @@ The order follows change C1 of the week 2 plan (§3.5). Every time is UTC. The w
 | 06 | Silver build: units, gate G3, partition versions | 2026-11-26 17:38 | 2026-11-26 18:32 | [#9](https://github.com/jaymercado/gbmi-platform/pull/9) | Done. Working time about 43 minutes; the GitHub checks took about 11 minutes |
 | 07 | DAGs, DAG tests, tracer on the new path | 2026-11-26 18:21 | 2026-11-26 18:59 | [#10](https://github.com/jaymercado/gbmi-platform/pull/10) | Done. Working time about 27 minutes; the GitHub checks took about 11 minutes |
 | 08 | Operational models in dbt | 2026-11-26 18:48 | 2026-11-26 19:12 | [#11](https://github.com/jaymercado/gbmi-platform/pull/11) | Done. Working time about 15 minutes of the time box of 90 minutes; cut 1 is not applied. The GitHub checks took about 9 minutes |
-| 11 | Drills DR2, DR4, DR8 and two runbooks (before WP-09: change C1) | 2026-11-26 19:02 | | | In progress |
+| 11 | Drills DR2, DR4, DR8 and two runbooks (before WP-09: change C1) | 2026-11-26 19:02 | 2026-11-26 19:25 | [#12](https://github.com/jaymercado/gbmi-platform/pull/12) | Done. Working time about 11 minutes; the GitHub checks took about 12 minutes |
+| — | Review of the code before the backfill, and the repairs (change C6) | 2026-11-26 19:10 | | | In progress |
 
 ## Version pins
 
@@ -68,6 +69,30 @@ On 2026-11-26, before the first work package, one independent review agent (a se
 | R14 | A read-only PostgreSQL role needs `CONNECT` on the database `gbmi`; a one-shot service on the PostgreSQL image needs a `tmpfs` | WP-08: the role file grants `CONNECT`; the service `postgres-roles` has a `tmpfs` for the data directory, and the smoke check "no service uses an anonymous volume" passes |
 | R15 | No required workflow builds the operational dbt models | WP-08: `make demo` runs `dbt build --select +ops_slot_status_daily`, so the workflow `e2e` builds and tests the two models. The password test requires the compiled model before the search |
 | R16 | `uv lock` alone keeps typer 0.29.2; hypothesis writes `.hypothesis/`; the aggregation script of phase P0 reads a table which the probe removed | WP-01 (typer, `.hypothesis/`); open: WP-10 |
+
+## Review of the code before the backfill
+
+Change C6 of the week 2 plan. On 2026-11-26, from 19:10 to 19:46 UTC, one independent review agent (a second instance of the AI model, with read-only duty and no network access) read the code of the ledger, the ingestion, the parsers, the build and the three DAGs on `main` against the week 2 plan and the blueprint. The agent ran fourteen separate experiments in a scratch folder. One experiment built a synthetic GKG day of real size from three real GKG files.
+
+**Result.** The review found no defect which puts wrong, doubled or lost rows into silver. The table lists every finding and what was done.
+
+| # | Finding | Verdict of the review | Handling |
+|---|---|---|---|
+| V1 | A start of WP-09 after 10:49 UTC leaves the day before the start day without a day build: the first scheduled run of `gdelt_silver_daily` builds the start day | Suspected, about 90% sure | Known before the review as change C4 of the execution plan: one more backfill for the single day S−1 follows the 30-day backfill |
+| V2 | The working stack runs the code of the working tree (`src` and `dags` are bind mounts), and the column `_pipeline_version` holds the package version whatever commit built the row | Facts read from two files | Rule for WP-09: no file under `src` and `dags` changes between the start of the backfill and the end of the live run. The commit of the working tree is recorded at the start and at the end. The content checksum includes `_pipeline_version`, so the value has to stay the same for the rerun proof. The Git commit as the version is work of the runtime image (phase P2) |
+| V3 | The rules of the trailing seven days do not reach an older day. (a) A slot which is verified after the day build of a day older than seven days is never built. (b) A listed file which GDELT does not serve is confirmed automatically only while the slot is younger than seven days | Confirmed by two experiments | No change of code before the backfill. WP-09 checks: no slot of the window is `listed` or `quarantined` before the builds, and no slot is `verified` after the builds. Both runbooks name the limit and the command to use. The repair queue of gate G6 (phase P4) closes the gap for good |
+| V4 | An ingest run before `gbmi gdelt enqueue` leaves days without ledger rows between the enqueued range and the first older row, and no report names the days | Confirmed by an experiment; the order of the plan (enqueue first) is safe | WP-09 checks before the enqueue: the table `ops.source_slot` of the working stack holds no row. The runbook for silver builds has the rule |
+| V5 | Gate G1 did not recognise a zip whose compressed stream is broken while size and MD5 equal the file list: the slot stayed `listed` for ever, with no failed attempt on record | Confirmed by an experiment; the input is rare | Repaired: every way in which a zip cannot be read is a failed verification, so the slot is fetched again and quarantined after three attempts. One new test |
+| V6 | A GKG word count above 2,147,483,647 stopped the build of the unit with a conversion error | Confirmed; not reachable with real articles | Repaired: gate G2 rejects the row with a reason. While writing the test, one more case showed: DuckDB reads a text such as `1e999` as infinity. Gate G2 now rejects a number which is not finite, for every number column of the three feeds. Four new test cases |
+| V7 | A run of `gdelt_silver_daily` which is started by hand for the current day makes `gdelt_silver_hourly` build the whole day again every 15 minutes | Suspected; only a run from the Airflow screen can do so | The runbook for silver builds has the warning |
+
+Three facts of the review for the run, which are no defects:
+
+- The local stack ran with 0 task retries, so one transient error would fail a day of the backfill. The Makefile now sets 3 retries for the working stack (the value of the blueprint, §8.1) and 0 for the demo stack and CI.
+- Twenty containers of two other projects on the laptop used about 2.1 GiB of the 7.65 GiB of the Docker machine at 19:40 UTC. The memory report of phase P0 assumed 0.3 GB. Week 2 does not touch the containers. WP-09 starts the working stack without Metabase and records the memory during the backfill.
+- A synthetic GKG day of 341 MB (zipped) built in 8.9 seconds with a peak of 835 MB of resident memory, and a day of 682 MB in 16.2 seconds with about 1.29 GB, on macOS outside a container. The largest real day of the window has 541 MB (finding F4 of the week 2 plan). The limit of the scheduler container is 2.6 GB.
+
+The review did not reach: Airflow at run time (the scheduler, `airflow backfill create`, the order in the pool), the live GDELT servers, real Events and Mentions files beyond the fixture hour, dbt and ClickHouse.
 
 ## Choices made during the run
 
@@ -144,3 +169,5 @@ On 2026-11-26, before the first work package, one independent review agent (a se
 | 69 | WP-11 | `make psql SQL="…"` runs one SQL statement on the operational database of the stack | The two runbooks read the ledger with SQL, and each command of a runbook has to work as written. The commands of both runbooks were run on the demo stack on 2026-11-26 |
 | 70 | WP-11 | `gbmi silver build-day` takes the day as `--day` or as `--date` | The week 2 plan writes `--date` in the verification table (§9) |
 | 71 | WP-11 | The runbook for silver builds describes the restore of a bronze file of a loaded slot by hand: download from the address in the ledger, compare the MD5, build again | Phase P1 has no command for the case, and no state leads out of `loaded`. The build refuses a loaded file whose bytes changed |
+| 72 | Review | Gate G2 rejects a number which is not finite. Before, a text such as `1e999` passed as infinity | "Nothing is coerced silently" (blueprint §5.7). An infinity in a tone column is no value of the source |
+| 73 | Review | The working stack runs with 3 task retries, the demo stack and CI with 0 | Phase P0 set 0 for the local stack: a failure then shows at once. The working stack now runs the schedules on live data, where a transient error has to be tried again. The silver DAGs use 2 of the 3 (blueprint §8.4) |

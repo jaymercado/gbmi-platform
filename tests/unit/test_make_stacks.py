@@ -19,6 +19,7 @@ _MAKE_STATE = {
     "COMPOSE_PROJECT_NAME",
     "GBMI_LAKE_DIR",
     "GBMI_DAG_SCHEDULES",
+    "GBMI_TASK_RETRIES",
     "CONFIRM",
     "MAKEFLAGS",
     "MFLAGS",
@@ -85,6 +86,15 @@ def test_the_demo_stack_runs_its_dags_by_hand_and_the_working_stack_by_the_clock
     assert "GBMI_DAG_SCHEDULES := on" in inherited.stdout
     compose = (REPO / "compose" / "compose.yaml").read_text(encoding="utf-8")
     assert "GBMI_DAG_SCHEDULES: ${GBMI_DAG_SCHEDULES:-on}" in compose
+
+
+def test_the_working_stack_retries_a_failed_task_and_the_demo_stack_does_not() -> None:
+    working = dry_run("--print-data-base", "up")
+    demo = dry_run("--print-data-base", "up", "STACK=gbmi-demo")
+
+    # Three retries on live data (blueprint 8.1); on the fixtures a failure shows at once.
+    assert "GBMI_TASK_RETRIES := 3" in working.stdout
+    assert "GBMI_TASK_RETRIES := 0" in demo.stdout
 
 
 def test_an_unknown_stack_is_refused() -> None:

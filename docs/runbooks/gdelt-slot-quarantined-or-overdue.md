@@ -79,7 +79,9 @@ The reconciliation confirms such a slot as missing by itself, with `decided_by =
 - an `expected` slot which two reconciliations in a row did not find in the file list, when the slot is 48 hours old;
 - a `listed` slot whose file GDELT has not served for 48 hours.
 
-So the first way out is to wait. The second way out is an earlier decision of the operator, with a note. `--state` names the states which the command may confirm, so a slot which only waits for a download is not confirmed by accident.
+So the first way out is to wait. The reconciliation reads the trailing seven days only: for a slot which is older than about four days when the problem starts, for example a slot of a backfill, the 48 hours end outside the seven days, and the automatic confirmation never comes. For such a slot use the command and do not wait.
+
+The second way out is an earlier decision of the operator, with a note. `--state` names the states which the command may confirm, so a slot which only waits for a download is not confirmed by accident.
 
 ```bash
 make toolbox CMD="gbmi ledger confirm-missing --from 2026-11-25 --to 2026-11-25 --state expected --state listed --decided-by jay --note 'GDELT published no file for the slots; checked on the master list on 2026-11-27'"

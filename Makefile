@@ -22,12 +22,17 @@ ifeq ($(STACK),$(WORKING_STACK))
 LAKE_DIR := data/lake
 OTHER_STACK := $(DEMO_STACK)
 DAG_SCHEDULES := on
+# The working stack runs the schedules on live data: a task which fails is tried again, three
+# times, as the blueprint says (8.1). A transient error must not fail a day of a backfill.
+TASK_RETRIES := 3
 else ifeq ($(STACK),$(DEMO_STACK))
 LAKE_DIR := data/demo/lake
 OTHER_STACK := $(WORKING_STACK)
 # The demo stack runs its DAGs by hand only, on the recorded files and with a fixed clock. An
 # unpaused DAG must not start a run against the live source by the clock (dags/common).
 DAG_SCHEDULES := off
+# On the demo stack and in CI a failing task shows at once.
+TASK_RETRIES := 0
 else
 $(error STACK is "$(STACK)"; use $(WORKING_STACK) for the working stack or $(DEMO_STACK) for the demo stack)
 endif
@@ -37,6 +42,7 @@ export STACK
 export COMPOSE_PROJECT_NAME := $(STACK)
 export GBMI_LAKE_DIR := ./$(LAKE_DIR)
 export GBMI_DAG_SCHEDULES := $(DAG_SCHEDULES)
+export GBMI_TASK_RETRIES := $(TASK_RETRIES)
 
 # Compose files live in compose/, so the project directory and the env file are always passed
 # explicitly; otherwise relative paths and .env would resolve from compose/.

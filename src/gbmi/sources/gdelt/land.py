@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import io
 import zipfile
+import zlib
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
@@ -202,6 +203,13 @@ class FixtureFetcher:
         return Fetched(content=path.read_bytes())
 
 
+#: What reading a damaged zip raises. A broken directory gives BadZipFile; a broken compressed
+#: stream gives zlib.error or EOFError; an unknown method gives NotImplementedError; an
+#: encrypted member gives RuntimeError. Each one is a failure of gate G1, so that the slot is
+#: fetched again and quarantined after three attempts, and never stays listed for ever.
+_UNREADABLE_ZIP = (zipfile.BadZipFile, zlib.error, EOFError, NotImplementedError, RuntimeError)
+
+
 def md5_hex(content: bytes) -> str:
     # MD5 is the checksum GDELT publishes; it is used for integrity, not for security.
     return hashlib.md5(content, usedforsecurity=False).hexdigest()
@@ -222,9 +230,9 @@ def verify(content: bytes, line: IndexLine) -> None:
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
             members = archive.namelist()
             damaged = archive.testzip()
-    except zipfile.BadZipFile as error:
+    except _UNREADABLE_ZIP as error:
         raise VerificationError(
-            f"{line.file_name}: not a readable zip ({error})", content
+            f"{line.file_name}: not a readable zip ({type(error).__name__}: {error})", content
         ) from error
     if damaged is not None or len(members) != 1:
         raise VerificationError(

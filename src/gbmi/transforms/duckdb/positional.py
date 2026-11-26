@@ -143,9 +143,11 @@ def failure(column: SilverColumn) -> Check | None:
                 f"{label}: not an integer",
             )
         case Kind.DOUBLE:
+            # A text such as 1e999 has the form of a number and is read as infinity.
             return (
                 f"{source} <> '' and (not regexp_full_match({source}, '{DOUBLE}') "
-                f"or try_cast({source} as double) is null)",
+                f"or try_cast({source} as double) is null "
+                f"or not isfinite(try_cast({source} as double)))",
                 f"{label}: not a number",
             )
         case Kind.FLAG:

@@ -142,6 +142,8 @@ def test_output_has_exactly_the_silver_schema_in_utc() -> None:
         ({"NumArticles": "99999999999"}, "num_articles (NumArticles): not an integer"),
         ({"GoldsteinScale": "high"}, "goldstein_scale (GoldsteinScale): not a number"),
         ({"AvgTone": "1,5"}, "avg_tone (AvgTone): not a number"),
+        # The form of a number, read as infinity: not a number of the column.
+        ({"AvgTone": "1e999"}, "avg_tone (AvgTone): not a number"),
         (
             {"DATEADDED": "2026-11-25 08:45"},
             "date_added (DATEADDED): not a timestamp YYYYMMDDHHMMSS",

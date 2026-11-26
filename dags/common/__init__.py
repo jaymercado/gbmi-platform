@@ -25,7 +25,8 @@ DBT_PROFILES_YML = "/opt/gbmi/dbt/profiles/profiles.yml"
 DBT_MANIFEST = "/opt/gbmi/dbt/target/manifest.json"
 
 #: Three retries, four attempts in total, with growing delays (blueprint 8.1). The number is
-#: configuration: the local stack sets GBMI_TASK_RETRIES=0 so that a failure shows at once.
+#: configuration: the working stack keeps 3; the demo stack and CI set GBMI_TASK_RETRIES=0 so
+#: that a failure shows at once (Makefile).
 TASK_RETRIES = int(os.environ.get("GBMI_TASK_RETRIES", "3"))
 
 DEFAULT_ARGS: dict[str, Any] = {

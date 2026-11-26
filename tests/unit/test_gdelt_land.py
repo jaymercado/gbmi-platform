@@ -8,6 +8,7 @@ import signal
 import subprocess
 import sys
 import zipfile
+import zlib
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -90,6 +91,25 @@ def test_verify_rejects_wrong_size_md5_and_broken_zip() -> None:
     not_a_zip = b"this is not a zip archive"
     with pytest.raises(VerificationError, match="not a readable zip"):
         verify(not_a_zip, line_for(not_a_zip))
+
+
+def test_verify_rejects_a_zip_whose_compressed_stream_is_broken() -> None:
+    # The source itself publishes a damaged file: the size and the MD5 equal the list, the
+    # directory of the zip is intact, and the compressed bytes cannot be read.
+    rows = "".join(f"{number}\t{'x' * (number % 53)}\n" for number in range(20_000))
+    content = bytearray(zipped(rows))
+    start = 30 + len("20261125084500.export.CSV") + 200  # inside the compressed stream
+    for offset in range(start, start + 8):
+        content[offset] ^= 0xFF
+    broken = bytes(content)
+    with zipfile.ZipFile(io.BytesIO(broken)) as archive, pytest.raises(zlib.error):
+        archive.testzip()
+
+    with pytest.raises(VerificationError, match=r"not a readable zip \(error: ") as raised:
+        verify(broken, line_for(broken))
+
+    # The bytes go with the error, for the copy in the quarantine area.
+    assert raised.value.content == broken
 
 
 def test_landing_writes_the_bytes_unchanged_under_the_deterministic_key(tmp_path: Path) -> None:
