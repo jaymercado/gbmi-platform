@@ -38,13 +38,15 @@ The first run pulls four images and builds one; on a fast connection that took a
 |---|---|
 | Dashboard | <http://127.0.0.1:3000> — sign in with `METABASE_ADMIN_EMAIL` and `METABASE_ADMIN_PASSWORD` from `.env` |
 | Airflow | <http://127.0.0.1:8080> — user `admin`, password `AIRFLOW_ADMIN_PASSWORD` from `.env` |
-| Stop | `make down` keeps the data; `make reset` removes it |
+| Stop | `make down STACK=gbmi-demo` keeps the data of the demo; `make reset STACK=gbmi-demo` removes the data |
+
+`make demo` runs on a stack of its own, the demo stack (Compose project `gbmi-demo`, lake `data/demo/lake`). The working stack (`make up`, Compose project `gbmi`, lake `data/lake`) holds real data. Both stacks publish the same ports, so one stack runs at a time, and a command names the demo stack with `STACK=gbmi-demo`.
 
 Other commands (`make help` lists them all):
 
 ```bash
-make lint test      # ruff, mypy, sqlfluff, lock files; unit and transformation tests
-make up smoke       # start the core stack and check it
+make lint test      # ruff, mypy, sqlfluff, lock files; unit, ledger and transformation tests (the ledger tests use the PostgreSQL of the running stack)
+make up smoke       # start the core profile of the working stack and check the stack
 make integration    # the three spikes, against the running stack
 make integration-aws  # the Glue/S3 halves of the spikes; needs an AWS sign-in (infra/terraform/README.md)
 make tf-check       # Terraform format, validate, tflint and checkov, with no AWS access

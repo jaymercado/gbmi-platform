@@ -16,6 +16,7 @@ def _clean_environment(monkeypatch: pytest.MonkeyPatch) -> None:
         "GBMI_LAKE_URI",
         "GBMI_CATALOG_URI",
         "GBMI_PG_DSN",
+        "GBMI_MIGRATIONS_DIR",
         "GBMI_CH_URL",
         "GBMI_SEC_USER_AGENT",
         "GBMI_WATCHLIST_SIZE",

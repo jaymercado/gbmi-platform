@@ -7,6 +7,7 @@ importable and testable without Airflow (blueprint 8.1).
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -22,15 +23,21 @@ app = typer.Typer(
     add_completion=False,
 )
 config_app = typer.Typer(help="Inspect the active configuration.", no_args_is_help=True)
+db_app = typer.Typer(help="The operational database: schema migrations.", no_args_is_help=True)
 gdelt_app = typer.Typer(help="GDELT: land files and build silver tables.", no_args_is_help=True)
 lake_app = typer.Typer(help="The lake as the warehouse sees it.", no_args_is_help=True)
 quality_app = typer.Typer(help="Quality gates and reconciliation.", no_args_is_help=True)
 app.add_typer(config_app, name="config")
+app.add_typer(db_app, name="db")
 app.add_typer(gdelt_app, name="gdelt")
 app.add_typer(lake_app, name="lake")
 app.add_typer(quality_app, name="quality")
 
 HourArgument = Annotated[str, typer.Option("--hour", help="UTC slot-hour, YYYY-MM-DDTHH.")]
+MigrationsDirectory = Annotated[
+    Path | None,
+    typer.Option("--dir", help="Directory of the migration files (default: GBMI_MIGRATIONS_DIR)."),
+]
 
 
 def _print(result: object) -> None:
@@ -68,6 +75,34 @@ def config_show() -> None:
     """Print the active settings as JSON, with secrets masked."""
     settings = get_settings()
     typer.echo(json.dumps(settings.model_dump(mode="json"), indent=2, sort_keys=True))
+
+
+@db_app.command("migrate")
+def db_migrate(directory: MigrationsDirectory = None) -> None:
+    """Apply every migration file which the operational database does not hold yet."""
+    from gbmi.ledger.db import LedgerConfigurationError
+    from gbmi.ledger.migrate import MigrationError, migrate
+
+    try:
+        applied = migrate(directory=directory)
+    except (MigrationError, LedgerConfigurationError) as error:
+        typer.echo(f"gbmi db migrate: {error}", err=True)
+        raise typer.Exit(code=1) from error
+    _print({"applied": applied})
+
+
+@db_app.command("status")
+def db_status(directory: MigrationsDirectory = None) -> None:
+    """List each migration file with its state: applied, pending, changed or file_missing."""
+    from gbmi.ledger.db import LedgerConfigurationError
+    from gbmi.ledger.migrate import MigrationError, status
+
+    try:
+        report = status(directory=directory)
+    except (MigrationError, LedgerConfigurationError) as error:
+        typer.echo(f"gbmi db status: {error}", err=True)
+        raise typer.Exit(code=1) from error
+    _print(report)
 
 
 @gdelt_app.command("land")

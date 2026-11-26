@@ -10,6 +10,7 @@
 !src/**
 !dags/**
 !dbt/**
+!db/postgres/migrations/**
 !docker/airflow/requirements.txt
 
 dbt/.venv

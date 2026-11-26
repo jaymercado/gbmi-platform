@@ -17,8 +17,24 @@ jobs:
     name: lint, types, tests, secret scan
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
+    services:
+      # The ledger tests create throwaway databases here (week 2 plan 3.3). The image is the
+      # one of compose/compose.yaml.
+      postgres:
+        image: postgres:17@sha256:87c8b42f423b45d5247e6aa8fdb2e7762fec164c68a50fe3eb07e7bfcaf4dbcf
+        env:
+          # Throwaway credentials for a container that lives only for this job.
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready --username postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     env:
       UV_PYTHON_PREFERENCE: only-managed
+      GBMI_TEST_PG_ADMIN_DSN: postgresql://postgres:ci-only-password@localhost:5432/postgres
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -38,7 +54,7 @@ jobs:
       - name: Lint (ruff, mypy, sqlfluff, lock files)
         run: make lint
 
-      - name: Unit tests
+      - name: Unit, ledger and transformation tests with the coverage gate
         run: make test
 
       - name: Secret scan (gitleaks)
