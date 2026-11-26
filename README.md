@@ -49,9 +49,12 @@ make lint test      # ruff, mypy, sqlfluff, lock files; unit, ledger, transforma
 make up smoke       # start the core profile of the working stack and check the stack
 make test-dags      # the DAG tests, with the interpreter of Airflow inside the image; needs a running stack
 make integration    # the integration tests against the running stack: the three spikes, the ingestion and the silver build
+make drill DR=2     # a failure drill on the recorded files: 2 (crash during the silver commit), 4 (corrupt file), 8 (rerun of a day)
 make integration-aws  # the Glue/S3 halves of the spikes; needs an AWS sign-in (infra/terraform/README.md)
 make tf-check       # Terraform format, validate, tflint and checkov, with no AWS access
 ```
+
+Two runbooks say what to do when the pipeline reports a problem: [a slot is quarantined or overdue](docs/runbooks/gdelt-slot-quarantined-or-overdue.md) and [a silver build failed, or silver holds wrong data](docs/runbooks/silver-build-failed-or-wrong-data.md).
 
 To run the pipeline on live data instead of the fixtures, trigger the DAG `tracer_gdelt_events` in Airflow with `source` set to `live` and an `hour` such as `2026-11-25T08`.
 

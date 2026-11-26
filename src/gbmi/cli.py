@@ -365,7 +365,7 @@ def silver_build_hour(
 
 @silver_app.command("build-day")
 def silver_build_day(
-    day: Annotated[str, typer.Option("--day", help="UTC day, YYYY-MM-DD.")],
+    day: Annotated[str, typer.Option("--day", "--date", help="UTC day, YYYY-MM-DD.")],
     feed: Feeds = None,
     accept_volume: Annotated[
         str | None,

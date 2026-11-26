@@ -76,7 +76,8 @@ def test_the_fixture_day_is_built_by_the_commands(landed: str) -> None:
     assert (hour["export"]["unit_kind"], hour["export"]["loaded"]) == ("hour", 4)
     assert [unit["feed"] for unit in silver("units", "--as-of", AS_OF)[1]] == ["gkg", "mentions"]
 
-    code, day, _ = silver("build-day", "--day", DAY, "--as-of", AS_OF)
+    # The week 2 plan writes the option as --date in one place; both names work.
+    code, day, _ = silver("build-day", "--date", DAY, "--as-of", AS_OF)
     assert (code, sorted(day)) == (0, ["export", "gkg", "mentions"])
     assert {feed: day[feed]["counts"]["committed"] for feed in day} == COMMITTED
     assert day["mentions"]["counts"]["duplicates"] == 120
