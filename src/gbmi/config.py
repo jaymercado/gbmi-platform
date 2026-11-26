@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     #: ``sqlite:///<path>`` for the local backend, ``glue://<region>`` for AWS.
     catalog_uri: str = "sqlite:////lake/catalog/catalog.db"
     pg_dsn: SecretStr | None = None
+    #: The SQL files which ``gbmi db migrate`` applies to the schema ``ops`` (week 2 plan 3.3).
+    #: The default fits a checkout; the images set an absolute path.
+    migrations_dir: str = "db/postgres/migrations"
     ch_url: SecretStr | None = None
     sec_user_agent: str | None = None
     watchlist_size: int = Field(default=50, ge=1, le=10_000)
