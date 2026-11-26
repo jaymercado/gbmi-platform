@@ -12,7 +12,8 @@ The order follows change C1 of the week 2 plan (§3.5). Every time is UTC. The w
 
 | WP | Subject | Start | End | Pull request | State |
 |---|---|---|---|---|---|
-| 01 | Start: checks, pins, plan in the repository | 2026-11-26 16:09 | | | In progress |
+| 01 | Start: checks, pins, plan in the repository | 2026-11-26 16:09 | 2026-11-26 16:28 | [#4](https://github.com/jaymercado/gbmi-platform/pull/4) | Done. Working time about 10 minutes; the GitHub checks took about 10 minutes |
+| 02 | Operational database: migrations, the schema `ops`, two stacks | 2026-11-26 16:29 | | | In progress |
 
 ## Version pins
 
@@ -38,6 +39,29 @@ Checked on 2026-11-26 between 16:10 and 16:13 UTC, the start date, against PyPI,
 | hypothesis | Not installed | 6.170.17 (2026-11-20) | **6.170.17**, new in the development group (`hypothesis>=6.170,<7`), with sortedcontainers 2.4.0 |
 | GitHub Actions | checkout 7.0.1, setup-uv 10.4.0, setup-buildx 4.4.1, build-push 7.4.0, setup-terraform 4.0.1, setup-tflint 6.3.2; gitleaks 8.30.1 | Newest releases | Unchanged |
 
+## Review of the plan before the start
+
+On 2026-11-26, before the first work package, one independent review agent (a second instance of the AI model, with read-only access) compared the week 2 plan with the repository and with the installed tools. The review reported sixteen points. The table lists each point and the work package which handles the point. A point marked "open" belongs to a later work package.
+
+| # | Point | Handled |
+|---|---|---|
+| R1 | `make demo` could run on the working stack, because the Makefile fixed the Compose command when the file was read. The shortened GKG fixtures would then become loaded slots of the real ledger | WP-02: `make demo` and `make e2e` call make again with `STACK=gbmi-demo`; a target which starts containers stops while the other stack runs; `tests/unit/test_make_stacks.py` holds the rule |
+| R2 | `compose/smoke.sh` built a Compose command without a project, and the Makefile created only `data/lake` | WP-02: the Makefile exports `STACK` and the lake directory of the stack, and creates the directory before a container starts |
+| R3 | The migration runner refuses a changed file, so an edit of an applied file fails only where the file is applied: on the laptop | WP-02: columns which a unit can leave empty are nullable from the first file on; every later change is a new file; the working stack received the migrations as the last step |
+| R4 | `--cov-fail-under` would measure the whole package; pytest fails for a test path which does not exist | WP-02: the gate is a second coverage report over three packages; `tests/ledger` joined `make test`. `tests/contract` joins in WP-05 |
+| R5 | `HttpFetcher.fetch` retries HTTP 429 five times, so an ingest run never sees the first 429 | Open: WP-04 |
+| R6 | DuckDB 2.0.1 returns a list with one empty string for an empty field | Open: WP-05 |
+| R7 | PyIceberg 0.12.0 already retries a failed commit four times and raises a second exception type for a conflict on the same unit | Open: WP-06 |
+| R8 | A day build leaves the quarantine files of the hour units of the same day | Open: WP-06 |
+| R9 | The DAG tests need the Airflow interpreter in the toolbox, a bundle-aware loader for the import of `common`, and a subprocess assertion which allows `file` and `uname` | Open: WP-07 |
+| R10 | A DAG run triggered through the REST API without a logical date has no logical date in the templates | Open: WP-07 |
+| R11 | The second run of the tracer has to rebuild the hour, because the end-to-end test expects a new snapshot | Open: WP-07 |
+| R12 | ClickHouse 26.8 rejects a query parameter in `CREATE NAMED COLLECTION` | Open: WP-08 |
+| R13 | The entrypoint of the ClickHouse image writes a file in `users.d` which replaces the user `default` | Open: WP-08 |
+| R14 | A read-only PostgreSQL role needs `CONNECT` on the database `gbmi`; a one-shot service on the PostgreSQL image needs a `tmpfs` | Open: WP-08 |
+| R15 | No required workflow builds the operational dbt models | Open: WP-08 |
+| R16 | `uv lock` alone keeps typer 0.29.2; hypothesis writes `.hypothesis/`; the aggregation script of phase P0 reads a table which the probe removed | WP-01 (typer, `.hypothesis/`); open: WP-10 |
+
 ## Choices made during the run
 
 | # | Work package | Choice | Reason |
@@ -45,3 +69,10 @@ Checked on 2026-11-26 between 16:10 and 16:13 UTC, the start date, against PyPI,
 | 1 | WP-01 | The pin check also took ClickHouse 26.8.47.5 and Metabase 0.65.7.2 | The week 2 plan (§4.2) had not compared the image tags with Docker Hub and had not checked Metabase again. Both changes are patch releases, so the rule of WP-01 applies |
 | 2 | WP-01 | The status report starts in WP-01 and grows with each pull request. The week 2 plan lists the report under WP-12 | The pin table and the times of each work package are evidence which exists from the first day. WP-12 completes the report |
 | 3 | WP-01 | `.gitignore` names the directory `.hypothesis/` | hypothesis stores examples in the directory during a test run |
+| 4 | WP-02 | `make reset` for the working stack stops and asks for `CONFIRM=yes`. `make reset STACK=gbmi-demo` asks nothing | The working stack will hold 30 days of real data. The week 2 plan (§9) says: a reset of the working stack needs the agreement of Jay |
+| 5 | WP-02 | The migrations hold more rules than the illustrative DDL of the blueprint: the twelve transitions as a check constraint, an append-only trigger on `ops.slot_transition`, the accounting identities on `ops.source_slot` and on `ops.silver_partition`, and the facts which each state needs | The database refuses a state, a transition or an accounting which the rules do not allow, also when the code has a defect. `tests/ledger/test_schema.py` tests each rule |
+| 6 | WP-02 | Stored times such as `listed_at`, `verified_at` and `created_at` come from the clock of the database. Rules read the time from the argument `as_of`, and the tables `ops.slot_transition` and `ops.pipeline_run` store `as_of` in a column of its own | The latency numbers of WP-09 need real times. The tests of the rules need a clock which a test controls (week 2 plan, §3.3) |
+| 7 | WP-02 | Two columns join the tables of the plan: `entry_point` in `ops.pipeline_run` (the function of the package, also for a run without Airflow) and `detail` (`jsonb`) in `ops.silver_partition` | "The reconciliation is due" is read from the run records (week 2 plan, §3.3). Free detail stays out of new columns |
+| 8 | WP-02 | The coverage gate is a second report (`coverage report --include … --fail-under=80`) after the test run | `make test` keeps the coverage table of every module, as in phase P0 |
+| 9 | WP-02 | `make reset` removes `dbt/target` only while the other stack is down | Both stacks read the dbt manifest from the same directory |
+| 10 | WP-02 | A test found a defect before the first migration was applied: a check constraint let an hour unit without an hour pass, because a comparison with `NULL` is `NULL` | The constraint now names `IS NOT NULL`. Every other constraint was read again for the same trap |
