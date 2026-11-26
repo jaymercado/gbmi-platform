@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<!-- Rights of the administrator user (week 2 plan, WP-08).
+
+     The entrypoint of the image writes users.d/default-user.xml for the user "default". The
+     files of users.d are merged in the order of their names, so this file, which sorts after
+     default-user.xml, adds to that user. With named_collection_control the user can create a
+     named collection with SQL and grant its use: the service clickhouse-init creates pg_ops,
+     which holds the connection to the operational database. -->
+<clickhouse>
+    <users>
+        <default>
+            <named_collection_control>1</named_collection_control>
+        </default>
+    </users>
+</clickhouse>

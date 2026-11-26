@@ -75,6 +75,8 @@ x-airflow-common: &airflow-common
       condition: service_completed_successfully
     ops-migrate:
       condition: service_completed_successfully
+    postgres-roles:
+      condition: service_completed_successfully
     airflow-init:
       condition: service_completed_successfully
     dbt-manifest:
@@ -119,6 +121,7 @@ services:
     volumes:
       - clickhouse-data:/var/lib/clickhouse
       - ./docker/clickhouse/config.d/gbmi.xml:/etc/clickhouse-server/config.d/gbmi.xml:ro
+      - ./docker/clickhouse/users.d/gbmi.xml:/etc/clickhouse-server/users.d/gbmi.xml:ro
       # Read-only: ClickHouse reads Iceberg tables from the lake and never writes to it.
       - ${GBMI_LAKE_DIR:-./data/lake}:/lake:ro
     ports:
@@ -154,11 +157,32 @@ services:
             --param_gbmi_password="$$CH_GBMI_PASSWORD" \
             --multiquery < "$$file"
         done
+        # The named collection pg_ops: how ClickHouse reaches the schema ops of PostgreSQL, as
+        # the read-only role gbmi_ro. dbt models name the collection and never a password.
+        # ClickHouse 26.8 takes no query parameter in CREATE NAMED COLLECTION, so the password
+        # is written into the statement; make env generates hexadecimal passwords.
+        if [[ ! "$$GBMI_RO_DB_PASSWORD" =~ ^[0-9a-f]+$$ ]]; then
+          echo "GBMI_RO_DB_PASSWORD must be hexadecimal (make env generates such a value)" >&2
+          exit 1
+        fi
+        echo "applying the named collection pg_ops"
+        clickhouse-client --host clickhouse --user default --password "$$CLICKHOUSE_PASSWORD" \
+          --multiquery <<SQL
+        CREATE NAMED COLLECTION IF NOT EXISTS pg_ops AS
+            host = 'postgres', port = 5432, database = 'gbmi', user = 'gbmi_ro',
+            password = '$$GBMI_RO_DB_PASSWORD';
+        ALTER NAMED COLLECTION pg_ops SET
+            host = 'postgres', port = 5432, database = 'gbmi', user = 'gbmi_ro',
+            password = '$$GBMI_RO_DB_PASSWORD';
+        GRANT NAMED COLLECTION ON pg_ops TO dbt_rw;
+        GRANT POSTGRES ON *.* TO dbt_rw;
+        SQL
     environment:
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_ADMIN_PASSWORD}
       CH_DBT_PASSWORD: ${CH_DBT_PASSWORD:?run make setup}
       CH_BI_PASSWORD: ${CH_BI_PASSWORD:?run make setup}
       CH_GBMI_PASSWORD: ${CH_GBMI_PASSWORD:?run make setup}
+      GBMI_RO_DB_PASSWORD: ${GBMI_RO_DB_PASSWORD:?run make env}
     volumes:
       - ./db/clickhouse/init:/init:ro
     # The image declares /var/lib/clickhouse as a volume. This container only runs the client,
@@ -182,6 +206,36 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+  # One-shot: the read-only role gbmi_ro and its grants on the schema ops (week 2 plan 3.3).
+  # Idempotent SQL as the superuser, at every start and after the migrations, so a change
+  # reaches an existing volume without `make reset`.
+  postgres-roles:
+    image: postgres:17@sha256:87c8b42f423b45d5247e6aa8fdb2e7762fec164c68a50fe3eb07e7bfcaf4dbcf
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        set -euo pipefail
+        for file in /roles/*.sql; do
+          echo "applying $$file"
+          psql --host postgres --username postgres --dbname gbmi --quiet \
+            --set ON_ERROR_STOP=1 --file "$$file"
+        done
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      GBMI_RO_DB_PASSWORD: ${GBMI_RO_DB_PASSWORD:?run make env}
+    volumes:
+      - ./docker/postgres/roles:/roles:ro
+    # The image declares its data directory as a volume. The container only runs the client,
+    # so the directory is in memory; otherwise every `make down` would leave an anonymous
+    # volume behind.
+    tmpfs:
+      - /var/lib/postgresql/data
+    restart: "no"
+    depends_on:
+      ops-migrate:
+        condition: service_completed_successfully
 
   # One-shot: migrate the metadata database, create the administrator and the three pools.
   airflow-init:
@@ -302,6 +356,9 @@ services:
       # Tests, drills and scratch runs work in throwaway databases, which only an administrator
       # can create (week 2 plan 3.3). The database gbmi of the stack is never their target.
       GBMI_TEST_PG_ADMIN_DSN: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
+      # The end-to-end tests log in as the read-only role and search the dbt artefacts for
+      # the password of the role (week 2 plan, WP-08).
+      GBMI_RO_DB_PASSWORD: ${GBMI_RO_DB_PASSWORD}
       # The Glue/S3 halves of the spikes: short-lived credentials are passed through only
       # when GBMI_TEST_AWS=1 is set for make integration (week 1 plan 3.3).
       GBMI_TEST_AWS: ${GBMI_TEST_AWS:-0}
@@ -321,6 +378,8 @@ services:
       clickhouse-init:
         condition: service_completed_successfully
       ops-migrate:
+        condition: service_completed_successfully
+      postgres-roles:
         condition: service_completed_successfully
 
 volumes:

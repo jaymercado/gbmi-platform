@@ -54,7 +54,7 @@ services_healthy() {
 
 one_shots_succeeded() {
   local service code bad=0
-  for service in clickhouse-init ops-migrate airflow-init dbt-manifest; do
+  for service in clickhouse-init ops-migrate postgres-roles airflow-init dbt-manifest; do
     code="$("${COMPOSE[@]}" ps --all --format '{{.ExitCode}}' "$service" 2>/dev/null)"
     if [ "$code" != "0" ]; then
       echo "$service: exit code ${code:-unknown}"
@@ -172,6 +172,20 @@ clickhouse_reads_postgres() {
   [ "$tables" -gt 0 ] 2>/dev/null || { echo "expected a count of PostgreSQL system tables, got '$tables'"; return 1; }
 }
 
+dbt_reads_the_ledger() {
+  # The dbt user reads the schema ops through the named collection pg_ops, which holds the
+  # connection of the read-only role gbmi_ro: no query and no dbt model carries a password
+  # (week 2 plan, WP-08).
+  local files
+  files="$("${COMPOSE[@]}" exec -T clickhouse clickhouse-client \
+    --user dbt --password "$CH_DBT_PASSWORD" \
+    --query "SELECT count() FROM postgresql(pg_ops, schema = 'ops', table = 'schema_migration')")" || {
+    echo "$files"
+    return 1
+  }
+  [ "$files" -gt 0 ] 2>/dev/null || { echo "expected the number of applied migration files, got '$files'"; return 1; }
+}
+
 lake_is_shared() {
   # Airflow writes, ClickHouse reads the same path, and ClickHouse cannot write.
   local token="smoke-$$-$RANDOM"
@@ -200,7 +214,7 @@ environments_are_isolated() {
 }
 
 check "long-running services are healthy" services_healthy
-check "clickhouse-init, ops-migrate, airflow-init and dbt-manifest finished with exit code 0" one_shots_succeeded
+check "the one-shot services finished with exit code 0 (init, migrations, roles, manifest)" one_shots_succeeded
 check "no container has restarted" no_restarts
 check "no service uses an anonymous volume" no_anonymous_volumes
 check "no DAG import errors" no_import_errors
@@ -211,6 +225,7 @@ check "ClickHouse users dbt, bi and gbmi can log in" clickhouse_users_can_log_in
 check "PostgreSQL databases airflow, gbmi and metabase exist" postgres_databases
 check "the newest migration file is applied in the schema ops" migrations_applied
 check "ClickHouse reads PostgreSQL through postgresql()" clickhouse_reads_postgres
+check "the dbt user reads the ledger through the named collection pg_ops" dbt_reads_the_ledger
 check "Airflow writes /lake, ClickHouse reads it read-only" lake_is_shared
 check "Airflow, gbmi and dbt environments are isolated" environments_are_isolated
 

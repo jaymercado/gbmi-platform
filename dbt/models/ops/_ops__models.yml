@@ -1,0 +1,67 @@
+version: 2
+
+models:
+  - name: ops_slot_status_daily
+    description: >
+      Slot status and completeness of each UTC day, from the ledger (blueprint 8.2). One row
+      for each source, slot date and feed, and one row over all feeds (feed = all).
+      completeness = loaded slots / (calendar slots - confirmed-missing slots); a feed has 96
+      calendar slots in a day. Rebuilt in full on every run.
+    meta:
+      owner: data-engineering
+      layer: ops
+      grain: one row per source, slot date and feed (or all feeds)
+      sensitivity: internal
+      build: full rebuild
+    columns:
+      - name: source
+        description: The source system, for example gdelt.
+        data_tests:
+          - not_null
+      - name: slot_date
+        description: UTC date of the slots.
+        data_tests:
+          - not_null
+      - name: feed
+        description: The feed, or all for the row over the feeds of the source.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["export", "mentions", "gkg", "all"]
+      - name: calendar_slots
+        description: Slots of the calendar for the day - 96 for one feed, 288 for all feeds.
+        data_tests:
+          - not_null
+      - name: ledger_slots
+        description: Slots of the day which have a row in the ledger.
+      - name: expected_slots
+        description: Slots in state expected.
+      - name: listed_slots
+        description: Slots in state listed.
+      - name: downloaded_slots
+        description: Slots in state downloaded.
+      - name: verified_slots
+        description: Slots in state verified.
+      - name: loaded_slots
+        description: Slots in state loaded.
+      - name: quarantined_slots
+        description: Slots in state quarantined.
+      - name: confirmed_missing_slots
+        description: Slots in state confirmed_missing.
+      - name: completeness
+        description: Loaded slots divided by (calendar slots - confirmed-missing slots), from 0 to 1.
+        data_tests:
+          - not_null
+      - name: is_complete
+        description: True when every slot of the calendar is loaded or confirmed missing.
+      - name: raw_lines
+        description: Raw lines of the loaded files of the day.
+      - name: parsed_rows
+        description: Lines of the loaded files which passed gate G2.
+      - name: quarantined_rows
+        description: Lines of the loaded files which gate G2 rejected.
+      - name: _built_at
+        description: When the model was built (UTC).
+      - name: _dbt_invocation_id
+        description: The dbt run that built the model.

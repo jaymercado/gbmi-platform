@@ -26,3 +26,12 @@ models:
       +materialized: view
     marts:
       +schema: marts
+    # Operational marts are rebuilt in full on every run (blueprint 7.6).
+    ops:
+      +schema: ops
+      +materialized: table
+
+vars:
+  # The feeds of the GDELT source: each has 96 slots in a UTC day (blueprint 8.2).
+  gdelt_feeds: ["export", "mentions", "gkg"]
+  slots_per_day: 96
