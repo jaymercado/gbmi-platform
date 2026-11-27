@@ -1,0 +1,89 @@
+{
+  "benchmark": "B4",
+  "bronze_bytes": 12903538113,
+  "feeds": {
+    "export": {
+      "bronze": {
+        "files": 2880,
+        "raw_lines": 3102544,
+        "zip_bytes": 196149481
+      },
+      "silver": {
+        "gdelt_event": {
+          "bytes": 99666798,
+          "bytes_of_a_day": {
+            "max": 4025474,
+            "median": 3640399.5,
+            "min": 1996846
+          },
+          "data_files": 30,
+          "days": 30,
+          "rows": 3102544
+        }
+      },
+      "silver_bytes": 99666798,
+      "silver_to_zip": 0.5081
+    },
+    "gkg": {
+      "bronze": {
+        "files": 2880,
+        "raw_lines": 2905938,
+        "zip_bytes": 12434008419
+      },
+      "silver": {
+        "gdelt_gkg_doc": {
+          "bytes": 451117178,
+          "bytes_of_a_day": {
+            "max": 19104037,
+            "median": 16886550.0,
+            "min": 8308637
+          },
+          "data_files": 30,
+          "days": 30,
+          "rows": 2905938
+        },
+        "gdelt_gkg_org": {
+          "bytes": 156211312,
+          "bytes_of_a_day": {
+            "max": 6618336,
+            "median": 5860378.0,
+            "min": 2601858
+          },
+          "data_files": 30,
+          "days": 30,
+          "rows": 6608297
+        }
+      },
+      "silver_bytes": 607328490,
+      "silver_to_zip": 0.0488
+    },
+    "mentions": {
+      "bronze": {
+        "files": 2880,
+        "raw_lines": 8387184,
+        "zip_bytes": 273380213
+      },
+      "silver": {
+        "gdelt_mention": {
+          "bytes": 107776106,
+          "bytes_of_a_day": {
+            "max": 4593308,
+            "median": 3990514.5,
+            "min": 1908163
+          },
+          "data_files": 30,
+          "days": 30,
+          "rows": 8235535
+        }
+      },
+      "silver_bytes": 107776106,
+      "silver_to_zip": 0.3942
+    }
+  },
+  "measured_at": "2026-11-26T21:27:36+00:00",
+  "silver_bytes": 814771394,
+  "window": {
+    "from": "2026-10-26",
+    "to": "2026-11-24"
+  }
+}

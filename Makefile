@@ -85,7 +85,7 @@ DEMO_HOUR := 2026-11-25T08
 TOOLBOX := $(COMPOSE_BI) --profile tools run --rm toolbox
 
 .PHONY: help setup fmt lint test test-dags env images up up-bi down reset ps logs smoke toolbox psql integration \
-	integration-aws dbt-build demo e2e drill logs-dump tf-check plan _other-stack-stopped _lake-dir _demo _e2e
+	integration-aws dbt-build demo e2e drill bench logs-dump tf-check plan _other-stack-stopped _lake-dir _demo _e2e
 
 help: ## List the available targets
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-14s %s\n", $$1, $$2}'
@@ -202,6 +202,19 @@ DRILL_8 := dr8_rerun_silver
 drill: _other-stack-stopped _lake-dir ## Run a failure drill on the recorded files: make drill DR=2 (2, 4 or 8); needs make up
 	@if [ -z "$(DRILL_$(DR))" ]; then echo "make drill DR=<n>: n is 2 (crash), 4 (corrupt file) or 8 (rerun)"; exit 1; fi
 	$(TOOLBOX) python -m drills.$(DRILL_$(DR)) $(ARGS)
+
+# The benchmarks of blueprint 15.6 which phase P1 measures. A benchmark needs the real days of
+# the working stack; B1 and B2 also need the three GDELT DAGs paused. Each script writes the
+# raw result beside the script, under benchmarks/. More scripts and the method: the report
+# docs/reports/benchmark-v1.md.
+BENCH_DAY ?= 2026-11-04
+BENCH_1 := benchmarks.b1_ingest.throughput --day $(BENCH_DAY) --from-hour 12
+BENCH_2 := benchmarks.b2_transform.rebuild_day --day $(BENCH_DAY) --runs 3
+BENCH_4 := benchmarks.b4_storage.storage --day $(BENCH_DAY)
+
+bench: _other-stack-stopped _lake-dir ## Run a benchmark on the working stack: make bench B=4 (1 ingestion, 2 transformation, 4 storage)
+	@if [ -z "$(BENCH_$(B))" ]; then echo "make bench B=<n>: n is 1 (ingestion), 2 (transformation) or 4 (storage)"; exit 1; fi
+	$(TOOLBOX) python -m $(BENCH_$(B)) $(ARGS)
 
 # The Airflow environment of the image has no pytest, and no package is added to the Airflow
 # environment without need: the DAG tests use unittest and the interpreter of Airflow.

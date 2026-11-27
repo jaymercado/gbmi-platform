@@ -1,0 +1,175 @@
+{
+  "benchmark": "B2",
+  "command": "gbmi silver build-day --day <day> --feed <feed>",
+  "day": "2026-11-04",
+  "label": "scheduler-under-load",
+  "machine": {
+    "container_memory_limit": "2726297600",
+    "cpus": 12,
+    "platform": "Linux-6.10.14-linuxkit-aarch64-with-glibc2.41",
+    "python": "3.12.16"
+  },
+  "measured_at": "2026-11-27T18:13:13+00:00",
+  "runs": [
+    {
+      "committed_rows": 417430,
+      "committed_rows_per_second": 12090,
+      "container_memory_samples": 342,
+      "container_peak_anonymous_mib": 1329.5,
+      "container_peak_mib": 1827.0,
+      "cpu_seconds": 37.59,
+      "cpu_system_seconds": 8.87,
+      "cpu_user_seconds": 28.72,
+      "day": "2026-11-04",
+      "error": null,
+      "exit_code": 0,
+      "feed": "gkg",
+      "label": "scheduler-under-load",
+      "peak_resident_mib": 1074.1,
+      "raw_lines": 125779,
+      "raw_lines_per_second": 3643,
+      "run": 1,
+      "started_at": "2026-11-27T18:11:31+00:00",
+      "tables": {
+        "gdelt_gkg_doc": {
+          "build_milliseconds": 33201,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 125779,
+          "duplicate_rows": 0,
+          "new_version": 502,
+          "raw_lines": 125779
+        },
+        "gdelt_gkg_org": {
+          "build_milliseconds": 33201,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 291651,
+          "duplicate_rows": null,
+          "new_version": 503,
+          "raw_lines": null
+        }
+      },
+      "wall_seconds": 34.53
+    },
+    {
+      "committed_rows": 417430,
+      "committed_rows_per_second": 12138,
+      "container_memory_samples": 341,
+      "container_peak_anonymous_mib": 1298.4,
+      "container_peak_mib": 1697.8,
+      "cpu_seconds": 36.95,
+      "cpu_system_seconds": 9.65,
+      "cpu_user_seconds": 27.3,
+      "day": "2026-11-04",
+      "error": null,
+      "exit_code": 0,
+      "feed": "gkg",
+      "label": "scheduler-under-load",
+      "peak_resident_mib": 1037.0,
+      "raw_lines": 125779,
+      "raw_lines_per_second": 3657,
+      "run": 2,
+      "started_at": "2026-11-27T18:12:05+00:00",
+      "tables": {
+        "gdelt_gkg_doc": {
+          "build_milliseconds": 33009,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 125779,
+          "duplicate_rows": 0,
+          "new_version": 504,
+          "raw_lines": 125779
+        },
+        "gdelt_gkg_org": {
+          "build_milliseconds": 33009,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 291651,
+          "duplicate_rows": null,
+          "new_version": 505,
+          "raw_lines": null
+        }
+      },
+      "wall_seconds": 34.39
+    },
+    {
+      "committed_rows": 417430,
+      "committed_rows_per_second": 12560,
+      "container_memory_samples": 330,
+      "container_peak_anonymous_mib": 1310.8,
+      "container_peak_mib": 1620.0,
+      "cpu_seconds": 35.31,
+      "cpu_system_seconds": 8.4,
+      "cpu_user_seconds": 26.92,
+      "day": "2026-11-04",
+      "error": null,
+      "exit_code": 0,
+      "feed": "gkg",
+      "label": "scheduler-under-load",
+      "peak_resident_mib": 1049.4,
+      "raw_lines": 125779,
+      "raw_lines_per_second": 3785,
+      "run": 3,
+      "started_at": "2026-11-27T18:12:40+00:00",
+      "tables": {
+        "gdelt_gkg_doc": {
+          "build_milliseconds": 31996,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 125779,
+          "duplicate_rows": 0,
+          "new_version": 506,
+          "raw_lines": 125779
+        },
+        "gdelt_gkg_org": {
+          "build_milliseconds": 31996,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 291651,
+          "duplicate_rows": null,
+          "new_version": 507,
+          "raw_lines": null
+        }
+      },
+      "wall_seconds": 33.23
+    }
+  ],
+  "summary": {
+    "gkg": {
+      "container_peak_anonymous_mib": {
+        "max": 1329.5,
+        "median": 1310.8,
+        "min": 1298.4
+      },
+      "container_peak_mib": {
+        "max": 1827.0,
+        "median": 1697.8,
+        "min": 1620.0
+      },
+      "cpu_seconds": {
+        "max": 37.59,
+        "median": 36.95,
+        "min": 35.31
+      },
+      "every_checksum_equals_the_version_before": true,
+      "every_run_ended_with_exit_code_0": true,
+      "peak_resident_mib": {
+        "max": 1074.1,
+        "median": 1049.4,
+        "min": 1037.0
+      },
+      "raw_lines_per_second": {
+        "max": 3785,
+        "median": 3657,
+        "min": 3643
+      },
+      "runs": 3,
+      "wall_seconds": {
+        "max": 34.53,
+        "median": 34.39,
+        "min": 33.23
+      }
+    }
+  },
+  "versions": {
+    "duckdb": "2.0.1",
+    "pyarrow": "26.0.1",
+    "pyiceberg": "0.12.0"
+  },
+  "weekday": "Wednesday"
+}

@@ -1,0 +1,448 @@
+{
+  "benchmark": "B2, comparison for D17",
+  "day": "2026-11-04",
+  "feeds": {
+    "export": {
+      "every_hour_overwrite_kept_the_rows_of_the_day": true,
+      "every_step_ended_with_exit_code_0": true,
+      "runs": [
+        {
+          "commit": {
+            "gdelt_event": {
+              "added-data-files": "1",
+              "added-files-size": "3952088",
+              "operation": "append"
+            }
+          },
+          "cpu_seconds": 4.08,
+          "error": null,
+          "exit_code": 0,
+          "files_after": {
+            "gdelt_event": {
+              "bytes": 3952088,
+              "data_files": 1,
+              "rows": 125229
+            }
+          },
+          "peak_resident_mib": 317.8,
+          "round": 1,
+          "step": "day build",
+          "wall_seconds": 3.42
+        },
+        {
+          "commit": {
+            "gdelt_event": {
+              "added-data-files": "1",
+              "added-files-size": "176701",
+              "operation": "append"
+            }
+          },
+          "commits": {
+            "gdelt_event": {
+              "commit_seconds": 0.453,
+              "rows_of_the_hour": 5105
+            }
+          },
+          "cpu_seconds": 3.11,
+          "day_holds_the_same_rows": true,
+          "error": null,
+          "exit_code": 0,
+          "files_after": {
+            "gdelt_event": {
+              "bytes": 3547824,
+              "data_files": 2,
+              "rows": 125229
+            }
+          },
+          "parse_seconds": 0.14,
+          "peak_resident_mib": 521.4,
+          "round": 1,
+          "step": "hour overwrite",
+          "wall_seconds": 1.22
+        },
+        {
+          "commit": {
+            "gdelt_event": {
+              "added-data-files": "1",
+              "added-files-size": "3952088",
+              "operation": "append"
+            }
+          },
+          "cpu_seconds": 4.17,
+          "error": null,
+          "exit_code": 0,
+          "files_after": {
+            "gdelt_event": {
+              "bytes": 3952088,
+              "data_files": 1,
+              "rows": 125229
+            }
+          },
+          "peak_resident_mib": 301.5,
+          "round": 2,
+          "step": "day build",
+          "wall_seconds": 3.43
+        },
+        {
+          "commit": {
+            "gdelt_event": {
+              "added-data-files": "1",
+              "added-files-size": "176701",
+              "operation": "append"
+            }
+          },
+          "commits": {
+            "gdelt_event": {
+              "commit_seconds": 0.276,
+              "rows_of_the_hour": 5105
+            }
+          },
+          "cpu_seconds": 1.37,
+          "day_holds_the_same_rows": true,
+          "error": null,
+          "exit_code": 0,
+          "files_after": {
+            "gdelt_event": {
+              "bytes": 3547824,
+              "data_files": 2,
+              "rows": 125229
+            }
+          },
+          "parse_seconds": 0.083,
+          "peak_resident_mib": 485.5,
+          "round": 2,
+          "step": "hour overwrite",
+          "wall_seconds": 0.93
+        },
+        {
+          "commit": {
+            "gdelt_event": {
+              "added-data-files": "1",
+              "added-files-size": "3952088",
+              "operation": "append"
+            }
+          },
+          "cpu_seconds": 4.22,
+          "error": null,
+          "exit_code": 0,
+          "files_after": {
+            "gdelt_event": {
+              "bytes": 3952088,
+              "data_files": 1,
+              "rows": 125229
+            }
+          },
+          "peak_resident_mib": 279.8,
+          "round": 3,
+          "step": "day build",
+          "wall_seconds": 3.26
+        },
+        {
+          "commit": {
+            "gdelt_event": {
+              "added-data-files": "1",
+              "added-files-size": "176701",
+              "operation": "append"
+            }
+          },
+          "commits": {
+            "gdelt_event": {
+              "commit_seconds": 0.297,
+              "rows_of_the_hour": 5105
+            }
+          },
+          "cpu_seconds": 1.78,
+          "day_holds_the_same_rows": true,
+          "error": null,
+          "exit_code": 0,
+          "files_after": {
+            "gdelt_event": {
+              "bytes": 3547824,
+              "data_files": 2,
+              "rows": 125229
+            }
+          },
+          "parse_seconds": 0.087,
+          "peak_resident_mib": 467.4,
+          "round": 3,
+          "step": "hour overwrite",
+          "wall_seconds": 0.99
+        }
+      ],
+      "wall_seconds_of_the_day_build": {
+        "max": 3.43,
+        "median": 3.42,
+        "min": 3.26
+      },
+      "wall_seconds_of_the_hour_overwrite": {
+        "max": 1.22,
+        "median": 0.99,
+        "min": 0.93
+      }
+    },
+    "gkg": {
+      "every_hour_overwrite_kept_the_rows_of_the_day": true,
+      "every_step_ended_with_exit_code_0": true,
+      "runs": [
+        {
+          "commit": {
+            "gdelt_gkg_doc": {
+              "added-data-files": "1",
+              "added-files-size": "19099333",
+              "operation": "append"
+            },
+            "gdelt_gkg_org": {
+              "added-data-files": "1",
+              "added-files-size": "6613680",
+              "operation": "append"
+            }
+          },
+          "cpu_seconds": 24.3,
+          "error": null,
+          "exit_code": 0,
+          "files_after": {
+            "gdelt_gkg_doc": {
+              "bytes": 19099333,
+              "data_files": 1,
+              "rows": 125779
+            },
+            "gdelt_gkg_org": {
+              "bytes": 6613680,
+              "data_files": 1,
+              "rows": 291651
+            }
+          },
+          "peak_resident_mib": 986.0,
+          "round": 1,
+          "step": "day build",
+          "wall_seconds": 21.2
+        },
+        {
+          "commit": {
+            "gdelt_gkg_doc": {
+              "added-data-files": "1",
+              "added-files-size": "814156",
+              "operation": "append"
+            },
+            "gdelt_gkg_org": {
+              "added-data-files": "1",
+              "added-files-size": "287033",
+              "operation": "append"
+            }
+          },
+          "commits": {
+            "gdelt_gkg_doc": {
+              "commit_seconds": 0.807,
+              "rows_of_the_hour": 5060
+            },
+            "gdelt_gkg_org": {
+              "commit_seconds": 0.201,
+              "rows_of_the_hour": 11966
+            }
+          },
+          "cpu_seconds": 4.8,
+          "day_holds_the_same_rows": true,
+          "error": null,
+          "exit_code": 0,
+          "files_after": {
+            "gdelt_gkg_doc": {
+              "bytes": 17094503,
+              "data_files": 2,
+              "rows": 125779
+            },
+            "gdelt_gkg_org": {
+              "bytes": 5003569,
+              "data_files": 2,
+              "rows": 291651
+            }
+          },
+          "parse_seconds": 0.7,
+          "peak_resident_mib": 1044.8,
+          "round": 1,
+          "step": "hour overwrite",
+          "wall_seconds": 2.44
+        },
+        {
+          "commit": {
+            "gdelt_gkg_doc": {
+              "added-data-files": "1",
+              "added-files-size": "19099333",
+              "operation": "append"
+            },
+            "gdelt_gkg_org": {
+              "added-data-files": "1",
+              "added-files-size": "6613680",
+              "operation": "append"
+            }
+          },
+          "cpu_seconds": 24.12,
+          "error": null,
+          "exit_code": 0,
+          "files_after": {
+            "gdelt_gkg_doc": {
+              "bytes": 19099333,
+              "data_files": 1,
+              "rows": 125779
+            },
+            "gdelt_gkg_org": {
+              "bytes": 6613680,
+              "data_files": 1,
+              "rows": 291651
+            }
+          },
+          "peak_resident_mib": 1014.3,
+          "round": 2,
+          "step": "day build",
+          "wall_seconds": 20.76
+        },
+        {
+          "commit": {
+            "gdelt_gkg_doc": {
+              "added-data-files": "1",
+              "added-files-size": "814156",
+              "operation": "append"
+            },
+            "gdelt_gkg_org": {
+              "added-data-files": "1",
+              "added-files-size": "287033",
+              "operation": "append"
+            }
+          },
+          "commits": {
+            "gdelt_gkg_doc": {
+              "commit_seconds": 0.72,
+              "rows_of_the_hour": 5060
+            },
+            "gdelt_gkg_org": {
+              "commit_seconds": 0.245,
+              "rows_of_the_hour": 11966
+            }
+          },
+          "cpu_seconds": 4.9,
+          "day_holds_the_same_rows": true,
+          "error": null,
+          "exit_code": 0,
+          "files_after": {
+            "gdelt_gkg_doc": {
+              "bytes": 17094503,
+              "data_files": 2,
+              "rows": 125779
+            },
+            "gdelt_gkg_org": {
+              "bytes": 5003569,
+              "data_files": 2,
+              "rows": 291651
+            }
+          },
+          "parse_seconds": 0.818,
+          "peak_resident_mib": 1066.3,
+          "round": 2,
+          "step": "hour overwrite",
+          "wall_seconds": 2.54
+        },
+        {
+          "commit": {
+            "gdelt_gkg_doc": {
+              "added-data-files": "1",
+              "added-files-size": "19099333",
+              "operation": "append"
+            },
+            "gdelt_gkg_org": {
+              "added-data-files": "1",
+              "added-files-size": "6613680",
+              "operation": "append"
+            }
+          },
+          "cpu_seconds": 24.96,
+          "error": null,
+          "exit_code": 0,
+          "files_after": {
+            "gdelt_gkg_doc": {
+              "bytes": 19099333,
+              "data_files": 1,
+              "rows": 125779
+            },
+            "gdelt_gkg_org": {
+              "bytes": 6613680,
+              "data_files": 1,
+              "rows": 291651
+            }
+          },
+          "peak_resident_mib": 1052.1,
+          "round": 3,
+          "step": "day build",
+          "wall_seconds": 21.66
+        },
+        {
+          "commit": {
+            "gdelt_gkg_doc": {
+              "added-data-files": "1",
+              "added-files-size": "814156",
+              "operation": "append"
+            },
+            "gdelt_gkg_org": {
+              "added-data-files": "1",
+              "added-files-size": "287033",
+              "operation": "append"
+            }
+          },
+          "commits": {
+            "gdelt_gkg_doc": {
+              "commit_seconds": 0.726,
+              "rows_of_the_hour": 5060
+            },
+            "gdelt_gkg_org": {
+              "commit_seconds": 0.24,
+              "rows_of_the_hour": 11966
+            }
+          },
+          "cpu_seconds": 5.57,
+          "day_holds_the_same_rows": true,
+          "error": null,
+          "exit_code": 0,
+          "files_after": {
+            "gdelt_gkg_doc": {
+              "bytes": 17094503,
+              "data_files": 2,
+              "rows": 125779
+            },
+            "gdelt_gkg_org": {
+              "bytes": 5003569,
+              "data_files": 2,
+              "rows": 291651
+            }
+          },
+          "parse_seconds": 1.023,
+          "peak_resident_mib": 1074.2,
+          "round": 3,
+          "step": "hour overwrite",
+          "wall_seconds": 2.95
+        }
+      ],
+      "wall_seconds_of_the_day_build": {
+        "max": 21.66,
+        "median": 21.2,
+        "min": 20.76
+      },
+      "wall_seconds_of_the_hour_overwrite": {
+        "max": 2.95,
+        "median": 2.54,
+        "min": 2.44
+      }
+    }
+  },
+  "files_copied_into_the_world": {
+    "listed": 192,
+    "outcomes": {
+      "bytes": 548874685,
+      "verified": 192,
+      "written": 192
+    }
+  },
+  "hour": 12,
+  "machine": {
+    "platform": "Linux-6.10.14-linuxkit-aarch64-with-glibc2.41",
+    "python": "3.12.16"
+  },
+  "measured_at": "2026-11-27T18:13:37+00:00"
+}

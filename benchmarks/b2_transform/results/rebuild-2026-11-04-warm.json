@@ -1,0 +1,431 @@
+{
+  "benchmark": "B2",
+  "command": "gbmi silver build-day --day <day> --feed <feed>",
+  "day": "2026-11-04",
+  "label": "warm",
+  "machine": {
+    "container_memory_limit": "max",
+    "cpus": 12,
+    "platform": "Linux-6.10.14-linuxkit-aarch64-with-glibc2.41",
+    "python": "3.12.16"
+  },
+  "measured_at": "2026-11-27T18:10:12+00:00",
+  "runs": [
+    {
+      "committed_rows": 125229,
+      "committed_rows_per_second": 36063,
+      "container_memory_samples": 36,
+      "container_peak_anonymous_mib": 284.8,
+      "container_peak_mib": 320.3,
+      "cpu_seconds": 4.22,
+      "cpu_system_seconds": 0.73,
+      "cpu_user_seconds": 3.48,
+      "day": "2026-11-04",
+      "error": null,
+      "exit_code": 0,
+      "feed": "export",
+      "label": "warm",
+      "peak_resident_mib": 327.8,
+      "raw_lines": 125229,
+      "raw_lines_per_second": 36063,
+      "run": 1,
+      "started_at": "2026-11-27T18:08:50+00:00",
+      "tables": {
+        "gdelt_event": {
+          "build_milliseconds": 2840,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 125229,
+          "duplicate_rows": 0,
+          "new_version": 484,
+          "raw_lines": 125229
+        }
+      },
+      "wall_seconds": 3.47
+    },
+    {
+      "committed_rows": 125229,
+      "committed_rows_per_second": 37678,
+      "container_memory_samples": 34,
+      "container_peak_anonymous_mib": 281.4,
+      "container_peak_mib": 331.4,
+      "cpu_seconds": 4.08,
+      "cpu_system_seconds": 0.64,
+      "cpu_user_seconds": 3.44,
+      "day": "2026-11-04",
+      "error": null,
+      "exit_code": 0,
+      "feed": "export",
+      "label": "warm",
+      "peak_resident_mib": 337.3,
+      "raw_lines": 125229,
+      "raw_lines_per_second": 37678,
+      "run": 2,
+      "started_at": "2026-11-27T18:08:53+00:00",
+      "tables": {
+        "gdelt_event": {
+          "build_milliseconds": 2742,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 125229,
+          "duplicate_rows": 0,
+          "new_version": 485,
+          "raw_lines": 125229
+        }
+      },
+      "wall_seconds": 3.32
+    },
+    {
+      "committed_rows": 125229,
+      "committed_rows_per_second": 37827,
+      "container_memory_samples": 34,
+      "container_peak_anonymous_mib": 281.2,
+      "container_peak_mib": 317.3,
+      "cpu_seconds": 4.56,
+      "cpu_system_seconds": 0.83,
+      "cpu_user_seconds": 3.73,
+      "day": "2026-11-04",
+      "error": null,
+      "exit_code": 0,
+      "feed": "export",
+      "label": "warm",
+      "peak_resident_mib": 339.3,
+      "raw_lines": 125229,
+      "raw_lines_per_second": 37827,
+      "run": 3,
+      "started_at": "2026-11-27T18:08:56+00:00",
+      "tables": {
+        "gdelt_event": {
+          "build_milliseconds": 2699,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 125229,
+          "duplicate_rows": 0,
+          "new_version": 486,
+          "raw_lines": 125229
+        }
+      },
+      "wall_seconds": 3.31
+    },
+    {
+      "committed_rows": 348557,
+      "committed_rows_per_second": 85687,
+      "container_memory_samples": 42,
+      "container_peak_anonymous_mib": 735.7,
+      "container_peak_mib": 820.1,
+      "cpu_seconds": 5.67,
+      "cpu_system_seconds": 1.26,
+      "cpu_user_seconds": 4.41,
+      "day": "2026-11-04",
+      "error": null,
+      "exit_code": 0,
+      "feed": "mentions",
+      "label": "warm",
+      "peak_resident_mib": 808.3,
+      "raw_lines": 353999,
+      "raw_lines_per_second": 87025,
+      "run": 4,
+      "started_at": "2026-11-27T18:09:00+00:00",
+      "tables": {
+        "gdelt_mention": {
+          "build_milliseconds": 3451,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 348557,
+          "duplicate_rows": 5442,
+          "new_version": 487,
+          "raw_lines": 353999
+        }
+      },
+      "wall_seconds": 4.07
+    },
+    {
+      "committed_rows": 348557,
+      "committed_rows_per_second": 84449,
+      "container_memory_samples": 42,
+      "container_peak_anonymous_mib": 680.7,
+      "container_peak_mib": 770.8,
+      "cpu_seconds": 5.94,
+      "cpu_system_seconds": 1.15,
+      "cpu_user_seconds": 4.78,
+      "day": "2026-11-04",
+      "error": null,
+      "exit_code": 0,
+      "feed": "mentions",
+      "label": "warm",
+      "peak_resident_mib": 766.6,
+      "raw_lines": 353999,
+      "raw_lines_per_second": 85768,
+      "run": 5,
+      "started_at": "2026-11-27T18:09:04+00:00",
+      "tables": {
+        "gdelt_mention": {
+          "build_milliseconds": 3520,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 348557,
+          "duplicate_rows": 5442,
+          "new_version": 488,
+          "raw_lines": 353999
+        }
+      },
+      "wall_seconds": 4.13
+    },
+    {
+      "committed_rows": 348557,
+      "committed_rows_per_second": 84390,
+      "container_memory_samples": 42,
+      "container_peak_anonymous_mib": 702.0,
+      "container_peak_mib": 764.9,
+      "cpu_seconds": 5.21,
+      "cpu_system_seconds": 0.91,
+      "cpu_user_seconds": 4.3,
+      "day": "2026-11-04",
+      "error": null,
+      "exit_code": 0,
+      "feed": "mentions",
+      "label": "warm",
+      "peak_resident_mib": 781.0,
+      "raw_lines": 353999,
+      "raw_lines_per_second": 85707,
+      "run": 6,
+      "started_at": "2026-11-27T18:09:08+00:00",
+      "tables": {
+        "gdelt_mention": {
+          "build_milliseconds": 3477,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 348557,
+          "duplicate_rows": 5442,
+          "new_version": 489,
+          "raw_lines": 353999
+        }
+      },
+      "wall_seconds": 4.13
+    },
+    {
+      "committed_rows": 417430,
+      "committed_rows_per_second": 21544,
+      "container_memory_samples": 192,
+      "container_peak_anonymous_mib": 950.8,
+      "container_peak_mib": 1513.1,
+      "cpu_seconds": 22.19,
+      "cpu_system_seconds": 3.06,
+      "cpu_user_seconds": 19.13,
+      "day": "2026-11-04",
+      "error": null,
+      "exit_code": 0,
+      "feed": "gkg",
+      "label": "warm",
+      "peak_resident_mib": 1000.5,
+      "raw_lines": 125779,
+      "raw_lines_per_second": 6492,
+      "run": 7,
+      "started_at": "2026-11-27T18:09:12+00:00",
+      "tables": {
+        "gdelt_gkg_doc": {
+          "build_milliseconds": 18720,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 125779,
+          "duplicate_rows": 0,
+          "new_version": 490,
+          "raw_lines": 125779
+        },
+        "gdelt_gkg_org": {
+          "build_milliseconds": 18720,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 291651,
+          "duplicate_rows": null,
+          "new_version": 491,
+          "raw_lines": null
+        }
+      },
+      "wall_seconds": 19.38
+    },
+    {
+      "committed_rows": 417430,
+      "committed_rows_per_second": 20583,
+      "container_memory_samples": 201,
+      "container_peak_anonymous_mib": 946.2,
+      "container_peak_mib": 1563.6,
+      "cpu_seconds": 22.78,
+      "cpu_system_seconds": 3.41,
+      "cpu_user_seconds": 19.37,
+      "day": "2026-11-04",
+      "error": null,
+      "exit_code": 0,
+      "feed": "gkg",
+      "label": "warm",
+      "peak_resident_mib": 991.4,
+      "raw_lines": 125779,
+      "raw_lines_per_second": 6202,
+      "run": 8,
+      "started_at": "2026-11-27T18:09:32+00:00",
+      "tables": {
+        "gdelt_gkg_doc": {
+          "build_milliseconds": 19353,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 125779,
+          "duplicate_rows": 0,
+          "new_version": 492,
+          "raw_lines": 125779
+        },
+        "gdelt_gkg_org": {
+          "build_milliseconds": 19353,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 291651,
+          "duplicate_rows": null,
+          "new_version": 493,
+          "raw_lines": null
+        }
+      },
+      "wall_seconds": 20.28
+    },
+    {
+      "committed_rows": 417430,
+      "committed_rows_per_second": 20955,
+      "container_memory_samples": 197,
+      "container_peak_anonymous_mib": 922.5,
+      "container_peak_mib": 1557.5,
+      "cpu_seconds": 22.4,
+      "cpu_system_seconds": 3.34,
+      "cpu_user_seconds": 19.06,
+      "day": "2026-11-04",
+      "error": null,
+      "exit_code": 0,
+      "feed": "gkg",
+      "label": "warm",
+      "peak_resident_mib": 988.0,
+      "raw_lines": 125779,
+      "raw_lines_per_second": 6314,
+      "run": 9,
+      "started_at": "2026-11-27T18:09:52+00:00",
+      "tables": {
+        "gdelt_gkg_doc": {
+          "build_milliseconds": 19081,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 125779,
+          "duplicate_rows": 0,
+          "new_version": 494,
+          "raw_lines": 125779
+        },
+        "gdelt_gkg_org": {
+          "build_milliseconds": 19081,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 291651,
+          "duplicate_rows": null,
+          "new_version": 495,
+          "raw_lines": null
+        }
+      },
+      "wall_seconds": 19.92
+    }
+  ],
+  "summary": {
+    "export": {
+      "container_peak_anonymous_mib": {
+        "max": 284.8,
+        "median": 281.4,
+        "min": 281.2
+      },
+      "container_peak_mib": {
+        "max": 331.4,
+        "median": 320.3,
+        "min": 317.3
+      },
+      "cpu_seconds": {
+        "max": 4.56,
+        "median": 4.22,
+        "min": 4.08
+      },
+      "every_checksum_equals_the_version_before": true,
+      "every_run_ended_with_exit_code_0": true,
+      "peak_resident_mib": {
+        "max": 339.3,
+        "median": 337.3,
+        "min": 327.8
+      },
+      "raw_lines_per_second": {
+        "max": 37827,
+        "median": 37678,
+        "min": 36063
+      },
+      "runs": 3,
+      "wall_seconds": {
+        "max": 3.47,
+        "median": 3.32,
+        "min": 3.31
+      }
+    },
+    "gkg": {
+      "container_peak_anonymous_mib": {
+        "max": 950.8,
+        "median": 946.2,
+        "min": 922.5
+      },
+      "container_peak_mib": {
+        "max": 1563.6,
+        "median": 1557.5,
+        "min": 1513.1
+      },
+      "cpu_seconds": {
+        "max": 22.78,
+        "median": 22.4,
+        "min": 22.19
+      },
+      "every_checksum_equals_the_version_before": true,
+      "every_run_ended_with_exit_code_0": true,
+      "peak_resident_mib": {
+        "max": 1000.5,
+        "median": 991.4,
+        "min": 988.0
+      },
+      "raw_lines_per_second": {
+        "max": 6492,
+        "median": 6314,
+        "min": 6202
+      },
+      "runs": 3,
+      "wall_seconds": {
+        "max": 20.28,
+        "median": 19.92,
+        "min": 19.38
+      }
+    },
+    "mentions": {
+      "container_peak_anonymous_mib": {
+        "max": 735.7,
+        "median": 702.0,
+        "min": 680.7
+      },
+      "container_peak_mib": {
+        "max": 820.1,
+        "median": 770.8,
+        "min": 764.9
+      },
+      "cpu_seconds": {
+        "max": 5.94,
+        "median": 5.67,
+        "min": 5.21
+      },
+      "every_checksum_equals_the_version_before": true,
+      "every_run_ended_with_exit_code_0": true,
+      "peak_resident_mib": {
+        "max": 808.3,
+        "median": 781.0,
+        "min": 766.6
+      },
+      "raw_lines_per_second": {
+        "max": 87025,
+        "median": 85768,
+        "min": 85707
+      },
+      "runs": 3,
+      "wall_seconds": {
+        "max": 4.13,
+        "median": 4.13,
+        "min": 4.07
+      }
+    }
+  },
+  "versions": {
+    "duckdb": "2.0.1",
+    "pyarrow": "26.0.1",
+    "pyiceberg": "0.12.0"
+  },
+  "weekday": "Wednesday"
+}

@@ -1,0 +1,1366 @@
+{
+  "backfill": {
+    "feeds": {
+      "export": {
+        "by_day": [
+          {
+            "committed_rows": 108055,
+            "day": "2026-10-26",
+            "files": 96,
+            "raw_lines": 108055,
+            "raw_lines_per_second": 39755,
+            "run_id": "backfill__2026-10-27T08:25:00+00:00",
+            "seconds": 2.72,
+            "weekday": "Mon",
+            "zip_bytes": 6811874
+          },
+          {
+            "committed_rows": 119106,
+            "day": "2026-10-27",
+            "files": 96,
+            "raw_lines": 119106,
+            "raw_lines_per_second": 46147,
+            "run_id": "backfill__2026-10-28T08:25:00+00:00",
+            "seconds": 2.58,
+            "weekday": "Tue",
+            "zip_bytes": 7704403
+          },
+          {
+            "committed_rows": 123196,
+            "day": "2026-10-28",
+            "files": 96,
+            "raw_lines": 123196,
+            "raw_lines_per_second": 47769,
+            "run_id": "backfill__2026-10-29T08:25:00+00:00",
+            "seconds": 2.58,
+            "weekday": "Wed",
+            "zip_bytes": 7962885
+          },
+          {
+            "committed_rows": 118962,
+            "day": "2026-10-29",
+            "files": 96,
+            "raw_lines": 118962,
+            "raw_lines_per_second": 42823,
+            "run_id": "backfill__2026-10-30T08:25:00+00:00",
+            "seconds": 2.78,
+            "weekday": "Thu",
+            "zip_bytes": 7707146
+          },
+          {
+            "committed_rows": 114106,
+            "day": "2026-10-30",
+            "files": 96,
+            "raw_lines": 114106,
+            "raw_lines_per_second": 45992,
+            "run_id": "backfill__2026-10-31T08:25:00+00:00",
+            "seconds": 2.48,
+            "weekday": "Fri",
+            "zip_bytes": 7344295
+          },
+          {
+            "committed_rows": 73394,
+            "day": "2026-10-31",
+            "files": 96,
+            "raw_lines": 73394,
+            "raw_lines_per_second": 34784,
+            "run_id": "backfill__2026-11-01T08:25:00+00:00",
+            "seconds": 2.11,
+            "weekday": "Sat",
+            "zip_bytes": 4455680
+          },
+          {
+            "committed_rows": 63401,
+            "day": "2026-11-01",
+            "files": 96,
+            "raw_lines": 63401,
+            "raw_lines_per_second": 29878,
+            "run_id": "backfill__2026-11-02T08:25:00+00:00",
+            "seconds": 2.12,
+            "weekday": "Sun",
+            "zip_bytes": 3785014
+          },
+          {
+            "committed_rows": 103574,
+            "day": "2026-11-02",
+            "files": 96,
+            "raw_lines": 103574,
+            "raw_lines_per_second": 42310,
+            "run_id": "backfill__2026-11-03T08:25:00+00:00",
+            "seconds": 2.45,
+            "weekday": "Mon",
+            "zip_bytes": 6630254
+          },
+          {
+            "committed_rows": 119006,
+            "day": "2026-11-03",
+            "files": 96,
+            "raw_lines": 119006,
+            "raw_lines_per_second": 46108,
+            "run_id": "backfill__2026-11-04T08:25:00+00:00",
+            "seconds": 2.58,
+            "weekday": "Tue",
+            "zip_bytes": 7668814
+          },
+          {
+            "committed_rows": 125229,
+            "day": "2026-11-04",
+            "files": 96,
+            "raw_lines": 125229,
+            "raw_lines_per_second": 46330,
+            "run_id": "backfill__2026-11-05T08:25:00+00:00",
+            "seconds": 2.7,
+            "weekday": "Wed",
+            "zip_bytes": 8052450
+          },
+          {
+            "committed_rows": 117148,
+            "day": "2026-11-05",
+            "files": 96,
+            "raw_lines": 117148,
+            "raw_lines_per_second": 44090,
+            "run_id": "backfill__2026-11-06T08:25:00+00:00",
+            "seconds": 2.66,
+            "weekday": "Thu",
+            "zip_bytes": 7546794
+          },
+          {
+            "committed_rows": 113498,
+            "day": "2026-11-06",
+            "files": 96,
+            "raw_lines": 113498,
+            "raw_lines_per_second": 44544,
+            "run_id": "backfill__2026-11-07T08:25:00+00:00",
+            "seconds": 2.55,
+            "weekday": "Fri",
+            "zip_bytes": 7282781
+          },
+          {
+            "committed_rows": 71638,
+            "day": "2026-11-07",
+            "files": 96,
+            "raw_lines": 71638,
+            "raw_lines_per_second": 34032,
+            "run_id": "backfill__2026-11-08T08:25:00+00:00",
+            "seconds": 2.1,
+            "weekday": "Sat",
+            "zip_bytes": 4358684
+          },
+          {
+            "committed_rows": 57162,
+            "day": "2026-11-08",
+            "files": 96,
+            "raw_lines": 57162,
+            "raw_lines_per_second": 29556,
+            "run_id": "backfill__2026-11-09T08:25:00+00:00",
+            "seconds": 1.93,
+            "weekday": "Sun",
+            "zip_bytes": 3422996
+          },
+          {
+            "committed_rows": 102962,
+            "day": "2026-11-09",
+            "files": 96,
+            "raw_lines": 102962,
+            "raw_lines_per_second": 43261,
+            "run_id": "backfill__2026-11-10T08:25:00+00:00",
+            "seconds": 2.38,
+            "weekday": "Mon",
+            "zip_bytes": 6514268
+          },
+          {
+            "committed_rows": 124504,
+            "day": "2026-11-10",
+            "files": 96,
+            "raw_lines": 124504,
+            "raw_lines_per_second": 45373,
+            "run_id": "backfill__2026-11-11T08:25:00+00:00",
+            "seconds": 2.74,
+            "weekday": "Tue",
+            "zip_bytes": 7886632
+          },
+          {
+            "committed_rows": 118737,
+            "day": "2026-11-11",
+            "files": 96,
+            "raw_lines": 118737,
+            "raw_lines_per_second": 45476,
+            "run_id": "backfill__2026-11-12T08:25:00+00:00",
+            "seconds": 2.61,
+            "weekday": "Wed",
+            "zip_bytes": 7599316
+          },
+          {
+            "committed_rows": 120768,
+            "day": "2026-11-12",
+            "files": 96,
+            "raw_lines": 120768,
+            "raw_lines_per_second": 45012,
+            "run_id": "backfill__2026-11-13T08:25:00+00:00",
+            "seconds": 2.68,
+            "weekday": "Thu",
+            "zip_bytes": 7731424
+          },
+          {
+            "committed_rows": 111095,
+            "day": "2026-11-13",
+            "files": 96,
+            "raw_lines": 111095,
+            "raw_lines_per_second": 41702,
+            "run_id": "backfill__2026-11-14T08:25:00+00:00",
+            "seconds": 2.66,
+            "weekday": "Fri",
+            "zip_bytes": 7089535
+          },
+          {
+            "committed_rows": 74232,
+            "day": "2026-11-14",
+            "files": 96,
+            "raw_lines": 74232,
+            "raw_lines_per_second": 33243,
+            "run_id": "backfill__2026-11-15T08:25:00+00:00",
+            "seconds": 2.23,
+            "weekday": "Sat",
+            "zip_bytes": 4462484
+          },
+          {
+            "committed_rows": 61540,
+            "day": "2026-11-15",
+            "files": 96,
+            "raw_lines": 61540,
+            "raw_lines_per_second": 30724,
+            "run_id": "backfill__2026-11-16T08:25:00+00:00",
+            "seconds": 2.0,
+            "weekday": "Sun",
+            "zip_bytes": 3627566
+          },
+          {
+            "committed_rows": 107963,
+            "day": "2026-11-16",
+            "files": 96,
+            "raw_lines": 107963,
+            "raw_lines_per_second": 39202,
+            "run_id": "backfill__2026-11-17T08:25:00+00:00",
+            "seconds": 2.75,
+            "weekday": "Mon",
+            "zip_bytes": 6790467
+          },
+          {
+            "committed_rows": 127432,
+            "day": "2026-11-17",
+            "files": 96,
+            "raw_lines": 127432,
+            "raw_lines_per_second": 44807,
+            "run_id": "backfill__2026-11-18T08:25:00+00:00",
+            "seconds": 2.84,
+            "weekday": "Tue",
+            "zip_bytes": 8105190
+          },
+          {
+            "committed_rows": 128905,
+            "day": "2026-11-18",
+            "files": 96,
+            "raw_lines": 128905,
+            "raw_lines_per_second": 46654,
+            "run_id": "backfill__2026-11-19T08:25:00+00:00",
+            "seconds": 2.76,
+            "weekday": "Wed",
+            "zip_bytes": 8232392
+          },
+          {
+            "committed_rows": 130634,
+            "day": "2026-11-19",
+            "files": 96,
+            "raw_lines": 130634,
+            "raw_lines_per_second": 46079,
+            "run_id": "backfill__2026-11-20T08:25:00+00:00",
+            "seconds": 2.83,
+            "weekday": "Thu",
+            "zip_bytes": 8249502
+          },
+          {
+            "committed_rows": 119392,
+            "day": "2026-11-20",
+            "files": 96,
+            "raw_lines": 119392,
+            "raw_lines_per_second": 43606,
+            "run_id": "backfill__2026-11-21T08:25:00+00:00",
+            "seconds": 2.74,
+            "weekday": "Fri",
+            "zip_bytes": 7540390
+          },
+          {
+            "committed_rows": 73341,
+            "day": "2026-11-21",
+            "files": 96,
+            "raw_lines": 73341,
+            "raw_lines_per_second": 31196,
+            "run_id": "backfill__2026-11-22T08:25:00+00:00",
+            "seconds": 2.35,
+            "weekday": "Sat",
+            "zip_bytes": 4441744
+          },
+          {
+            "committed_rows": 59805,
+            "day": "2026-11-22",
+            "files": 96,
+            "raw_lines": 59805,
+            "raw_lines_per_second": 29273,
+            "run_id": "backfill__2026-11-23T08:25:00+00:00",
+            "seconds": 2.04,
+            "weekday": "Sun",
+            "zip_bytes": 3524909
+          },
+          {
+            "committed_rows": 101301,
+            "day": "2026-11-23",
+            "files": 96,
+            "raw_lines": 101301,
+            "raw_lines_per_second": 38679,
+            "run_id": "backfill__2026-11-24T08:25:00+00:00",
+            "seconds": 2.62,
+            "weekday": "Mon",
+            "zip_bytes": 6375169
+          },
+          {
+            "committed_rows": 112458,
+            "day": "2026-11-24",
+            "files": 96,
+            "raw_lines": 112458,
+            "raw_lines_per_second": 43980,
+            "run_id": "backfill__2026-11-25T08:25:00+00:00",
+            "seconds": 2.56,
+            "weekday": "Tue",
+            "zip_bytes": 7244423
+          }
+        ],
+        "days": 30,
+        "megabytes_zipped_per_second": {
+          "max": 3.09,
+          "median": 2.76,
+          "min": 1.73
+        },
+        "raw_lines_per_second": {
+          "max": 47769,
+          "median": 43433.5,
+          "min": 29273
+        },
+        "seconds": {
+          "max": 2.84,
+          "median": 2.58,
+          "min": 1.93
+        },
+        "seconds_total": 75.1
+      },
+      "gkg": {
+        "by_day": [
+          {
+            "committed_rows": 101215,
+            "day": "2026-10-26",
+            "files": 96,
+            "raw_lines": 101215,
+            "raw_lines_per_second": 6265,
+            "run_id": "backfill__2026-10-27T08:25:00+00:00",
+            "seconds": 16.16,
+            "weekday": "Mon",
+            "zip_bytes": 432769973
+          },
+          {
+            "committed_rows": 117445,
+            "day": "2026-10-27",
+            "files": 96,
+            "raw_lines": 117445,
+            "raw_lines_per_second": 6254,
+            "run_id": "backfill__2026-10-28T08:25:00+00:00",
+            "seconds": 18.78,
+            "weekday": "Tue",
+            "zip_bytes": 503846895
+          },
+          {
+            "committed_rows": 120123,
+            "day": "2026-10-28",
+            "files": 96,
+            "raw_lines": 120123,
+            "raw_lines_per_second": 6406,
+            "run_id": "backfill__2026-10-29T08:25:00+00:00",
+            "seconds": 18.75,
+            "weekday": "Wed",
+            "zip_bytes": 514980749
+          },
+          {
+            "committed_rows": 119299,
+            "day": "2026-10-29",
+            "files": 96,
+            "raw_lines": 119299,
+            "raw_lines_per_second": 6407,
+            "run_id": "backfill__2026-10-30T08:25:00+00:00",
+            "seconds": 18.62,
+            "weekday": "Thu",
+            "zip_bytes": 515306720
+          },
+          {
+            "committed_rows": 108415,
+            "day": "2026-10-30",
+            "files": 96,
+            "raw_lines": 108415,
+            "raw_lines_per_second": 6452,
+            "run_id": "backfill__2026-10-31T08:25:00+00:00",
+            "seconds": 16.8,
+            "weekday": "Fri",
+            "zip_bytes": 467945496
+          },
+          {
+            "committed_rows": 62008,
+            "day": "2026-10-31",
+            "files": 96,
+            "raw_lines": 62008,
+            "raw_lines_per_second": 6110,
+            "run_id": "backfill__2026-11-01T08:25:00+00:00",
+            "seconds": 10.15,
+            "weekday": "Sat",
+            "zip_bytes": 271561864
+          },
+          {
+            "committed_rows": 54361,
+            "day": "2026-11-01",
+            "files": 96,
+            "raw_lines": 54361,
+            "raw_lines_per_second": 5399,
+            "run_id": "backfill__2026-11-02T08:25:00+00:00",
+            "seconds": 10.07,
+            "weekday": "Sun",
+            "zip_bytes": 236983255
+          },
+          {
+            "committed_rows": 102905,
+            "day": "2026-11-02",
+            "files": 96,
+            "raw_lines": 102905,
+            "raw_lines_per_second": 6406,
+            "run_id": "backfill__2026-11-03T08:25:00+00:00",
+            "seconds": 16.06,
+            "weekday": "Mon",
+            "zip_bytes": 439075137
+          },
+          {
+            "committed_rows": 113571,
+            "day": "2026-11-03",
+            "files": 96,
+            "raw_lines": 113571,
+            "raw_lines_per_second": 6342,
+            "run_id": "backfill__2026-11-04T08:25:00+00:00",
+            "seconds": 17.91,
+            "weekday": "Tue",
+            "zip_bytes": 487216867
+          },
+          {
+            "committed_rows": 125779,
+            "day": "2026-11-04",
+            "files": 96,
+            "raw_lines": 125779,
+            "raw_lines_per_second": 6361,
+            "run_id": "backfill__2026-11-05T08:25:00+00:00",
+            "seconds": 19.77,
+            "weekday": "Wed",
+            "zip_bytes": 540822235
+          },
+          {
+            "committed_rows": 116472,
+            "day": "2026-11-05",
+            "files": 96,
+            "raw_lines": 116472,
+            "raw_lines_per_second": 6261,
+            "run_id": "backfill__2026-11-06T08:25:00+00:00",
+            "seconds": 18.6,
+            "weekday": "Thu",
+            "zip_bytes": 506281300
+          },
+          {
+            "committed_rows": 112318,
+            "day": "2026-11-06",
+            "files": 96,
+            "raw_lines": 112318,
+            "raw_lines_per_second": 6389,
+            "run_id": "backfill__2026-11-07T08:25:00+00:00",
+            "seconds": 17.58,
+            "weekday": "Fri",
+            "zip_bytes": 483441370
+          },
+          {
+            "committed_rows": 64211,
+            "day": "2026-11-07",
+            "files": 96,
+            "raw_lines": 64211,
+            "raw_lines_per_second": 5856,
+            "run_id": "backfill__2026-11-08T08:25:00+00:00",
+            "seconds": 10.96,
+            "weekday": "Sat",
+            "zip_bytes": 277707296
+          },
+          {
+            "committed_rows": 52071,
+            "day": "2026-11-08",
+            "files": 96,
+            "raw_lines": 52071,
+            "raw_lines_per_second": 5656,
+            "run_id": "backfill__2026-11-09T08:25:00+00:00",
+            "seconds": 9.21,
+            "weekday": "Sun",
+            "zip_bytes": 227347063
+          },
+          {
+            "committed_rows": 97057,
+            "day": "2026-11-09",
+            "files": 96,
+            "raw_lines": 97057,
+            "raw_lines_per_second": 6263,
+            "run_id": "backfill__2026-11-10T08:25:00+00:00",
+            "seconds": 15.5,
+            "weekday": "Mon",
+            "zip_bytes": 419139753
+          },
+          {
+            "committed_rows": 114410,
+            "day": "2026-11-10",
+            "files": 96,
+            "raw_lines": 114410,
+            "raw_lines_per_second": 6416,
+            "run_id": "backfill__2026-11-11T08:25:00+00:00",
+            "seconds": 17.83,
+            "weekday": "Tue",
+            "zip_bytes": 489725865
+          },
+          {
+            "committed_rows": 109390,
+            "day": "2026-11-11",
+            "files": 96,
+            "raw_lines": 109390,
+            "raw_lines_per_second": 6391,
+            "run_id": "backfill__2026-11-12T08:25:00+00:00",
+            "seconds": 17.12,
+            "weekday": "Wed",
+            "zip_bytes": 469769570
+          },
+          {
+            "committed_rows": 109111,
+            "day": "2026-11-12",
+            "files": 96,
+            "raw_lines": 109111,
+            "raw_lines_per_second": 6429,
+            "run_id": "backfill__2026-11-13T08:25:00+00:00",
+            "seconds": 16.97,
+            "weekday": "Thu",
+            "zip_bytes": 467195238
+          },
+          {
+            "committed_rows": 104883,
+            "day": "2026-11-13",
+            "files": 96,
+            "raw_lines": 104883,
+            "raw_lines_per_second": 6475,
+            "run_id": "backfill__2026-11-14T08:25:00+00:00",
+            "seconds": 16.2,
+            "weekday": "Fri",
+            "zip_bytes": 444689095
+          },
+          {
+            "committed_rows": 62192,
+            "day": "2026-11-14",
+            "files": 96,
+            "raw_lines": 62192,
+            "raw_lines_per_second": 5994,
+            "run_id": "backfill__2026-11-15T08:25:00+00:00",
+            "seconds": 10.38,
+            "weekday": "Sat",
+            "zip_bytes": 263990219
+          },
+          {
+            "committed_rows": 50459,
+            "day": "2026-11-15",
+            "files": 96,
+            "raw_lines": 50459,
+            "raw_lines_per_second": 5812,
+            "run_id": "backfill__2026-11-16T08:25:00+00:00",
+            "seconds": 8.68,
+            "weekday": "Sun",
+            "zip_bytes": 216523329
+          },
+          {
+            "committed_rows": 96610,
+            "day": "2026-11-16",
+            "files": 96,
+            "raw_lines": 96610,
+            "raw_lines_per_second": 6237,
+            "run_id": "backfill__2026-11-17T08:25:00+00:00",
+            "seconds": 15.49,
+            "weekday": "Mon",
+            "zip_bytes": 407305510
+          },
+          {
+            "committed_rows": 115340,
+            "day": "2026-11-17",
+            "files": 96,
+            "raw_lines": 115340,
+            "raw_lines_per_second": 6524,
+            "run_id": "backfill__2026-11-18T08:25:00+00:00",
+            "seconds": 17.68,
+            "weekday": "Tue",
+            "zip_bytes": 488460168
+          },
+          {
+            "committed_rows": 118241,
+            "day": "2026-11-18",
+            "files": 96,
+            "raw_lines": 118241,
+            "raw_lines_per_second": 6355,
+            "run_id": "backfill__2026-11-19T08:25:00+00:00",
+            "seconds": 18.61,
+            "weekday": "Wed",
+            "zip_bytes": 500681961
+          },
+          {
+            "committed_rows": 119181,
+            "day": "2026-11-19",
+            "files": 96,
+            "raw_lines": 119181,
+            "raw_lines_per_second": 6460,
+            "run_id": "backfill__2026-11-20T08:25:00+00:00",
+            "seconds": 18.45,
+            "weekday": "Thu",
+            "zip_bytes": 506060994
+          },
+          {
+            "committed_rows": 111526,
+            "day": "2026-11-20",
+            "files": 96,
+            "raw_lines": 111526,
+            "raw_lines_per_second": 6390,
+            "run_id": "backfill__2026-11-21T08:25:00+00:00",
+            "seconds": 17.45,
+            "weekday": "Fri",
+            "zip_bytes": 473453743
+          },
+          {
+            "committed_rows": 63550,
+            "day": "2026-11-21",
+            "files": 96,
+            "raw_lines": 63550,
+            "raw_lines_per_second": 6034,
+            "run_id": "backfill__2026-11-22T08:25:00+00:00",
+            "seconds": 10.53,
+            "weekday": "Sat",
+            "zip_bytes": 268771561
+          },
+          {
+            "committed_rows": 52109,
+            "day": "2026-11-22",
+            "files": 96,
+            "raw_lines": 52109,
+            "raw_lines_per_second": 5949,
+            "run_id": "backfill__2026-11-23T08:25:00+00:00",
+            "seconds": 8.76,
+            "weekday": "Sun",
+            "zip_bytes": 223947678
+          },
+          {
+            "committed_rows": 100164,
+            "day": "2026-11-23",
+            "files": 96,
+            "raw_lines": 100164,
+            "raw_lines_per_second": 6419,
+            "run_id": "backfill__2026-11-24T08:25:00+00:00",
+            "seconds": 15.6,
+            "weekday": "Mon",
+            "zip_bytes": 419883519
+          },
+          {
+            "committed_rows": 111522,
+            "day": "2026-11-24",
+            "files": 96,
+            "raw_lines": 111522,
+            "raw_lines_per_second": 6450,
+            "run_id": "backfill__2026-11-25T08:25:00+00:00",
+            "seconds": 17.29,
+            "weekday": "Tue",
+            "zip_bytes": 469123996
+          }
+        ],
+        "days": 30,
+        "megabytes_zipped_per_second": {
+          "max": 27.85,
+          "median": 27.13,
+          "min": 23.53
+        },
+        "raw_lines_per_second": {
+          "max": 6524,
+          "median": 6358.0,
+          "min": 5399
+        },
+        "seconds": {
+          "max": 19.77,
+          "median": 16.88,
+          "min": 8.68
+        },
+        "seconds_total": 462.0
+      },
+      "mentions": {
+        "by_day": [
+          {
+            "committed_rows": 270721,
+            "day": "2026-10-26",
+            "files": 96,
+            "raw_lines": 276387,
+            "raw_lines_per_second": 97354,
+            "run_id": "backfill__2026-10-27T08:25:00+00:00",
+            "seconds": 2.84,
+            "weekday": "Mon",
+            "zip_bytes": 9057810
+          },
+          {
+            "committed_rows": 313559,
+            "day": "2026-10-27",
+            "files": 96,
+            "raw_lines": 318197,
+            "raw_lines_per_second": 100536,
+            "run_id": "backfill__2026-10-28T08:25:00+00:00",
+            "seconds": 3.17,
+            "weekday": "Tue",
+            "zip_bytes": 10766759
+          },
+          {
+            "committed_rows": 327033,
+            "day": "2026-10-28",
+            "files": 96,
+            "raw_lines": 333683,
+            "raw_lines_per_second": 99666,
+            "run_id": "backfill__2026-10-29T08:25:00+00:00",
+            "seconds": 3.35,
+            "weekday": "Wed",
+            "zip_bytes": 11098410
+          },
+          {
+            "committed_rows": 304229,
+            "day": "2026-10-29",
+            "files": 96,
+            "raw_lines": 309373,
+            "raw_lines_per_second": 95309,
+            "run_id": "backfill__2026-10-30T08:25:00+00:00",
+            "seconds": 3.25,
+            "weekday": "Thu",
+            "zip_bytes": 10558836
+          },
+          {
+            "committed_rows": 287859,
+            "day": "2026-10-30",
+            "files": 96,
+            "raw_lines": 294813,
+            "raw_lines_per_second": 99230,
+            "run_id": "backfill__2026-10-31T08:25:00+00:00",
+            "seconds": 2.97,
+            "weekday": "Fri",
+            "zip_bytes": 10223706
+          },
+          {
+            "committed_rows": 204344,
+            "day": "2026-10-31",
+            "files": 96,
+            "raw_lines": 207303,
+            "raw_lines_per_second": 86054,
+            "run_id": "backfill__2026-11-01T08:25:00+00:00",
+            "seconds": 2.41,
+            "weekday": "Sat",
+            "zip_bytes": 6238783
+          },
+          {
+            "committed_rows": 165020,
+            "day": "2026-11-01",
+            "files": 96,
+            "raw_lines": 167648,
+            "raw_lines_per_second": 71675,
+            "run_id": "backfill__2026-11-02T08:25:00+00:00",
+            "seconds": 2.34,
+            "weekday": "Sun",
+            "zip_bytes": 5151836
+          },
+          {
+            "committed_rows": 271057,
+            "day": "2026-11-02",
+            "files": 96,
+            "raw_lines": 275706,
+            "raw_lines_per_second": 100002,
+            "run_id": "backfill__2026-11-03T08:25:00+00:00",
+            "seconds": 2.76,
+            "weekday": "Mon",
+            "zip_bytes": 9263301
+          },
+          {
+            "committed_rows": 318384,
+            "day": "2026-11-03",
+            "files": 96,
+            "raw_lines": 323789,
+            "raw_lines_per_second": 105779,
+            "run_id": "backfill__2026-11-04T08:25:00+00:00",
+            "seconds": 3.06,
+            "weekday": "Tue",
+            "zip_bytes": 10727412
+          },
+          {
+            "committed_rows": 348557,
+            "day": "2026-11-04",
+            "files": 96,
+            "raw_lines": 353999,
+            "raw_lines_per_second": 103903,
+            "run_id": "backfill__2026-11-05T08:25:00+00:00",
+            "seconds": 3.41,
+            "weekday": "Wed",
+            "zip_bytes": 12004306
+          },
+          {
+            "committed_rows": 315800,
+            "day": "2026-11-05",
+            "files": 96,
+            "raw_lines": 321490,
+            "raw_lines_per_second": 100434,
+            "run_id": "backfill__2026-11-06T08:25:00+00:00",
+            "seconds": 3.2,
+            "weekday": "Thu",
+            "zip_bytes": 10810077
+          },
+          {
+            "committed_rows": 310958,
+            "day": "2026-11-06",
+            "files": 96,
+            "raw_lines": 315477,
+            "raw_lines_per_second": 100311,
+            "run_id": "backfill__2026-11-07T08:25:00+00:00",
+            "seconds": 3.15,
+            "weekday": "Fri",
+            "zip_bytes": 10245160
+          },
+          {
+            "committed_rows": 201881,
+            "day": "2026-11-07",
+            "files": 96,
+            "raw_lines": 205767,
+            "raw_lines_per_second": 85879,
+            "run_id": "backfill__2026-11-08T08:25:00+00:00",
+            "seconds": 2.4,
+            "weekday": "Sat",
+            "zip_bytes": 6152488
+          },
+          {
+            "committed_rows": 177090,
+            "day": "2026-11-08",
+            "files": 96,
+            "raw_lines": 179838,
+            "raw_lines_per_second": 77852,
+            "run_id": "backfill__2026-11-09T08:25:00+00:00",
+            "seconds": 2.31,
+            "weekday": "Sun",
+            "zip_bytes": 4969217
+          },
+          {
+            "committed_rows": 299630,
+            "day": "2026-11-09",
+            "files": 96,
+            "raw_lines": 305161,
+            "raw_lines_per_second": 100746,
+            "run_id": "backfill__2026-11-10T08:25:00+00:00",
+            "seconds": 3.03,
+            "weekday": "Mon",
+            "zip_bytes": 9540987
+          },
+          {
+            "committed_rows": 337691,
+            "day": "2026-11-10",
+            "files": 96,
+            "raw_lines": 343277,
+            "raw_lines_per_second": 103241,
+            "run_id": "backfill__2026-11-11T08:25:00+00:00",
+            "seconds": 3.33,
+            "weekday": "Tue",
+            "zip_bytes": 11209317
+          },
+          {
+            "committed_rows": 315167,
+            "day": "2026-11-11",
+            "files": 96,
+            "raw_lines": 322248,
+            "raw_lines_per_second": 95538,
+            "run_id": "backfill__2026-11-12T08:25:00+00:00",
+            "seconds": 3.37,
+            "weekday": "Wed",
+            "zip_bytes": 10734225
+          },
+          {
+            "committed_rows": 339711,
+            "day": "2026-11-12",
+            "files": 96,
+            "raw_lines": 346891,
+            "raw_lines_per_second": 104140,
+            "run_id": "backfill__2026-11-13T08:25:00+00:00",
+            "seconds": 3.33,
+            "weekday": "Thu",
+            "zip_bytes": 11101991
+          },
+          {
+            "committed_rows": 303462,
+            "day": "2026-11-13",
+            "files": 96,
+            "raw_lines": 309739,
+            "raw_lines_per_second": 104114,
+            "run_id": "backfill__2026-11-14T08:25:00+00:00",
+            "seconds": 2.98,
+            "weekday": "Fri",
+            "zip_bytes": 10054148
+          },
+          {
+            "committed_rows": 176668,
+            "day": "2026-11-14",
+            "files": 96,
+            "raw_lines": 179871,
+            "raw_lines_per_second": 79872,
+            "run_id": "backfill__2026-11-15T08:25:00+00:00",
+            "seconds": 2.25,
+            "weekday": "Sat",
+            "zip_bytes": 5697127
+          },
+          {
+            "committed_rows": 136756,
+            "day": "2026-11-15",
+            "files": 96,
+            "raw_lines": 138886,
+            "raw_lines_per_second": 71554,
+            "run_id": "backfill__2026-11-16T08:25:00+00:00",
+            "seconds": 1.94,
+            "weekday": "Sun",
+            "zip_bytes": 4351539
+          },
+          {
+            "committed_rows": 269321,
+            "day": "2026-11-16",
+            "files": 96,
+            "raw_lines": 274923,
+            "raw_lines_per_second": 97009,
+            "run_id": "backfill__2026-11-17T08:25:00+00:00",
+            "seconds": 2.83,
+            "weekday": "Mon",
+            "zip_bytes": 8752748
+          },
+          {
+            "committed_rows": 346787,
+            "day": "2026-11-17",
+            "files": 96,
+            "raw_lines": 353634,
+            "raw_lines_per_second": 105405,
+            "run_id": "backfill__2026-11-18T08:25:00+00:00",
+            "seconds": 3.35,
+            "weekday": "Tue",
+            "zip_bytes": 11463113
+          },
+          {
+            "committed_rows": 348367,
+            "day": "2026-11-18",
+            "files": 96,
+            "raw_lines": 354427,
+            "raw_lines_per_second": 106787,
+            "run_id": "backfill__2026-11-19T08:25:00+00:00",
+            "seconds": 3.32,
+            "weekday": "Wed",
+            "zip_bytes": 11697837
+          },
+          {
+            "committed_rows": 349294,
+            "day": "2026-11-19",
+            "files": 96,
+            "raw_lines": 356130,
+            "raw_lines_per_second": 105364,
+            "run_id": "backfill__2026-11-20T08:25:00+00:00",
+            "seconds": 3.38,
+            "weekday": "Thu",
+            "zip_bytes": 11731788
+          },
+          {
+            "committed_rows": 314347,
+            "day": "2026-11-20",
+            "files": 96,
+            "raw_lines": 321260,
+            "raw_lines_per_second": 104850,
+            "run_id": "backfill__2026-11-21T08:25:00+00:00",
+            "seconds": 3.06,
+            "weekday": "Fri",
+            "zip_bytes": 10633814
+          },
+          {
+            "committed_rows": 170469,
+            "day": "2026-11-21",
+            "files": 96,
+            "raw_lines": 172985,
+            "raw_lines_per_second": 67441,
+            "run_id": "backfill__2026-11-22T08:25:00+00:00",
+            "seconds": 2.56,
+            "weekday": "Sat",
+            "zip_bytes": 5628052
+          },
+          {
+            "committed_rows": 146721,
+            "day": "2026-11-22",
+            "files": 96,
+            "raw_lines": 149366,
+            "raw_lines_per_second": 71330,
+            "run_id": "backfill__2026-11-23T08:25:00+00:00",
+            "seconds": 2.09,
+            "weekday": "Sun",
+            "zip_bytes": 4501702
+          },
+          {
+            "committed_rows": 263477,
+            "day": "2026-11-23",
+            "files": 96,
+            "raw_lines": 267938,
+            "raw_lines_per_second": 92808,
+            "run_id": "backfill__2026-11-24T08:25:00+00:00",
+            "seconds": 2.89,
+            "weekday": "Mon",
+            "zip_bytes": 8750998
+          },
+          {
+            "committed_rows": 301175,
+            "day": "2026-11-24",
+            "files": 96,
+            "raw_lines": 306978,
+            "raw_lines_per_second": 92659,
+            "run_id": "backfill__2026-11-25T08:25:00+00:00",
+            "seconds": 3.31,
+            "weekday": "Tue",
+            "zip_bytes": 10262726
+          }
+        ],
+        "days": 30,
+        "megabytes_zipped_per_second": {
+          "max": 3.52,
+          "median": 3.25,
+          "min": 2.15
+        },
+        "raw_lines_per_second": {
+          "max": 106787,
+          "median": 99448.0,
+          "min": 67441
+        },
+        "seconds": {
+          "max": 3.41,
+          "median": 3.04,
+          "min": 1.94
+        },
+        "seconds_total": 87.6
+      }
+    },
+    "from": "2026-10-26",
+    "to": "2026-11-24"
+  },
+  "benchmark": "B2",
+  "live_run": {
+    "from": "2026-11-27T11:26:18+00:00",
+    "hour_builds": {
+      "export": {
+        "builds": 25,
+        "by_hour": [
+          {
+            "builds": 1,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 11,
+            "rows_in_the_last_build": 3981,
+            "seconds_of_all_builds": 0.59,
+            "seconds_of_the_last_build": 0.59
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 12,
+            "rows_in_the_last_build": 4126,
+            "seconds_of_all_builds": 6.55,
+            "seconds_of_the_last_build": 3.64
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 13,
+            "rows_in_the_last_build": 4660,
+            "seconds_of_all_builds": 1.73,
+            "seconds_of_the_last_build": 0.37
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 14,
+            "rows_in_the_last_build": 4675,
+            "seconds_of_all_builds": 1.34,
+            "seconds_of_the_last_build": 0.33
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 15,
+            "rows_in_the_last_build": 4259,
+            "seconds_of_all_builds": 1.34,
+            "seconds_of_the_last_build": 0.4
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 16,
+            "rows_in_the_last_build": 4629,
+            "seconds_of_all_builds": 1.36,
+            "seconds_of_the_last_build": 0.39
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 17,
+            "rows_in_the_last_build": 4173,
+            "seconds_of_all_builds": 1.37,
+            "seconds_of_the_last_build": 0.38
+          }
+        ],
+        "four_builds_against_the_last_build": {
+          "max": 4.68,
+          "median": 3.55,
+          "min": 1.8
+        },
+        "hours": 7,
+        "hours_with_four_builds_and_four_files": 6,
+        "seconds_of_four_builds": {
+          "max": 6.55,
+          "median": 1.37,
+          "min": 1.34
+        },
+        "seconds_of_the_last_build": {
+          "max": 3.64,
+          "median": 0.39,
+          "min": 0.33
+        }
+      },
+      "gkg": {
+        "builds": 26,
+        "by_hour": [
+          {
+            "builds": 2,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 11,
+            "rows_in_the_last_build": 3916,
+            "seconds_of_all_builds": 2.59,
+            "seconds_of_the_last_build": 1.79
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 12,
+            "rows_in_the_last_build": 4154,
+            "seconds_of_all_builds": 7.97,
+            "seconds_of_the_last_build": 3.9
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 13,
+            "rows_in_the_last_build": 4291,
+            "seconds_of_all_builds": 4.14,
+            "seconds_of_the_last_build": 1.28
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 14,
+            "rows_in_the_last_build": 4402,
+            "seconds_of_all_builds": 3.93,
+            "seconds_of_the_last_build": 1.66
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 15,
+            "rows_in_the_last_build": 4461,
+            "seconds_of_all_builds": 3.46,
+            "seconds_of_the_last_build": 1.2
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 16,
+            "rows_in_the_last_build": 4349,
+            "seconds_of_all_builds": 3.67,
+            "seconds_of_the_last_build": 1.3
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 17,
+            "rows_in_the_last_build": 4337,
+            "seconds_of_all_builds": 3.64,
+            "seconds_of_the_last_build": 1.19
+          }
+        ],
+        "four_builds_against_the_last_build": {
+          "max": 3.23,
+          "median": 2.85,
+          "min": 2.04
+        },
+        "hours": 7,
+        "hours_with_four_builds_and_four_files": 6,
+        "seconds_of_four_builds": {
+          "max": 7.97,
+          "median": 3.8,
+          "min": 3.46
+        },
+        "seconds_of_the_last_build": {
+          "max": 3.9,
+          "median": 1.29,
+          "min": 1.19
+        }
+      },
+      "mentions": {
+        "builds": 29,
+        "by_hour": [
+          {
+            "builds": 1,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 8,
+            "rows_in_the_last_build": 6668,
+            "seconds_of_all_builds": 0.21,
+            "seconds_of_the_last_build": 0.21
+          },
+          {
+            "builds": 1,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 9,
+            "rows_in_the_last_build": 7631,
+            "seconds_of_all_builds": 0.27,
+            "seconds_of_the_last_build": 0.27
+          },
+          {
+            "builds": 1,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 10,
+            "rows_in_the_last_build": 7705,
+            "seconds_of_all_builds": 0.27,
+            "seconds_of_the_last_build": 0.27
+          },
+          {
+            "builds": 2,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 11,
+            "rows_in_the_last_build": 8413,
+            "seconds_of_all_builds": 0.81,
+            "seconds_of_the_last_build": 0.25
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 12,
+            "rows_in_the_last_build": 8817,
+            "seconds_of_all_builds": 1.45,
+            "seconds_of_the_last_build": 0.44
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 13,
+            "rows_in_the_last_build": 10809,
+            "seconds_of_all_builds": 0.91,
+            "seconds_of_the_last_build": 0.27
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 14,
+            "rows_in_the_last_build": 11795,
+            "seconds_of_all_builds": 1.01,
+            "seconds_of_the_last_build": 0.32
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 15,
+            "rows_in_the_last_build": 10395,
+            "seconds_of_all_builds": 0.94,
+            "seconds_of_the_last_build": 0.26
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 16,
+            "rows_in_the_last_build": 11493,
+            "seconds_of_all_builds": 0.91,
+            "seconds_of_the_last_build": 0.25
+          },
+          {
+            "builds": 4,
+            "day": "2026-11-27",
+            "files_in_the_last_build": 4,
+            "hour": 17,
+            "rows_in_the_last_build": 11259,
+            "seconds_of_all_builds": 0.92,
+            "seconds_of_the_last_build": 0.25
+          }
+        ],
+        "four_builds_against_the_last_build": {
+          "max": 3.68,
+          "median": 3.49,
+          "min": 3.16
+        },
+        "hours": 10,
+        "hours_with_four_builds_and_four_files": 6,
+        "seconds_of_four_builds": {
+          "max": 1.45,
+          "median": 0.93,
+          "min": 0.91
+        },
+        "seconds_of_the_last_build": {
+          "max": 0.44,
+          "median": 0.27,
+          "min": 0.25
+        }
+      }
+    },
+    "runs_of_the_hourly_job": {
+      "runs": 25,
+      "runs_with_status_success": 25,
+      "seconds": {
+        "max": 8.14,
+        "median": 1.62,
+        "min": 0.94
+      },
+      "seconds_total": 49.8,
+      "units_built": {
+        "max": 3.0,
+        "median": 3.0,
+        "min": 3.0
+      }
+    },
+    "to": "2026-11-27T17:45:00+00:00"
+  },
+  "measured_at": "2026-11-27T18:15:40+00:00"
+}
