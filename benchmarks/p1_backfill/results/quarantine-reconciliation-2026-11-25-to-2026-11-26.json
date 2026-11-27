@@ -1,0 +1,124 @@
+{
+  "evaluated_at": "2026-11-27T11:32:15+00:00",
+  "quarantined_files": {
+    "files_kept_in_quarantine": [],
+    "slots_in_state_quarantined": []
+  },
+  "quarantined_rows": {
+    "by_feed": {
+      "export": {
+        "raw_lines": 212239,
+        "reasons": {},
+        "rows_in_quarantine_files": 0,
+        "rows_in_the_ledger": 0
+      },
+      "gkg": {
+        "raw_lines": 200665,
+        "reasons": {},
+        "rows_in_quarantine_files": 0,
+        "rows_in_the_ledger": 0
+      },
+      "mentions": {
+        "raw_lines": 521998,
+        "reasons": {},
+        "rows_in_quarantine_files": 0,
+        "rows_in_the_ledger": 0
+      }
+    },
+    "quarantine_files_of_units": 0
+  },
+  "reconciliation": {
+    "by_day": [
+      {
+        "bronze_bytes": 7502531,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 7502531,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-25",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 10087462,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 10087462,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-25",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 476465708,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 476465708,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-25",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 5966112,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 5966112,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-26",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 7582551,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 7582551,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-26",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 371588765,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 371588765,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-26",
+        "version_files": 96,
+        "version_kind": "day"
+      }
+    ],
+    "differences": [],
+    "feed_days": 6,
+    "feed_days_which_agree": 6,
+    "totals": {
+      "export": {
+        "bronze_bytes": 13468643,
+        "bronze_files": 192,
+        "ledger_bytes": 13468643,
+        "ledger_loaded_files": 192,
+        "version_files": 192
+      },
+      "gkg": {
+        "bronze_bytes": 848054473,
+        "bronze_files": 192,
+        "ledger_bytes": 848054473,
+        "ledger_loaded_files": 192,
+        "version_files": 192
+      },
+      "mentions": {
+        "bronze_bytes": 17670013,
+        "bronze_files": 192,
+        "ledger_bytes": 17670013,
+        "ledger_loaded_files": 192,
+        "version_files": 192
+      }
+    }
+  },
+  "window": {
+    "from": "2026-11-25",
+    "to": "2026-11-26"
+  }
+}
