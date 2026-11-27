@@ -22,3 +22,4 @@ A decision without evidence is marked provisional.
 | [001](001-scope-non-goals-success-criteria.md) | Scope, non-goals and success criteria | Accepted |
 | [004](004-iceberg-glue-local-backend.md) | Iceberg with Glue; a local filesystem backend instead of an S3 emulator | Accepted |
 | [006](006-incremental-contract-partition-replacement.md) | Incremental contract: partition replacement | Provisional (draft) |
+| [007](007-ledger-state-machine-and-completeness.md) | Ledger state machine and the meaning of completeness | Accepted |
