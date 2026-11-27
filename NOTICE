@@ -16,9 +16,11 @@ redistribution, provided that any use or redistribution includes a citation to
 the GDELT Project and a link to its website
 (https://www.gdeltproject.org/about.html#termsofuse).
 
-Recorded GDELT 2.0 files under tests/fixtures/gdelt/ are redistributed unchanged
-under those terms. The platform stores GDELT metadata, article titles and URLs
-only; it never fetches or stores article text.
+Recorded GDELT 2.0 files under tests/fixtures/gdelt/ are redistributed under
+those terms. The Events and Mentions files are unchanged. Each of the four GKG
+files holds the first 60 records of the real file, unchanged byte for byte
+(tests/fixtures/gdelt/ATTRIBUTION.md). The platform stores GDELT metadata,
+article titles and URLs only; it never fetches or stores article text.
 
 SEC EDGAR
 

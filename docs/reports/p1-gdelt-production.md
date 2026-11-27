@@ -3,8 +3,27 @@
 | | |
 |---|---|
 | Phase | P1 — GDELT at production quality (blueprint §11.2), as specified by the week 2 plan |
-| State | **In progress.** The report grows with each work package. The verdict, the exit gate with evidence, the numbers of the backfill, the open items and the hand-off follow in WP-12 |
-| Run | Started on 2026-11-26 at 16:09 UTC, on one laptop: MacBook Pro M2 Pro, 16 GB, Docker Desktop with a virtual machine of 7.65 GiB and 12 CPUs. Claude, the AI model which works in the repository, carries out the work packages. Jay gave the go-ahead for the Git work of the week (week 2 plan, §3.5) |
+| State | **Done on 2026-11-27.** Every row of the exit gate holds. Row 7 holds with one note: the laptop slept four times during the live run, so the 6 hours in a row and the scheduled daily run lie in different periods. The annotated tag `p1` marks the merge commit of the last pull request |
+| Run | Started on 2026-11-26 at 16:09 UTC, on one laptop: MacBook Pro M2 Pro, 16 GB, Docker Desktop with a virtual machine of 7.65 GiB and 12 CPUs. Claude, the AI model which works in the repository, carries out the work packages. Jay gave the go-ahead for the Git work of the week (week 2 plan, §3.5). The week took about 27 hours of elapsed time, from 2026-11-26 16:09 UTC to the evening of 2026-11-27 UTC; the live run alone took 21 hours. The recorded working time is about 9 hours; the plan had 45 hours for a person |
+
+## Exit gate
+
+The exit gate of the week 2 plan (§2). Every row holds; row 7 has one note.
+
+| # | Criterion | State | Evidence |
+|---|---|---|---|
+| 1 | Thirty consecutive closed UTC days of the three feeds are in silver, loaded by the backfill of WP-09 | Holds | The days 2026-10-26 to 2026-11-24. `gbmi ledger status`: 8,640 of 8,640 slots are `loaded`. Each of the four silver tables holds a day-level version for each of the 30 days (section "The 30-day backfill") |
+| 2 | Completeness is at least 99.5% for each of the 30 days | Holds | 100% for each day in `ops.ops_slot_status_daily`, built on 2026-11-26 at 20:46:45 UTC. The section on the backfill quotes the query and the answer |
+| 3 | Accounting is 100% | Holds | One query over the ledger, run on 2026-11-26 at 21:33 UTC: 8,640 of 8,640 loaded files balance, and 14,395,666 raw lines = 14,395,666 parsed rows + 0 quarantined rows |
+| 4 | A rerun gives equal checksums; the coverage of the parsers and of the ledger is at least 80% | Holds | Drill DR8 passes on the recorded day in the workflow `e2e`, and passed on two real days of the window: 12 of 12 checks on 2026-11-18 and on 2026-11-22. `make test` fails below 80% for `gbmi.ledger`, `gbmi.core` and `gbmi.transforms.duckdb` together; the gate shows 99% |
+| 5 | Gates G1, G2 and G3 are in force | Holds | Tests: a file with a wrong MD5 hash never reaches bronze (`tests/unit/test_gdelt_land.py`, `tests/ledger/test_ingest.py`); a file with more than 1% bad rows is quarantined as a whole, and a failed audit changes neither silver nor the ledger (`tests/integration/silver/test_build_failures.py`). The table `ops.dq_result` of the working stack holds 13,348 results: 9,494 of gate G1, 375 of gate G2, 3,477 of gate G3 and 2 of gate G6. Six results failed, each one the check for overdue slots during the drain of the backfill; no file and no unit failed a gate |
+| 6 | The three GDELT DAGs pass the DAG test suite, and the 30 days were built by `airflow backfill create` | Holds | `make test-dags` runs 15 tests in the workflow `e2e`. Backfill identifier 1: 30 runs, each with the state `success`. The run list is `benchmarks/p1_backfill/results/gdelt_silver_daily-runs.json` |
+| 7 | `gdelt_ingest` and `gdelt_silver_hourly` ran on the live source for at least 6 hours in a row without manual action, and the live run held one scheduled run of `gdelt_silver_daily` | Holds, with a note | 6 hours and 17 minutes in a row on 2026-11-27, from 11:26 to 17:43 UTC, with 25 of 25 runs of each of the two DAGs on time. The scheduled daily run for 08:25 UTC started at 09:08 UTC and built 2026-11-26. **Note:** the laptop slept four times, so the two facts lie in different periods of the live run. Latency from `listed` to the silver commit: 180.9 seconds in the median and 186.8 seconds at the 95th percentile, for 75 files (section "The live run") |
+| 8 | Drills DR2, DR4 and DR8 pass as scripts; two runbooks exist | Holds | `make drill DR=2`, `DR=4` and `DR=8` run in the workflow `e2e`. On the laptop on 2026-11-27: 52, 15 and 20 checks passed. `docs/runbooks/` holds the two runbooks |
+| 9 | Benchmark report v1 holds the first numbers of B1, B2 and B4, the memory of the real GKG parser and the source profile | Holds | `docs/reports/benchmark-v1.md`, with eleven scripts and the raw results under `benchmarks/`. The real GKG parser needs about 1.0 GiB for the largest day of the window |
+| 10 | The quarantine report and the reconciliation report exist | Holds | `docs/reports/p1-quarantine-reconciliation.md`: no quarantined row, no quarantined file, and 90 of 90 pairs of feed and day agree |
+| 11 | `make demo` passes on the laptop and in CI; the four workflows are green on `main` after the last merge | Holds | Laptop, 2026-11-27 from 18:25 to 18:30 UTC: `make reset STACK=gbmi-demo`, then `make demo` twice, with 18 end-to-end tests each. CI: the workflow `e2e` ran `make demo` on each pull request of the week. The four workflows on the last merge commit are checked before the tag `p1` is set |
+| 12 | ADR-007 is written, the four silver tables have a contract file, and the version pins are re-verified on the start date | Holds | `docs/adr/007-ledger-state-machine-and-completeness.md`; `docs/contracts/` holds one file for each of the four silver tables, and `tests/contract` compares the files with the schemas; the pin table below was checked on 2026-11-26 |
 
 ## Work packages
 
@@ -23,7 +42,8 @@ The order follows change C1 of the week 2 plan (§3.5). Every time is UTC. The w
 | 11 | Drills DR2, DR4, DR8 and two runbooks (before WP-09: change C1) | 2026-11-26 19:02 | 2026-11-26 19:25 | [#12](https://github.com/jaymercado/gbmi-platform/pull/12) | Done. Working time about 11 minutes; the GitHub checks took about 12 minutes |
 | — | Review of the code before the backfill, and the repairs (change C6) | 2026-11-26 19:10 | 2026-11-26 20:12 | [#13](https://github.com/jaymercado/gbmi-platform/pull/13) | Done. The review agent worked from 19:10 to 19:46. The repairs and the local checks ended at 20:00; the GitHub checks took about 12 minutes |
 | 09 | Thirty-day backfill and live run | 2026-11-26 20:14 | 2026-11-27 17:57 | [#14](https://github.com/jaymercado/gbmi-platform/pull/14) | Done. The drain, the backfill and the evidence took 33 minutes (20:14 to 20:47). The live run took 20 hours and 55 minutes of elapsed time, with four sleeps of the laptop. Working time about 90 minutes, an estimate: the work was mixed with the preparation of WP-10 during the live run. The GitHub checks took about 10 minutes |
-| 10 | Source profile and benchmarks B1, B2, B4 | 2026-11-26 20:18 | | [#15](https://github.com/jaymercado/gbmi-platform/pull/15) | The pull request is open. The scripts, the source profile and benchmark B4 were done during the live run of WP-09, because the three only read files and tables. Benchmarks B1 and B2 and the comparison for D17 ran after the live run, on 2026-11-27 from 17:46 to 18:21, with the three DAGs paused. Working time about 2.5 hours, an estimate; 3.5 hours were planned. No part of the work package was cut. The stretch item of change C8 was taken |
+| 10 | Source profile and benchmarks B1, B2, B4 | 2026-11-26 20:18 | 2026-11-27 18:36 | [#15](https://github.com/jaymercado/gbmi-platform/pull/15) | Done. The scripts, the source profile and benchmark B4 were done during the live run of WP-09, because the three only read files and tables. Benchmarks B1 and B2 and the comparison for D17 ran after the live run, on 2026-11-27 from 17:46 to 18:21, with the three DAGs paused. Working time about 2.5 hours, an estimate; 3.5 hours were planned. No part of the work package was cut. The stretch item of change C8 was taken. The GitHub checks took about 11 minutes |
+| 12 | ADR-007, status report, close-out | 2026-11-27 18:37 | | [#16](https://github.com/jaymercado/gbmi-platform/pull/16) | The last pull request of the week. Decision record ADR-007 was drafted during the live run. Working time about 1 hour, an estimate. The merge time is in the handoff file and in the tag `p1`, because the report is part of the same pull request |
 
 ## Version pins
 
@@ -294,6 +314,74 @@ Row 7 asks for two facts.
 
 The two facts lie in different periods of the live run. The daily run did not happen inside the 6 unbroken hours, and the daily run started 43 minutes late, because the laptop slept at 08:25. The week 2 plan gives the rule for a sleep: the count of 6 hours starts again (§10). A run of 6 unbroken hours which holds 08:25 UTC was not done on the laptop. The host of phase P2 runs the schedules without a lid, and the soak of phase P6 measures the same latency over 14 days.
 
+## Verification of the week
+
+The checks of the week 2 plan (§9), each with the last result. Every time is UTC.
+
+| Check | Result |
+|---|---|
+| Tooling: `make lint`, `make test` | Clean on 2026-11-27 at 18:23. 432 tests pass. The coverage of `gbmi.ledger`, `gbmi.core` and `gbmi.transforms.duckdb` together is 99% |
+| Migrations: `gbmi db status` | Three applied files on the working stack, each applied on 2026-11-26 at 16:44. The later starts of the stack applied nothing |
+| Stack: `make smoke` | Every check passes: on the working stack on 2026-11-26 at 20:14, on the demo stack on 2026-11-27 at 18:32 |
+| Ledger rules and parsers | `tests/unit`, `tests/ledger`, `tests/transforms` and `tests/contract` are part of `make test`; the property tests pass |
+| Spikes and builds: `make integration` | 78 tests pass on the demo stack on 2026-11-27 at 18:31. Four tests are marked as expected failures since phase P0: each one holds a behaviour of a stock tool which a spike rejected |
+| DAGs: `make test-dags` | 15 tests pass on 2026-11-27 at 18:30 |
+| End to end: `make demo`, twice | Passes twice on the demo stack on 2026-11-27, with 18 end-to-end tests each. The working stack was stopped during the two runs |
+| Drills: `make drill DR=2`, `DR=4`, `DR=8` | Exit code 0 for each drill on 2026-11-27: 52, 15 and 20 checks |
+| Operational model: `make dbt-build` | 27 of 27 steps pass on the demo stack on 2026-11-27 at 18:37. On the working stack the model holds one row for each feed and day of the window, and one row for the three feeds together |
+| Backfill: `gbmi ledger status` | 8,640 slots of the window, each `loaded` |
+| Completeness and accounting | 100% for each of the 30 days; 100% of the loaded files |
+| Rerun | Equal checksums on 2026-11-18 and on 2026-11-22 (drill DR8). The 18 rebuilds of 2026-11-04 in benchmark B2 gave the checksum of the version before, too |
+| Live run | 20 hours and 55 minutes with four sleeps of the laptop; 6 hours and 17 minutes in a row at the end. No DAG run failed. Nine tries failed while the laptop slept or had just woken, and a later try passed each time. One scheduled run of `gdelt_silver_daily`. The latencies are in the section on the live run |
+| CI | The four workflows passed on each pull request of the week, #4 to #15, and on `main` after each merge |
+| From nothing: `make reset STACK=gbmi-demo && make demo` | Passes on 2026-11-27 at 18:28, in 152 seconds |
+
+## What the evidence corrects
+
+The blueprint was not edited. The week 2 plan changed only in section 3.5. The table lists the places where a measurement of the week says something else than a document, or gives the first number.
+
+| Document | Statement | Finding | Evidence |
+|---|---|---|---|
+| Blueprint §5.3 | Twelve months are about 160 GB of zip files and about 480 GB of text (an estimate) | The twelve full months from 2025-11 to 2026-10 have 165.5 GB of zip files. By the ratios of the 30 days the text has about 530 GB; the second number stays an estimate | Benchmark report v1, source profile |
+| Blueprint §4.6 | One GKG day is about 0.43 GB as zip files | The 30 days have between 217 MB and 541 MB, with a median of 468 MB. A Sunday has less than half of a Wednesday | Benchmark report v1, source profile |
+| Memory report of phase P0 | Silver GKG needs 2.5 to 4 GB for a month | 0.61 GB for the 30 days, in two tables | Benchmark B4 |
+| Blueprint §9.1 | A task process has a budget of 2 GB | The build of the largest GKG day peaks at about 1.0 GiB. The budget holds with a factor of two | Benchmark B2 |
+| Blueprint §3.4 and §8.3 | From `listed` to the silver commit: 45 minutes at the 95th percentile. From `listed` to `verified`: 10 minutes | 187 seconds and 1.8 seconds on the laptop, over 6.3 hours | Section on the live run |
+| Blueprint §8.2 | A listed file which the source does not serve is confirmed missing after 48 hours | The case happens in small: GDELT listed two GKG files and answered HTTP 404, for one of the two files at two tries which lay 19 minutes apart. Both files were served 2.4 hours later, at the next try | Section on the live run |
+| Blueprint §8.4 | The hourly job overwrites single hours in the trailing seven days | An hour overwrite inside a finalised day is faster than a build of the day, needs the same memory and leaves two data files. The platform builds the day again (difference D17) | Benchmark report v1 |
+| Week 2 plan, changes C3 and C4 | After a start of WP-09 late in the day, no scheduled run builds the day before the start day | The newest run of a backfill counts as the last automated run of a DAG, so the scheduler created the scheduled run right after the backfill command | Section on the backfill |
+| Week 2 plan, WP-09 | The drain of 13 GB takes about 12 minutes at 19 MB for each second | 14 minutes and 34 seconds at 16.4 MB for each second | Section on the backfill |
+| Week 2 plan, §3.3 | A slot which is not verified six hours after the slot time is reported as overdue | During the drain of a backfill the rule reports each file which waits for the download: six failed results in 12 minutes | Section on the backfill; ADR-007 |
+| Execution plan of the week | `caffeinate` does not keep a laptop with a closed lid awake | True on battery. On mains power the laptop stayed awake with a closed lid for 5 hours and 47 minutes | Section on the live run |
+
+## Open items
+
+**Carried to later phases**
+
+| Item | Phase |
+|---|---|
+| The memory and the CPU of the stack on the host; commit latency on S3; bronze on S3, as a new download on the host or as a copy of the laptop files; a ClickHouse role on AWS without write access to the lake; the password of the PostgreSQL reader in Parameter Store | P2 |
+| A live run of 6 unbroken hours which holds 08:25 UTC. The host runs the schedules without a lid | P2 |
+| The Git commit as the value of `_pipeline_version` (review finding V2), with the runtime image of the host | P2 |
+| The formal drill DR1 and the mart halves of DR2 and DR8; consistent pins of `gdelt_gkg_doc` and `gdelt_gkg_org` for one mart build; the large marts | P3 |
+| The webhook and the email alerts; the repair queue of gate G6, which closes the seven-day limits (review finding V3); a rule which keeps the overdue check quiet during the drain of a backfill; a rollback command for a silver table | P4 |
+| Clean-up of unreferenced files, of staged day files which a crash left behind and of old Iceberg metadata files. The lake of the working stack holds 15 GB: 13 GB of bronze, and silver with the data files of each replaced version (507 partition versions for 33 days) | P4 |
+| Benchmarks on cold disks, on a small day and on a GKG day above 541 MB; the benchmarks B3 and B5 to B8 | P5 and P6 |
+
+**Stretch items of the plan (§6, change C8).** Taken: the events mart over the month partitions of the window (benchmark report v1, B4). Not taken: the build tests on Glue and S3, which need a sign-in of Jay; a `plan` job in CI; the Dependabot and `security` configuration.
+
+**Points which stay with Jay.** The status of the alert email address (setup guide, step 4.1). The review of the gold-sheet labels before phase P3. The contact address for the SEC user agent, which the first SEC request of phase P2 needs.
+
+**State of the laptop at the end of the week.** Both Compose stacks are stopped. The working stack keeps the volumes and the lake: 9,432 files from 2026-10-26 00:00 UTC to 2026-11-27 17:45 UTC, each `loaded`, and the three GDELT DAGs are paused. `make up` starts the stack. After the unpause of `gdelt_ingest` and `gdelt_silver_hourly`, the ingest job lists and lands the files since the pause in batches of 200, as after each sleep of the laptop. Two rules of the runbook `silver-build-failed-or-wrong-data.md` apply to a long pause: each closed day of the gap gets the day-level version from `airflow backfill create`, and the hourly job looks at the trailing seven days only.
+
+## Hand-off to week 3
+
+Phase P2 (SEC ingestion and first deployment) starts when the exit gate holds. The gate holds since 2026-11-27, and the tag `p1` marks the commit.
+
+- **P2 inherits** the migration runner and the schema `ops`; the ledger pattern, which the table `ops.source_object` repeats for SEC files (blueprint §7.3); the run records and the quality results; the failpoints; the targets `make drill` and `make bench`; and three DAGs which need only a new environment to run on the host.
+- **P2 should read first:** benchmark report v1, because the memory and the duration of a GKG day decide the host column of the memory budget (blueprint §9.1, risk R4): about 1.0 GiB and 20 seconds on 12 fast cores, and 1.7 times as long under load. Then the section on the live run: the section shows what the pipeline does when a machine sleeps or loses the network. Then decision record ADR-007.
+- **Unchanged for the host:** the upload times of GDELT (finding F1 of the week 2 plan) and the schedules of the plan (§3.3).
+
 ## Choices made during the run
 
 | # | Work package | Choice | Reason |
@@ -303,16 +391,16 @@ The two facts lie in different periods of the live run. The daily run did not ha
 | 3 | WP-01 | `.gitignore` names the directory `.hypothesis/` | hypothesis stores examples in the directory during a test run |
 | 4 | WP-02 | `make reset` for the working stack stops and asks for `CONFIRM=yes`. `make reset STACK=gbmi-demo` asks nothing | The working stack will hold 30 days of real data. The week 2 plan (§9) says: a reset of the working stack needs the agreement of Jay |
 | 5 | WP-02 | The migrations hold more rules than the illustrative DDL of the blueprint: the twelve transitions as a check constraint, an append-only trigger on `ops.slot_transition`, the accounting identities on `ops.source_slot` and on `ops.silver_partition`, and the facts which each state needs | The database refuses a state, a transition or an accounting which the rules do not allow, also when the code has a defect. `tests/ledger/test_schema.py` tests each rule |
-| 6 | WP-02 | Stored times such as `listed_at`, `verified_at` and `created_at` come from the clock of the database. Rules read the time from the argument `as_of`, and the tables `ops.slot_transition` and `ops.pipeline_run` store `as_of` in a column of its own | The latency numbers of WP-09 need real times. The tests of the rules need a clock which a test controls (week 2 plan, §3.3) |
+| 6 | WP-02 | Stored times such as `listed_at`, `verified_at` and `created_at` come from the clock of the database. Rules read the time from the argument `as_of`, and the tables `ops.slot_transition` and `ops.pipeline_run` store `as_of` in a separate column | The latency numbers of WP-09 need real times. The tests of the rules need a clock which a test controls (week 2 plan, §3.3) |
 | 7 | WP-02 | Two columns join the tables of the plan: `entry_point` in `ops.pipeline_run` (the function of the package, also for a run without Airflow) and `detail` (`jsonb`) in `ops.silver_partition` | "The reconciliation is due" is read from the run records (week 2 plan, §3.3). Free detail stays out of new columns |
 | 8 | WP-02 | The coverage gate is a second report (`coverage report --include … --fail-under=80`) after the test run | `make test` keeps the coverage table of every module, as in phase P0 |
 | 9 | WP-02 | `make reset` removes `dbt/target` only while the other stack is down | Both stacks read the dbt manifest from the same directory |
 | 10 | WP-02 | A test found a defect before the first migration was applied: a check constraint let an hour unit without an hour pass, because a comparison with `NULL` is `NULL` | The constraint now names `IS NOT NULL`. Every other constraint was read again for the same trap |
 | 11 | WP-03 | Each change of state is one SQL statement: the guarded update and the insert of the log rows | The slot and the log cannot differ, also when a process stops between two statements |
 | 12 | WP-03 | A function for one slot raises `StaleStateError` when the slot is not in the assumed state. A function for many slots returns the slots which moved | The ingest job and the reconciliation work on sets; a set call which moves a part of the set is normal there |
-| 13 | WP-03 | `gbmi ledger confirm-missing` asks for the option `--state` (`expected`, `listed` or `quarantined`) beside the range and the note | A slot which only waits for its download is not confirmed by accident |
+| 13 | WP-03 | `gbmi ledger confirm-missing` asks for the option `--state` (`expected`, `listed` or `quarantined`) beside the range and the note | A slot which only waits for the download is not confirmed by accident |
 | 14 | WP-03 | `gbmi.core.clock` is the only module which reads the real clock | Week 2 plan, §3.3: every function takes the time as the argument `as_of` |
-| 15 | WP-04 | The first line of a cut tail of the master list is dropped. The reader of phase P0 trusted the line | A range request can cut a line inside its size. The rest still looks like a line, with a wrong size (`tests/unit/test_gdelt_index.py`) |
+| 15 | WP-04 | The first line of a cut tail of the master list is dropped. The reader of phase P0 trusted the line | A range request can cut a line inside the size field. The rest still looks like a line, with a wrong size (`tests/unit/test_gdelt_index.py`) |
 | 16 | WP-04 | A file which fails gate G1 is fetched again in the same run. The third failure quarantines the file and keeps the bytes under `quarantine/<source>/<feed>/dt=…/` | Blueprint §8.3: "fetch again up to three times, then quarantined". A cut transfer is repaired within one run |
 | 17 | WP-04 | An ingest run works as if the clock showed `as_of`: a line of `lastupdate.txt` for a later slot waits for a later run | A run with a controlled clock gives the same result on every day (week 2 plan, §3.3) |
 | 18 | WP-04 | The reconciliation counts an expected slot as absent only when the master list holds a newer slot | The list has not reached a slot which is newer than the newest slot of the list |
@@ -321,10 +409,10 @@ The two facts lie in different periods of the live run. The daily run did not ha
 | 21 | WP-04 | `gbmi.core.failpoint` and `gbmi.quality.results` arrive in WP-04. The week 2 plan lists both under WP-06 | The failpoint before the bronze move and the results of gate G1 belong to the ingest code |
 | 22 | WP-04 | `benchmarks/source_profile/live_ingest_once.py` is the live check of WP-04 as a script: two ingest runs against the GDELT servers in a throwaway database and a scratch lake | The check can be repeated, and benchmark B1 of WP-10 measures the same code path |
 | 23 | WP-05 | Gate G2 for GKG is as strict as the week 2 plan says: the record identifier has the form of the codebook, the date is a valid time of 14 digits, the tone holds exactly seven numbers. A profile of three real GKG files (2,349 records of 2026-11-22, 2026-11-25 and 2026-11-26) found no record which breaks a rule | The GKG codebook says: for some special collections the date can be 0. Such a record would go to quarantine with a reason. The backfill of WP-09 shows whether the case occurs |
-| 24 | WP-05 | The normalisation of text repeats its one pass until the text stops changing | For a few rare characters one pass is not stable. The rule "a second normalisation changes nothing" has to hold for every text, and a property test with 500 random texts checks the rule |
+| 24 | WP-05 | The normalisation of text repeats the one pass until the text stops changing | For a few rare characters one pass is not stable. The rule "a second normalisation changes nothing" has to hold for every text, and a property test with 500 random texts checks the rule |
 | 25 | WP-05 | "Letter" and "digit" in the normalisation are the Unicode categories L and Nd | The categories are the same in every engine which uses the Python function |
-| 26 | WP-05 | A parser applies the 1% rule for a whole file only when the caller passes `file_threshold`. The build of WP-06 passes 0.01 | The tests of single rows keep their meaning: a test file with one good row and one bad row is not rejected as a whole |
-| 27 | WP-05 | The list columns `themes` and `countries` are declared as required in the Iceberg schema | PyIceberg 0.12.0 writes them and ClickHouse 26.8 reads them as `Array(String)` (`tests/integration/lake/test_silver_tables.py`). The fallback of the week 2 plan is not needed |
+| 26 | WP-05 | A parser applies the 1% rule for a whole file only when the caller passes `file_threshold`. The build of WP-06 passes 0.01 | The tests of single rows keep the meaning: a test file with one good row and one bad row is not rejected as a whole |
+| 27 | WP-05 | The list columns `themes` and `countries` are declared as required in the Iceberg schema | PyIceberg 0.12.0 writes the two columns and ClickHouse 26.8 reads the two columns as `Array(String)` (`tests/integration/lake/test_silver_tables.py`). The fallback of the week 2 plan is not needed |
 | 28 | WP-05 | The column meanings of the four contracts were checked against the GDELT Event Codebook V2.0 and the GKG Codebook V2.1 on 2026-11-26 | A contract states facts about the source; five meanings were corrected after the check |
 | 29 | WP-05 | PyYAML is a declared dependency of the development group | The contract tests read the YAML files of `docs/contracts` |
 | 30 | WP-06 | A failed audit changes no slot. A file which gate G2 rejects as a whole moves to `quarantined` only after the audit of the other files of the unit has passed | The week 2 plan says: a failed audit leaves the ledger unchanged. The next run finds the rejected file again |
