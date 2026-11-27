@@ -1,0 +1,2260 @@
+{
+  "by_month": {
+    "2015-02": {
+      "export": {
+        "compressed_bytes": 125962733,
+        "files": 956
+      },
+      "gkg": {
+        "compressed_bytes": 7738306450,
+        "files": 956
+      },
+      "mentions": {
+        "compressed_bytes": 224067604,
+        "files": 956
+      }
+    },
+    "2015-03": {
+      "export": {
+        "compressed_bytes": 392237884,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 25017506186,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 705970252,
+        "files": 2976
+      }
+    },
+    "2015-04": {
+      "export": {
+        "compressed_bytes": 369164763,
+        "files": 2878
+      },
+      "gkg": {
+        "compressed_bytes": 23448981394,
+        "files": 2878
+      },
+      "mentions": {
+        "compressed_bytes": 660605990,
+        "files": 2878
+      }
+    },
+    "2015-05": {
+      "export": {
+        "compressed_bytes": 352362746,
+        "files": 2969
+      },
+      "gkg": {
+        "compressed_bytes": 24303606945,
+        "files": 2969
+      },
+      "mentions": {
+        "compressed_bytes": 660665714,
+        "files": 2969
+      }
+    },
+    "2015-06": {
+      "export": {
+        "compressed_bytes": 350086108,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 23990142597,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 664247123,
+        "files": 2880
+      }
+    },
+    "2015-07": {
+      "export": {
+        "compressed_bytes": 411365995,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 31004911688,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 778733373,
+        "files": 2975
+      }
+    },
+    "2015-08": {
+      "export": {
+        "compressed_bytes": 386314448,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 27974871570,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 694017405,
+        "files": 2975
+      }
+    },
+    "2015-09": {
+      "export": {
+        "compressed_bytes": 404055054,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 28046941021,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 758594271,
+        "files": 2880
+      }
+    },
+    "2015-10": {
+      "export": {
+        "compressed_bytes": 395268169,
+        "files": 2807
+      },
+      "gkg": {
+        "compressed_bytes": 27604874212,
+        "files": 2807
+      },
+      "mentions": {
+        "compressed_bytes": 716767671,
+        "files": 2807
+      }
+    },
+    "2015-11": {
+      "export": {
+        "compressed_bytes": 397886883,
+        "files": 2876
+      },
+      "gkg": {
+        "compressed_bytes": 27514040248,
+        "files": 2876
+      },
+      "mentions": {
+        "compressed_bytes": 726848512,
+        "files": 2876
+      }
+    },
+    "2015-12": {
+      "export": {
+        "compressed_bytes": 378109615,
+        "files": 2968
+      },
+      "gkg": {
+        "compressed_bytes": 26565409719,
+        "files": 2968
+      },
+      "mentions": {
+        "compressed_bytes": 670419822,
+        "files": 2968
+      }
+    },
+    "2016-01": {
+      "export": {
+        "compressed_bytes": 394079666,
+        "files": 2968
+      },
+      "gkg": {
+        "compressed_bytes": 27420685763,
+        "files": 2968
+      },
+      "mentions": {
+        "compressed_bytes": 703034650,
+        "files": 2968
+      }
+    },
+    "2016-02": {
+      "export": {
+        "compressed_bytes": 411675227,
+        "files": 2784
+      },
+      "gkg": {
+        "compressed_bytes": 29139068948,
+        "files": 2784
+      },
+      "mentions": {
+        "compressed_bytes": 747763477,
+        "files": 2784
+      }
+    },
+    "2016-03": {
+      "export": {
+        "compressed_bytes": 428045935,
+        "files": 2973
+      },
+      "gkg": {
+        "compressed_bytes": 30979092294,
+        "files": 2973
+      },
+      "mentions": {
+        "compressed_bytes": 766171585,
+        "files": 2973
+      }
+    },
+    "2016-04": {
+      "export": {
+        "compressed_bytes": 422130931,
+        "files": 2874
+      },
+      "gkg": {
+        "compressed_bytes": 32655006798,
+        "files": 2875
+      },
+      "mentions": {
+        "compressed_bytes": 725176997,
+        "files": 2874
+      }
+    },
+    "2016-05": {
+      "export": {
+        "compressed_bytes": 430839600,
+        "files": 2973
+      },
+      "gkg": {
+        "compressed_bytes": 38017225552,
+        "files": 2973
+      },
+      "mentions": {
+        "compressed_bytes": 768770976,
+        "files": 2973
+      }
+    },
+    "2016-06": {
+      "export": {
+        "compressed_bytes": 418544328,
+        "files": 2872
+      },
+      "gkg": {
+        "compressed_bytes": 36614070474,
+        "files": 2872
+      },
+      "mentions": {
+        "compressed_bytes": 761598629,
+        "files": 2872
+      }
+    },
+    "2016-07": {
+      "export": {
+        "compressed_bytes": 411421381,
+        "files": 2972
+      },
+      "gkg": {
+        "compressed_bytes": 35029301413,
+        "files": 2972
+      },
+      "mentions": {
+        "compressed_bytes": 821736082,
+        "files": 2972
+      }
+    },
+    "2016-08": {
+      "export": {
+        "compressed_bytes": 412285396,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 36089703006,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 773716191,
+        "files": 2976
+      }
+    },
+    "2016-09": {
+      "export": {
+        "compressed_bytes": 424760675,
+        "files": 2876
+      },
+      "gkg": {
+        "compressed_bytes": 34341243350,
+        "files": 2876
+      },
+      "mentions": {
+        "compressed_bytes": 774434902,
+        "files": 2876
+      }
+    },
+    "2016-10": {
+      "export": {
+        "compressed_bytes": 428442781,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 35324636822,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 775329189,
+        "files": 2975
+      }
+    },
+    "2016-11": {
+      "export": {
+        "compressed_bytes": 410507069,
+        "files": 2873
+      },
+      "gkg": {
+        "compressed_bytes": 34600224960,
+        "files": 2873
+      },
+      "mentions": {
+        "compressed_bytes": 756735408,
+        "files": 2873
+      }
+    },
+    "2016-12": {
+      "export": {
+        "compressed_bytes": 378303755,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 32871376203,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 696883121,
+        "files": 2975
+      }
+    },
+    "2017-01": {
+      "export": {
+        "compressed_bytes": 414994212,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 34672036688,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 811973700,
+        "files": 2976
+      }
+    },
+    "2017-02": {
+      "export": {
+        "compressed_bytes": 410413970,
+        "files": 2688
+      },
+      "gkg": {
+        "compressed_bytes": 33226115335,
+        "files": 2688
+      },
+      "mentions": {
+        "compressed_bytes": 797658861,
+        "files": 2688
+      }
+    },
+    "2017-03": {
+      "export": {
+        "compressed_bytes": 435082854,
+        "files": 2953
+      },
+      "gkg": {
+        "compressed_bytes": 34788022748,
+        "files": 2953
+      },
+      "mentions": {
+        "compressed_bytes": 843644479,
+        "files": 2953
+      }
+    },
+    "2017-04": {
+      "export": {
+        "compressed_bytes": 379347952,
+        "files": 2843
+      },
+      "gkg": {
+        "compressed_bytes": 30130473328,
+        "files": 2843
+      },
+      "mentions": {
+        "compressed_bytes": 737880068,
+        "files": 2843
+      }
+    },
+    "2017-05": {
+      "export": {
+        "compressed_bytes": 394164899,
+        "files": 2906
+      },
+      "gkg": {
+        "compressed_bytes": 30404182316,
+        "files": 2907
+      },
+      "mentions": {
+        "compressed_bytes": 755330471,
+        "files": 2906
+      }
+    },
+    "2017-06": {
+      "export": {
+        "compressed_bytes": 368365394,
+        "files": 2797
+      },
+      "gkg": {
+        "compressed_bytes": 28676529179,
+        "files": 2797
+      },
+      "mentions": {
+        "compressed_bytes": 677373899,
+        "files": 2797
+      }
+    },
+    "2017-07": {
+      "export": {
+        "compressed_bytes": 341292183,
+        "files": 2828
+      },
+      "gkg": {
+        "compressed_bytes": 23919672209,
+        "files": 2830
+      },
+      "mentions": {
+        "compressed_bytes": 607521754,
+        "files": 2828
+      }
+    },
+    "2017-08": {
+      "export": {
+        "compressed_bytes": 362346930,
+        "files": 2902
+      },
+      "gkg": {
+        "compressed_bytes": 26553198026,
+        "files": 2903
+      },
+      "mentions": {
+        "compressed_bytes": 652030895,
+        "files": 2902
+      }
+    },
+    "2017-09": {
+      "export": {
+        "compressed_bytes": 356595172,
+        "files": 2800
+      },
+      "gkg": {
+        "compressed_bytes": 25688833287,
+        "files": 2800
+      },
+      "mentions": {
+        "compressed_bytes": 626887163,
+        "files": 2800
+      }
+    },
+    "2017-10": {
+      "export": {
+        "compressed_bytes": 364364320,
+        "files": 2914
+      },
+      "gkg": {
+        "compressed_bytes": 27310246499,
+        "files": 2914
+      },
+      "mentions": {
+        "compressed_bytes": 655344843,
+        "files": 2914
+      }
+    },
+    "2017-11": {
+      "export": {
+        "compressed_bytes": 364746695,
+        "files": 2748
+      },
+      "gkg": {
+        "compressed_bytes": 27535250388,
+        "files": 2748
+      },
+      "mentions": {
+        "compressed_bytes": 672034480,
+        "files": 2748
+      }
+    },
+    "2017-12": {
+      "export": {
+        "compressed_bytes": 314796743,
+        "files": 2691
+      },
+      "gkg": {
+        "compressed_bytes": 24860141088,
+        "files": 2691
+      },
+      "mentions": {
+        "compressed_bytes": 575064676,
+        "files": 2691
+      }
+    },
+    "2018-01": {
+      "export": {
+        "compressed_bytes": 345536242,
+        "files": 2751
+      },
+      "gkg": {
+        "compressed_bytes": 26880125107,
+        "files": 2751
+      },
+      "mentions": {
+        "compressed_bytes": 623817103,
+        "files": 2751
+      }
+    },
+    "2018-02": {
+      "export": {
+        "compressed_bytes": 331446977,
+        "files": 2524
+      },
+      "gkg": {
+        "compressed_bytes": 25688679565,
+        "files": 2524
+      },
+      "mentions": {
+        "compressed_bytes": 602173843,
+        "files": 2524
+      }
+    },
+    "2018-03": {
+      "export": {
+        "compressed_bytes": 383226305,
+        "files": 2831
+      },
+      "gkg": {
+        "compressed_bytes": 28745918277,
+        "files": 2831
+      },
+      "mentions": {
+        "compressed_bytes": 722048482,
+        "files": 2831
+      }
+    },
+    "2018-04": {
+      "export": {
+        "compressed_bytes": 365644118,
+        "files": 2718
+      },
+      "gkg": {
+        "compressed_bytes": 27019315498,
+        "files": 2718
+      },
+      "mentions": {
+        "compressed_bytes": 702646302,
+        "files": 2718
+      }
+    },
+    "2018-05": {
+      "export": {
+        "compressed_bytes": 379044244,
+        "files": 2853
+      },
+      "gkg": {
+        "compressed_bytes": 28628285528,
+        "files": 2853
+      },
+      "mentions": {
+        "compressed_bytes": 728327107,
+        "files": 2853
+      }
+    },
+    "2018-06": {
+      "export": {
+        "compressed_bytes": 347500310,
+        "files": 2783
+      },
+      "gkg": {
+        "compressed_bytes": 27031383258,
+        "files": 2783
+      },
+      "mentions": {
+        "compressed_bytes": 647424917,
+        "files": 2783
+      }
+    },
+    "2018-07": {
+      "export": {
+        "compressed_bytes": 339951004,
+        "files": 2913
+      },
+      "gkg": {
+        "compressed_bytes": 25791205810,
+        "files": 2913
+      },
+      "mentions": {
+        "compressed_bytes": 617307009,
+        "files": 2913
+      }
+    },
+    "2018-08": {
+      "export": {
+        "compressed_bytes": 351552733,
+        "files": 2966
+      },
+      "gkg": {
+        "compressed_bytes": 25679936251,
+        "files": 2966
+      },
+      "mentions": {
+        "compressed_bytes": 668419989,
+        "files": 2966
+      }
+    },
+    "2018-09": {
+      "export": {
+        "compressed_bytes": 332741010,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 24484611941,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 654426522,
+        "files": 2880
+      }
+    },
+    "2018-10": {
+      "export": {
+        "compressed_bytes": 362555183,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 26071099751,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 706549740,
+        "files": 2976
+      }
+    },
+    "2018-11": {
+      "export": {
+        "compressed_bytes": 344428017,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 24579123220,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 673030246,
+        "files": 2880
+      }
+    },
+    "2018-12": {
+      "export": {
+        "compressed_bytes": 289922418,
+        "files": 2973
+      },
+      "gkg": {
+        "compressed_bytes": 20793298618,
+        "files": 2973
+      },
+      "mentions": {
+        "compressed_bytes": 541212449,
+        "files": 2973
+      }
+    },
+    "2019-01": {
+      "export": {
+        "compressed_bytes": 318804432,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 21795491136,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 568768743,
+        "files": 2976
+      }
+    },
+    "2019-02": {
+      "export": {
+        "compressed_bytes": 323876835,
+        "files": 2688
+      },
+      "gkg": {
+        "compressed_bytes": 21676148497,
+        "files": 2688
+      },
+      "mentions": {
+        "compressed_bytes": 569145548,
+        "files": 2688
+      }
+    },
+    "2019-03": {
+      "export": {
+        "compressed_bytes": 354652301,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 23728825393,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 629614849,
+        "files": 2975
+      }
+    },
+    "2019-04": {
+      "export": {
+        "compressed_bytes": 331964514,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 23203622590,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 600234991,
+        "files": 2880
+      }
+    },
+    "2019-05": {
+      "export": {
+        "compressed_bytes": 340075101,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 23695671765,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 614985224,
+        "files": 2976
+      }
+    },
+    "2019-06": {
+      "export": {
+        "compressed_bytes": 314685729,
+        "files": 2876
+      },
+      "gkg": {
+        "compressed_bytes": 21312891835,
+        "files": 2876
+      },
+      "mentions": {
+        "compressed_bytes": 575528093,
+        "files": 2876
+      }
+    },
+    "2019-07": {
+      "export": {
+        "compressed_bytes": 315730217,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 21614287845,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 550948443,
+        "files": 2976
+      }
+    },
+    "2019-08": {
+      "export": {
+        "compressed_bytes": 309892026,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 21198216393,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 549543521,
+        "files": 2976
+      }
+    },
+    "2019-09": {
+      "export": {
+        "compressed_bytes": 308545412,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 20642072808,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 544285849,
+        "files": 2880
+      }
+    },
+    "2019-10": {
+      "export": {
+        "compressed_bytes": 325278009,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 21918256644,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 574689775,
+        "files": 2975
+      }
+    },
+    "2019-11": {
+      "export": {
+        "compressed_bytes": 292388670,
+        "files": 2879
+      },
+      "gkg": {
+        "compressed_bytes": 19898109856,
+        "files": 2879
+      },
+      "mentions": {
+        "compressed_bytes": 500824337,
+        "files": 2879
+      }
+    },
+    "2019-12": {
+      "export": {
+        "compressed_bytes": 270279168,
+        "files": 2972
+      },
+      "gkg": {
+        "compressed_bytes": 18345287662,
+        "files": 2972
+      },
+      "mentions": {
+        "compressed_bytes": 458909078,
+        "files": 2972
+      }
+    },
+    "2020-01": {
+      "export": {
+        "compressed_bytes": 310733483,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 19944497878,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 556293841,
+        "files": 2975
+      }
+    },
+    "2020-02": {
+      "export": {
+        "compressed_bytes": 295588075,
+        "files": 2784
+      },
+      "gkg": {
+        "compressed_bytes": 19082856282,
+        "files": 2784
+      },
+      "mentions": {
+        "compressed_bytes": 497892268,
+        "files": 2784
+      }
+    },
+    "2020-03": {
+      "export": {
+        "compressed_bytes": 301138328,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 22256317566,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 515506359,
+        "files": 2976
+      }
+    },
+    "2020-04": {
+      "export": {
+        "compressed_bytes": 260385915,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 20678941381,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 442571279,
+        "files": 2880
+      }
+    },
+    "2020-05": {
+      "export": {
+        "compressed_bytes": 257391717,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 19535230063,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 433978782,
+        "files": 2975
+      }
+    },
+    "2020-06": {
+      "export": {
+        "compressed_bytes": 278290272,
+        "files": 2878
+      },
+      "gkg": {
+        "compressed_bytes": 19465086921,
+        "files": 2878
+      },
+      "mentions": {
+        "compressed_bytes": 485092499,
+        "files": 2878
+      }
+    },
+    "2020-07": {
+      "export": {
+        "compressed_bytes": 275047571,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 19712303681,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 464526431,
+        "files": 2976
+      }
+    },
+    "2020-08": {
+      "export": {
+        "compressed_bytes": 261869849,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 18486203450,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 444437908,
+        "files": 2975
+      }
+    },
+    "2020-09": {
+      "export": {
+        "compressed_bytes": 263896275,
+        "files": 2755
+      },
+      "gkg": {
+        "compressed_bytes": 17807833867,
+        "files": 2755
+      },
+      "mentions": {
+        "compressed_bytes": 430515989,
+        "files": 2755
+      }
+    },
+    "2020-10": {
+      "export": {
+        "compressed_bytes": 190228068,
+        "files": 1690
+      },
+      "gkg": {
+        "compressed_bytes": 11627143606,
+        "files": 1690
+      },
+      "mentions": {
+        "compressed_bytes": 275330113,
+        "files": 1690
+      }
+    },
+    "2020-11": {
+      "export": {
+        "compressed_bytes": 162944654,
+        "files": 1712
+      },
+      "gkg": {
+        "compressed_bytes": 10618739183,
+        "files": 1712
+      },
+      "mentions": {
+        "compressed_bytes": 240183941,
+        "files": 1712
+      }
+    },
+    "2020-12": {
+      "export": {
+        "compressed_bytes": 224318596,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 16744449743,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 376599612,
+        "files": 2975
+      }
+    },
+    "2021-01": {
+      "export": {
+        "compressed_bytes": 231134053,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 17179775904,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 417218785,
+        "files": 2976
+      }
+    },
+    "2021-02": {
+      "export": {
+        "compressed_bytes": 219175233,
+        "files": 2688
+      },
+      "gkg": {
+        "compressed_bytes": 16331533100,
+        "files": 2688
+      },
+      "mentions": {
+        "compressed_bytes": 365992371,
+        "files": 2688
+      }
+    },
+    "2021-03": {
+      "export": {
+        "compressed_bytes": 248735753,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 17951056011,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 414847070,
+        "files": 2975
+      }
+    },
+    "2021-04": {
+      "export": {
+        "compressed_bytes": 227418542,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 16159065665,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 374850932,
+        "files": 2880
+      }
+    },
+    "2021-05": {
+      "export": {
+        "compressed_bytes": 224638087,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 15794494925,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 371138415,
+        "files": 2976
+      }
+    },
+    "2021-06": {
+      "export": {
+        "compressed_bytes": 220287162,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 15737337103,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 350815868,
+        "files": 2880
+      }
+    },
+    "2021-07": {
+      "export": {
+        "compressed_bytes": 210586419,
+        "files": 2929
+      },
+      "gkg": {
+        "compressed_bytes": 15238964314,
+        "files": 2929
+      },
+      "mentions": {
+        "compressed_bytes": 322320338,
+        "files": 2929
+      }
+    },
+    "2021-08": {
+      "export": {
+        "compressed_bytes": 194577004,
+        "files": 2414
+      },
+      "gkg": {
+        "compressed_bytes": 12910220494,
+        "files": 2414
+      },
+      "mentions": {
+        "compressed_bytes": 302976340,
+        "files": 2414
+      }
+    },
+    "2021-09": {
+      "export": {
+        "compressed_bytes": 226073470,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 15284388500,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 351620594,
+        "files": 2880
+      }
+    },
+    "2021-10": {
+      "export": {
+        "compressed_bytes": 221551044,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 15230275317,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 332294287,
+        "files": 2976
+      }
+    },
+    "2021-11": {
+      "export": {
+        "compressed_bytes": 209933990,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 14582341892,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 313638789,
+        "files": 2880
+      }
+    },
+    "2021-12": {
+      "export": {
+        "compressed_bytes": 196238105,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 14217074886,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 296254778,
+        "files": 2976
+      }
+    },
+    "2022-01": {
+      "export": {
+        "compressed_bytes": 196187030,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 14545809408,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 298104632,
+        "files": 2975
+      }
+    },
+    "2022-02": {
+      "export": {
+        "compressed_bytes": 207251521,
+        "files": 2687
+      },
+      "gkg": {
+        "compressed_bytes": 13703216486,
+        "files": 2687
+      },
+      "mentions": {
+        "compressed_bytes": 322270964,
+        "files": 2687
+      }
+    },
+    "2022-03": {
+      "export": {
+        "compressed_bytes": 246915979,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 15580268436,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 385367582,
+        "files": 2976
+      }
+    },
+    "2022-04": {
+      "export": {
+        "compressed_bytes": 207847642,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 14211656279,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 319039027,
+        "files": 2880
+      }
+    },
+    "2022-05": {
+      "export": {
+        "compressed_bytes": 217545644,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 14916143179,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 329127634,
+        "files": 2975
+      }
+    },
+    "2022-06": {
+      "export": {
+        "compressed_bytes": 205466070,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 13973183203,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 298993915,
+        "files": 2880
+      }
+    },
+    "2022-07": {
+      "export": {
+        "compressed_bytes": 192420874,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 13444790263,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 275082266,
+        "files": 2976
+      }
+    },
+    "2022-08": {
+      "export": {
+        "compressed_bytes": 190990703,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 13532308733,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 272922138,
+        "files": 2976
+      }
+    },
+    "2022-09": {
+      "export": {
+        "compressed_bytes": 191600887,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 13231453123,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 277607615,
+        "files": 2880
+      }
+    },
+    "2022-10": {
+      "export": {
+        "compressed_bytes": 187865325,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 13247266859,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 263123109,
+        "files": 2976
+      }
+    },
+    "2022-11": {
+      "export": {
+        "compressed_bytes": 173916993,
+        "files": 2878
+      },
+      "gkg": {
+        "compressed_bytes": 12650736366,
+        "files": 2878
+      },
+      "mentions": {
+        "compressed_bytes": 236151540,
+        "files": 2878
+      }
+    },
+    "2022-12": {
+      "export": {
+        "compressed_bytes": 165470325,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 12192798728,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 230414290,
+        "files": 2976
+      }
+    },
+    "2023-01": {
+      "export": {
+        "compressed_bytes": 185180622,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 12831293544,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 267935403,
+        "files": 2975
+      }
+    },
+    "2023-02": {
+      "export": {
+        "compressed_bytes": 177939556,
+        "files": 2688
+      },
+      "gkg": {
+        "compressed_bytes": 12070438535,
+        "files": 2688
+      },
+      "mentions": {
+        "compressed_bytes": 256767526,
+        "files": 2688
+      }
+    },
+    "2023-03": {
+      "export": {
+        "compressed_bytes": 239839529,
+        "files": 2829
+      },
+      "gkg": {
+        "compressed_bytes": 16254177875,
+        "files": 2829
+      },
+      "mentions": {
+        "compressed_bytes": 353306689,
+        "files": 2829
+      }
+    },
+    "2023-04": {
+      "export": {
+        "compressed_bytes": 295716056,
+        "files": 2878
+      },
+      "gkg": {
+        "compressed_bytes": 20708787294,
+        "files": 2878
+      },
+      "mentions": {
+        "compressed_bytes": 470240815,
+        "files": 2878
+      }
+    },
+    "2023-05": {
+      "export": {
+        "compressed_bytes": 304592031,
+        "files": 2971
+      },
+      "gkg": {
+        "compressed_bytes": 21676050016,
+        "files": 2971
+      },
+      "mentions": {
+        "compressed_bytes": 482854462,
+        "files": 2971
+      }
+    },
+    "2023-06": {
+      "export": {
+        "compressed_bytes": 281887634,
+        "files": 2878
+      },
+      "gkg": {
+        "compressed_bytes": 19962461913,
+        "files": 2878
+      },
+      "mentions": {
+        "compressed_bytes": 443245808,
+        "files": 2878
+      }
+    },
+    "2023-07": {
+      "export": {
+        "compressed_bytes": 264076701,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 18616495494,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 397602687,
+        "files": 2975
+      }
+    },
+    "2023-08": {
+      "export": {
+        "compressed_bytes": 267803949,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 19380971567,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 403694836,
+        "files": 2975
+      }
+    },
+    "2023-09": {
+      "export": {
+        "compressed_bytes": 271475723,
+        "files": 2879
+      },
+      "gkg": {
+        "compressed_bytes": 18617353822,
+        "files": 2879
+      },
+      "mentions": {
+        "compressed_bytes": 408208111,
+        "files": 2879
+      }
+    },
+    "2023-10": {
+      "export": {
+        "compressed_bytes": 294983003,
+        "files": 2974
+      },
+      "gkg": {
+        "compressed_bytes": 19413527258,
+        "files": 2974
+      },
+      "mentions": {
+        "compressed_bytes": 490741326,
+        "files": 2974
+      }
+    },
+    "2023-11": {
+      "export": {
+        "compressed_bytes": 268851323,
+        "files": 2877
+      },
+      "gkg": {
+        "compressed_bytes": 18261636003,
+        "files": 2877
+      },
+      "mentions": {
+        "compressed_bytes": 431864874,
+        "files": 2877
+      }
+    },
+    "2023-12": {
+      "export": {
+        "compressed_bytes": 236168313,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 16575555998,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 369423347,
+        "files": 2976
+      }
+    },
+    "2024-01": {
+      "export": {
+        "compressed_bytes": 251547287,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 17270368227,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 375633988,
+        "files": 2976
+      }
+    },
+    "2024-02": {
+      "export": {
+        "compressed_bytes": 256353109,
+        "files": 2784
+      },
+      "gkg": {
+        "compressed_bytes": 17395426298,
+        "files": 2784
+      },
+      "mentions": {
+        "compressed_bytes": 385079205,
+        "files": 2784
+      }
+    },
+    "2024-03": {
+      "export": {
+        "compressed_bytes": 267110169,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 18193107029,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 392550339,
+        "files": 2976
+      }
+    },
+    "2024-04": {
+      "export": {
+        "compressed_bytes": 256894079,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 17539746251,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 385004507,
+        "files": 2880
+      }
+    },
+    "2024-05": {
+      "export": {
+        "compressed_bytes": 262633623,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 17776695905,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 383398680,
+        "files": 2976
+      }
+    },
+    "2024-06": {
+      "export": {
+        "compressed_bytes": 236216141,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 16575349697,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 349364422,
+        "files": 2880
+      }
+    },
+    "2024-07": {
+      "export": {
+        "compressed_bytes": 240337421,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 17305764199,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 361997101,
+        "files": 2975
+      }
+    },
+    "2024-08": {
+      "export": {
+        "compressed_bytes": 239186424,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 16805409765,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 351710499,
+        "files": 2976
+      }
+    },
+    "2024-09": {
+      "export": {
+        "compressed_bytes": 239625802,
+        "files": 2879
+      },
+      "gkg": {
+        "compressed_bytes": 16517556155,
+        "files": 2879
+      },
+      "mentions": {
+        "compressed_bytes": 347628038,
+        "files": 2879
+      }
+    },
+    "2024-10": {
+      "export": {
+        "compressed_bytes": 255299782,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 17451454589,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 371498897,
+        "files": 2976
+      }
+    },
+    "2024-11": {
+      "export": {
+        "compressed_bytes": 230659436,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 16151512004,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 331058983,
+        "files": 2880
+      }
+    },
+    "2024-12": {
+      "export": {
+        "compressed_bytes": 223856684,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 15158052113,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 322535858,
+        "files": 2976
+      }
+    },
+    "2025-01": {
+      "export": {
+        "compressed_bytes": 237225279,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 16512802314,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 352047153,
+        "files": 2975
+      }
+    },
+    "2025-02": {
+      "export": {
+        "compressed_bytes": 224356708,
+        "files": 2688
+      },
+      "gkg": {
+        "compressed_bytes": 14870998862,
+        "files": 2688
+      },
+      "mentions": {
+        "compressed_bytes": 336387035,
+        "files": 2688
+      }
+    },
+    "2025-03": {
+      "export": {
+        "compressed_bytes": 247842904,
+        "files": 2974
+      },
+      "gkg": {
+        "compressed_bytes": 16165787118,
+        "files": 2974
+      },
+      "mentions": {
+        "compressed_bytes": 361933903,
+        "files": 2974
+      }
+    },
+    "2025-04": {
+      "export": {
+        "compressed_bytes": 241769120,
+        "files": 2878
+      },
+      "gkg": {
+        "compressed_bytes": 15746802031,
+        "files": 2878
+      },
+      "mentions": {
+        "compressed_bytes": 348442853,
+        "files": 2878
+      }
+    },
+    "2025-05": {
+      "export": {
+        "compressed_bytes": 247031262,
+        "files": 2974
+      },
+      "gkg": {
+        "compressed_bytes": 15136104662,
+        "files": 2974
+      },
+      "mentions": {
+        "compressed_bytes": 343820856,
+        "files": 2974
+      }
+    },
+    "2025-06": {
+      "export": {
+        "compressed_bytes": 107075210,
+        "files": 1311
+      },
+      "gkg": {
+        "compressed_bytes": 6912767888,
+        "files": 1311
+      },
+      "mentions": {
+        "compressed_bytes": 157023615,
+        "files": 1311
+      }
+    },
+    "2025-07": {
+      "export": {
+        "compressed_bytes": 228287376,
+        "files": 2871
+      },
+      "gkg": {
+        "compressed_bytes": 15187815884,
+        "files": 2871
+      },
+      "mentions": {
+        "compressed_bytes": 326612823,
+        "files": 2871
+      }
+    },
+    "2025-08": {
+      "export": {
+        "compressed_bytes": 226205666,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 14817768279,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 332659455,
+        "files": 2976
+      }
+    },
+    "2025-09": {
+      "export": {
+        "compressed_bytes": 226500088,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 14819241059,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 335268981,
+        "files": 2880
+      }
+    },
+    "2025-10": {
+      "export": {
+        "compressed_bytes": 235638610,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 15383401243,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 348005969,
+        "files": 2976
+      }
+    },
+    "2025-11": {
+      "export": {
+        "compressed_bytes": 207792715,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 14160063450,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 290706595,
+        "files": 2880
+      }
+    },
+    "2025-12": {
+      "export": {
+        "compressed_bytes": 192135907,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 13441767918,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 270458270,
+        "files": 2976
+      }
+    },
+    "2026-01": {
+      "export": {
+        "compressed_bytes": 209268111,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 14028342654,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 304537953,
+        "files": 2976
+      }
+    },
+    "2026-02": {
+      "export": {
+        "compressed_bytes": 197888940,
+        "files": 2688
+      },
+      "gkg": {
+        "compressed_bytes": 13238619989,
+        "files": 2688
+      },
+      "mentions": {
+        "compressed_bytes": 280842272,
+        "files": 2688
+      }
+    },
+    "2026-03": {
+      "export": {
+        "compressed_bytes": 220953986,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 14481674978,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 321098017,
+        "files": 2976
+      }
+    },
+    "2026-04": {
+      "export": {
+        "compressed_bytes": 195078881,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 13460976699,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 296521521,
+        "files": 2880
+      }
+    },
+    "2026-05": {
+      "export": {
+        "compressed_bytes": 198493576,
+        "files": 2975
+      },
+      "gkg": {
+        "compressed_bytes": 13235882684,
+        "files": 2975
+      },
+      "mentions": {
+        "compressed_bytes": 280430694,
+        "files": 2975
+      }
+    },
+    "2026-06": {
+      "export": {
+        "compressed_bytes": 183671457,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 12854131218,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 257381422,
+        "files": 2880
+      }
+    },
+    "2026-07": {
+      "export": {
+        "compressed_bytes": 191604662,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 13104162726,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 269806746,
+        "files": 2976
+      }
+    },
+    "2026-08": {
+      "export": {
+        "compressed_bytes": 178522939,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 12353172867,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 248500230,
+        "files": 2976
+      }
+    },
+    "2026-09": {
+      "export": {
+        "compressed_bytes": 190552612,
+        "files": 2880
+      },
+      "gkg": {
+        "compressed_bytes": 12565333114,
+        "files": 2880
+      },
+      "mentions": {
+        "compressed_bytes": 269173221,
+        "files": 2880
+      }
+    },
+    "2026-10": {
+      "export": {
+        "compressed_bytes": 202808763,
+        "files": 2976
+      },
+      "gkg": {
+        "compressed_bytes": 12832633725,
+        "files": 2976
+      },
+      "mentions": {
+        "compressed_bytes": 283927754,
+        "files": 2976
+      }
+    },
+    "2026-11": {
+      "export": {
+        "compressed_bytes": 167314412,
+        "files": 2487
+      },
+      "gkg": {
+        "compressed_bytes": 10549064473,
+        "files": 2487
+      },
+      "mentions": {
+        "compressed_bytes": 232616780,
+        "files": 2487
+      }
+    }
+  },
+  "examples_of_other_lines": [
+    "http://data.gdeltproject.org/gdeltv2/",
+    "http://data.gdeltproject.org/gdeltv2/",
+    "http://data.gdeltproject.org/gdeltv2/",
+    "http://data.gdeltproject.org/gdeltv2/",
+    "http://data.gdeltproject.org/gdeltv2/",
+    "http://data.gdeltproject.org/gdeltv2/",
+    "http://data.gdeltproject.org/gdeltv2/",
+    "http://data.gdeltproject.org/gdeltv2/",
+    "http://data.gdeltproject.org/gdeltv2/",
+    "http://data.gdeltproject.org/gdeltv2/"
+  ],
+  "feeds": {
+    "export": {
+      "calendar_slots_from_first_to_last": 412699,
+      "calendar_slots_not_in_the_list": 7291,
+      "calendar_slots_not_in_the_list_by_year": {
+        "2015": 200,
+        "2016": 45,
+        "2017": 994,
+        "2018": 992,
+        "2019": 11,
+        "2020": 2585,
+        "2021": 610,
+        "2022": 5,
+        "2023": 165,
+        "2024": 2,
+        "2025": 1681,
+        "2026": 1
+      },
+      "compressed_bytes": 40321997680,
+      "distinct_slots": 405408,
+      "first_slot": "2015-02-18T23:00:00+00:00",
+      "last_lines_out_of_order": [
+        {
+          "slot": "2024-06-10 22:45",
+          "stands_after": "2024-06-11 00:00"
+        },
+        {
+          "slot": "2024-07-08 15:15",
+          "stands_after": "2024-07-08 15:30"
+        },
+        {
+          "slot": "2024-08-02 22:15",
+          "stands_after": "2024-08-02 22:45"
+        },
+        {
+          "slot": "2024-08-02 22:30",
+          "stands_after": "2024-08-02 22:45"
+        },
+        {
+          "slot": "2024-08-02 23:00",
+          "stands_after": "2024-08-02 23:15"
+        },
+        {
+          "slot": "2024-09-22 04:15",
+          "stands_after": "2024-09-22 05:00"
+        },
+        {
+          "slot": "2025-05-04 21:15",
+          "stands_after": "2025-05-04 21:45"
+        },
+        {
+          "slot": "2025-06-13 04:00",
+          "stands_after": "2025-06-13 04:30"
+        },
+        {
+          "slot": "2026-10-28 19:30",
+          "stands_after": "2026-10-28 19:45"
+        },
+        {
+          "slot": "2026-11-15 02:45",
+          "stands_after": "2026-11-15 04:30"
+        }
+      ],
+      "last_slot": "2026-11-26T21:30:00+00:00",
+      "lines": 405408,
+      "lines_for_a_slot_listed_before": 0,
+      "lines_out_of_order": 1167,
+      "newest_calendar_slots_not_in_the_list": [
+        "2025-07-02 00:00",
+        "2025-07-02 00:15",
+        "2025-07-02 00:30",
+        "2025-07-02 00:45",
+        "2025-07-02 01:00",
+        "2025-07-02 01:15",
+        "2025-07-02 01:30",
+        "2025-07-02 01:45",
+        "2025-07-02 02:00",
+        "2026-05-09 23:30"
+      ],
+      "share_of_calendar_slots_in_the_list": 0.982333
+    },
+    "gkg": {
+      "calendar_slots_from_first_to_last": 412699,
+      "calendar_slots_not_in_the_list": 7286,
+      "calendar_slots_not_in_the_list_by_year": {
+        "2015": 200,
+        "2016": 44,
+        "2017": 990,
+        "2018": 992,
+        "2019": 11,
+        "2020": 2585,
+        "2021": 610,
+        "2022": 5,
+        "2023": 165,
+        "2024": 2,
+        "2025": 1681,
+        "2026": 1
+      },
+      "compressed_bytes": 2896652064133,
+      "distinct_slots": 405413,
+      "first_slot": "2015-02-18T23:00:00+00:00",
+      "last_lines_out_of_order": [
+        {
+          "slot": "2024-06-10 22:45",
+          "stands_after": "2024-06-11 00:00"
+        },
+        {
+          "slot": "2024-07-08 15:15",
+          "stands_after": "2024-07-08 15:30"
+        },
+        {
+          "slot": "2024-08-02 22:15",
+          "stands_after": "2024-08-02 22:45"
+        },
+        {
+          "slot": "2024-08-02 22:30",
+          "stands_after": "2024-08-02 22:45"
+        },
+        {
+          "slot": "2024-08-02 23:00",
+          "stands_after": "2024-08-02 23:15"
+        },
+        {
+          "slot": "2024-09-22 04:15",
+          "stands_after": "2024-09-22 05:00"
+        },
+        {
+          "slot": "2025-05-04 21:15",
+          "stands_after": "2025-05-04 21:45"
+        },
+        {
+          "slot": "2025-06-13 04:00",
+          "stands_after": "2025-06-13 04:30"
+        },
+        {
+          "slot": "2026-10-28 19:30",
+          "stands_after": "2026-10-28 19:45"
+        },
+        {
+          "slot": "2026-11-15 02:45",
+          "stands_after": "2026-11-15 04:30"
+        }
+      ],
+      "last_slot": "2026-11-26T21:30:00+00:00",
+      "lines": 405413,
+      "lines_for_a_slot_listed_before": 0,
+      "lines_out_of_order": 1170,
+      "newest_calendar_slots_not_in_the_list": [
+        "2025-07-02 00:00",
+        "2025-07-02 00:15",
+        "2025-07-02 00:30",
+        "2025-07-02 00:45",
+        "2025-07-02 01:00",
+        "2025-07-02 01:15",
+        "2025-07-02 01:30",
+        "2025-07-02 01:45",
+        "2025-07-02 02:00",
+        "2026-05-09 23:30"
+      ],
+      "share_of_calendar_slots_in_the_list": 0.982345
+    },
+    "mentions": {
+      "calendar_slots_from_first_to_last": 412699,
+      "calendar_slots_not_in_the_list": 7291,
+      "calendar_slots_not_in_the_list_by_year": {
+        "2015": 200,
+        "2016": 45,
+        "2017": 994,
+        "2018": 992,
+        "2019": 11,
+        "2020": 2585,
+        "2021": 610,
+        "2022": 5,
+        "2023": 165,
+        "2024": 2,
+        "2025": 1681,
+        "2026": 1
+      },
+      "compressed_bytes": 68236549213,
+      "distinct_slots": 405408,
+      "first_slot": "2015-02-18T23:00:00+00:00",
+      "last_lines_out_of_order": [
+        {
+          "slot": "2024-06-10 22:45",
+          "stands_after": "2024-06-11 00:00"
+        },
+        {
+          "slot": "2024-07-08 15:15",
+          "stands_after": "2024-07-08 15:30"
+        },
+        {
+          "slot": "2024-08-02 22:15",
+          "stands_after": "2024-08-02 22:45"
+        },
+        {
+          "slot": "2024-08-02 22:30",
+          "stands_after": "2024-08-02 22:45"
+        },
+        {
+          "slot": "2024-08-02 23:00",
+          "stands_after": "2024-08-02 23:15"
+        },
+        {
+          "slot": "2024-09-22 04:15",
+          "stands_after": "2024-09-22 05:00"
+        },
+        {
+          "slot": "2025-05-04 21:15",
+          "stands_after": "2025-05-04 21:45"
+        },
+        {
+          "slot": "2025-06-13 04:00",
+          "stands_after": "2025-06-13 04:30"
+        },
+        {
+          "slot": "2026-10-28 19:30",
+          "stands_after": "2026-10-28 19:45"
+        },
+        {
+          "slot": "2026-11-15 02:45",
+          "stands_after": "2026-11-15 04:30"
+        }
+      ],
+      "last_slot": "2026-11-26T21:30:00+00:00",
+      "lines": 405408,
+      "lines_for_a_slot_listed_before": 0,
+      "lines_out_of_order": 1167,
+      "newest_calendar_slots_not_in_the_list": [
+        "2025-07-02 00:00",
+        "2025-07-02 00:15",
+        "2025-07-02 00:30",
+        "2025-07-02 00:45",
+        "2025-07-02 01:00",
+        "2025-07-02 01:15",
+        "2025-07-02 01:30",
+        "2025-07-02 01:45",
+        "2025-07-02 02:00",
+        "2026-05-09 23:30"
+      ],
+      "share_of_calendar_slots_in_the_list": 0.982333
+    }
+  },
+  "lines": 1216290,
+  "lines_which_are_no_file_of_gdelt_2": 61,
+  "measured_at": "2026-11-26T21:26:06+00:00",
+  "seconds": 10.9,
+  "slots_in_all_three_feeds": 405408,
+  "slots_in_one_feed_or_more": 405413,
+  "source": {
+    "bytes_read": 129867940,
+    "content_length": "129867940",
+    "etag": "\"ee9b2c0db4971b3b677d94ba6bdf51fc\"",
+    "last_modified": "Thu, 26 Nov 2026 21:20:03 GMT",
+    "status": 200,
+    "url": "https://data.gdeltproject.org/gdeltv2/masterfilelist.txt"
+  }
+}

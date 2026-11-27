@@ -1,0 +1,1660 @@
+{
+  "feeds": {
+    "export": {
+      "by_day": {
+        "2026-10-26": {
+          "files": 96,
+          "lines": 108055,
+          "text_bytes": 43900564,
+          "zip_bytes": 6811874
+        },
+        "2026-10-27": {
+          "files": 96,
+          "lines": 119106,
+          "text_bytes": 48638429,
+          "zip_bytes": 7704403
+        },
+        "2026-10-28": {
+          "files": 96,
+          "lines": 123196,
+          "text_bytes": 50139579,
+          "zip_bytes": 7962885
+        },
+        "2026-10-29": {
+          "files": 96,
+          "lines": 118962,
+          "text_bytes": 48471488,
+          "zip_bytes": 7707146
+        },
+        "2026-10-30": {
+          "files": 96,
+          "lines": 114106,
+          "text_bytes": 46454998,
+          "zip_bytes": 7344295
+        },
+        "2026-10-31": {
+          "files": 96,
+          "lines": 73394,
+          "text_bytes": 29732583,
+          "zip_bytes": 4455680
+        },
+        "2026-11-01": {
+          "files": 96,
+          "lines": 63401,
+          "text_bytes": 25756841,
+          "zip_bytes": 3785014
+        },
+        "2026-11-02": {
+          "files": 96,
+          "lines": 103574,
+          "text_bytes": 42127402,
+          "zip_bytes": 6630254
+        },
+        "2026-11-03": {
+          "files": 96,
+          "lines": 119006,
+          "text_bytes": 48603447,
+          "zip_bytes": 7668814
+        },
+        "2026-11-04": {
+          "files": 96,
+          "lines": 125229,
+          "text_bytes": 51113019,
+          "zip_bytes": 8052450
+        },
+        "2026-11-05": {
+          "files": 96,
+          "lines": 117148,
+          "text_bytes": 47670273,
+          "zip_bytes": 7546794
+        },
+        "2026-11-06": {
+          "files": 96,
+          "lines": 113498,
+          "text_bytes": 46413290,
+          "zip_bytes": 7282781
+        },
+        "2026-11-07": {
+          "files": 96,
+          "lines": 71638,
+          "text_bytes": 29219344,
+          "zip_bytes": 4358684
+        },
+        "2026-11-08": {
+          "files": 96,
+          "lines": 57162,
+          "text_bytes": 23290269,
+          "zip_bytes": 3422996
+        },
+        "2026-11-09": {
+          "files": 96,
+          "lines": 102962,
+          "text_bytes": 42014532,
+          "zip_bytes": 6514268
+        },
+        "2026-11-10": {
+          "files": 96,
+          "lines": 124504,
+          "text_bytes": 50798207,
+          "zip_bytes": 7886632
+        },
+        "2026-11-11": {
+          "files": 96,
+          "lines": 118737,
+          "text_bytes": 48350688,
+          "zip_bytes": 7599316
+        },
+        "2026-11-12": {
+          "files": 96,
+          "lines": 120768,
+          "text_bytes": 49153021,
+          "zip_bytes": 7731424
+        },
+        "2026-11-13": {
+          "files": 96,
+          "lines": 111095,
+          "text_bytes": 45227111,
+          "zip_bytes": 7089535
+        },
+        "2026-11-14": {
+          "files": 96,
+          "lines": 74232,
+          "text_bytes": 30273874,
+          "zip_bytes": 4462484
+        },
+        "2026-11-15": {
+          "files": 96,
+          "lines": 61540,
+          "text_bytes": 25093494,
+          "zip_bytes": 3627566
+        },
+        "2026-11-16": {
+          "files": 96,
+          "lines": 107963,
+          "text_bytes": 43915630,
+          "zip_bytes": 6790467
+        },
+        "2026-11-17": {
+          "files": 96,
+          "lines": 127432,
+          "text_bytes": 52072517,
+          "zip_bytes": 8105190
+        },
+        "2026-11-18": {
+          "files": 96,
+          "lines": 128905,
+          "text_bytes": 52454050,
+          "zip_bytes": 8232392
+        },
+        "2026-11-19": {
+          "files": 96,
+          "lines": 130634,
+          "text_bytes": 53295804,
+          "zip_bytes": 8249502
+        },
+        "2026-11-20": {
+          "files": 96,
+          "lines": 119392,
+          "text_bytes": 48788974,
+          "zip_bytes": 7540390
+        },
+        "2026-11-21": {
+          "files": 96,
+          "lines": 73341,
+          "text_bytes": 29851621,
+          "zip_bytes": 4441744
+        },
+        "2026-11-22": {
+          "files": 96,
+          "lines": 59805,
+          "text_bytes": 24190540,
+          "zip_bytes": 3524909
+        },
+        "2026-11-23": {
+          "files": 96,
+          "lines": 101301,
+          "text_bytes": 40985580,
+          "zip_bytes": 6375169
+        },
+        "2026-11-24": {
+          "files": 96,
+          "lines": 112458,
+          "text_bytes": 45702727,
+          "zip_bytes": 7244423
+        }
+      },
+      "columns": [
+        {
+          "bytes": 31025440,
+          "filled_lines": 3102544,
+          "name": "GLOBALEVENTID",
+          "position": 1,
+          "share_of_field_bytes": 0.028793
+        },
+        {
+          "bytes": 24820352,
+          "filled_lines": 3102544,
+          "name": "SQLDATE",
+          "position": 2,
+          "share_of_field_bytes": 0.023034
+        },
+        {
+          "bytes": 18615264,
+          "filled_lines": 3102544,
+          "name": "MonthYear",
+          "position": 3,
+          "share_of_field_bytes": 0.017276
+        },
+        {
+          "bytes": 12410176,
+          "filled_lines": 3102544,
+          "name": "Year",
+          "position": 4,
+          "share_of_field_bytes": 0.011517
+        },
+        {
+          "bytes": 27922896,
+          "filled_lines": 3102544,
+          "name": "FractionDate",
+          "position": 5,
+          "share_of_field_bytes": 0.025913
+        },
+        {
+          "bytes": 9939850,
+          "filled_lines": 2806782,
+          "name": "Actor1Code",
+          "position": 6,
+          "share_of_field_bytes": 0.009225
+        },
+        {
+          "bytes": 24549943,
+          "filled_lines": 2806783,
+          "name": "Actor1Name",
+          "position": 7,
+          "share_of_field_bytes": 0.022783
+        },
+        {
+          "bytes": 5274405,
+          "filled_lines": 1758135,
+          "name": "Actor1CountryCode",
+          "position": 8,
+          "share_of_field_bytes": 0.004895
+        },
+        {
+          "bytes": 106164,
+          "filled_lines": 35388,
+          "name": "Actor1KnownGroupCode",
+          "position": 9,
+          "share_of_field_bytes": 9.9e-05
+        },
+        {
+          "bytes": 53433,
+          "filled_lines": 17811,
+          "name": "Actor1EthnicCode",
+          "position": 10,
+          "share_of_field_bytes": 5e-05
+        },
+        {
+          "bytes": 114096,
+          "filled_lines": 38032,
+          "name": "Actor1Religion1Code",
+          "position": 11,
+          "share_of_field_bytes": 0.000106
+        },
+        {
+          "bytes": 28842,
+          "filled_lines": 9614,
+          "name": "Actor1Religion2Code",
+          "position": 12,
+          "share_of_field_bytes": 2.7e-05
+        },
+        {
+          "bytes": 3992031,
+          "filled_lines": 1330677,
+          "name": "Actor1Type1Code",
+          "position": 13,
+          "share_of_field_bytes": 0.003705
+        },
+        {
+          "bytes": 242400,
+          "filled_lines": 80800,
+          "name": "Actor1Type2Code",
+          "position": 14,
+          "share_of_field_bytes": 0.000225
+        },
+        {
+          "bytes": 5175,
+          "filled_lines": 1725,
+          "name": "Actor1Type3Code",
+          "position": 15,
+          "share_of_field_bytes": 5e-06
+        },
+        {
+          "bytes": 7710179,
+          "filled_lines": 2186973,
+          "name": "Actor2Code",
+          "position": 16,
+          "share_of_field_bytes": 0.007155
+        },
+        {
+          "bytes": 18871757,
+          "filled_lines": 2186973,
+          "name": "Actor2Name",
+          "position": 17,
+          "share_of_field_bytes": 0.017514
+        },
+        {
+          "bytes": 4127253,
+          "filled_lines": 1375751,
+          "name": "Actor2CountryCode",
+          "position": 18,
+          "share_of_field_bytes": 0.00383
+        },
+        {
+          "bytes": 88620,
+          "filled_lines": 29540,
+          "name": "Actor2KnownGroupCode",
+          "position": 19,
+          "share_of_field_bytes": 8.2e-05
+        },
+        {
+          "bytes": 41382,
+          "filled_lines": 13794,
+          "name": "Actor2EthnicCode",
+          "position": 20,
+          "share_of_field_bytes": 3.8e-05
+        },
+        {
+          "bytes": 96984,
+          "filled_lines": 32328,
+          "name": "Actor2Religion1Code",
+          "position": 21,
+          "share_of_field_bytes": 9e-05
+        },
+        {
+          "bytes": 23124,
+          "filled_lines": 7708,
+          "name": "Actor2Religion2Code",
+          "position": 22,
+          "share_of_field_bytes": 2.1e-05
+        },
+        {
+          "bytes": 3065067,
+          "filled_lines": 1021689,
+          "name": "Actor2Type1Code",
+          "position": 23,
+          "share_of_field_bytes": 0.002844
+        },
+        {
+          "bytes": 166839,
+          "filled_lines": 55613,
+          "name": "Actor2Type2Code",
+          "position": 24,
+          "share_of_field_bytes": 0.000155
+        },
+        {
+          "bytes": 3633,
+          "filled_lines": 1211,
+          "name": "Actor2Type3Code",
+          "position": 25,
+          "share_of_field_bytes": 3e-06
+        },
+        {
+          "bytes": 3102544,
+          "filled_lines": 3102544,
+          "name": "IsRootEvent",
+          "position": 26,
+          "share_of_field_bytes": 0.002879
+        },
+        {
+          "bytes": 9400621,
+          "filled_lines": 3102544,
+          "name": "EventCode",
+          "position": 27,
+          "share_of_field_bytes": 0.008724
+        },
+        {
+          "bytes": 9307632,
+          "filled_lines": 3102544,
+          "name": "EventBaseCode",
+          "position": 28,
+          "share_of_field_bytes": 0.008638
+        },
+        {
+          "bytes": 6205088,
+          "filled_lines": 3102544,
+          "name": "EventRootCode",
+          "position": 29,
+          "share_of_field_bytes": 0.005759
+        },
+        {
+          "bytes": 3102544,
+          "filled_lines": 3102544,
+          "name": "QuadClass",
+          "position": 30,
+          "share_of_field_bytes": 0.002879
+        },
+        {
+          "bytes": 10390499,
+          "filled_lines": 3102537,
+          "name": "GoldsteinScale",
+          "position": 31,
+          "share_of_field_bytes": 0.009643
+        },
+        {
+          "bytes": 3598938,
+          "filled_lines": 3102544,
+          "name": "NumMentions",
+          "position": 32,
+          "share_of_field_bytes": 0.00334
+        },
+        {
+          "bytes": 3104643,
+          "filled_lines": 3102544,
+          "name": "NumSources",
+          "position": 33,
+          "share_of_field_bytes": 0.002881
+        },
+        {
+          "bytes": 3586250,
+          "filled_lines": 3102544,
+          "name": "NumArticles",
+          "position": 34,
+          "share_of_field_bytes": 0.003328
+        },
+        {
+          "bytes": 49748319,
+          "filled_lines": 3102544,
+          "name": "AvgTone",
+          "position": 35,
+          "share_of_field_bytes": 0.046168
+        },
+        {
+          "bytes": 3102544,
+          "filled_lines": 3102544,
+          "name": "Actor1Geo_Type",
+          "position": 36,
+          "share_of_field_bytes": 0.002879
+        },
+        {
+          "bytes": 69063994,
+          "filled_lines": 2732155,
+          "name": "Actor1Geo_FullName",
+          "position": 37,
+          "share_of_field_bytes": 0.064094
+        },
+        {
+          "bytes": 5465866,
+          "filled_lines": 2732933,
+          "name": "Actor1Geo_CountryCode",
+          "position": 38,
+          "share_of_field_bytes": 0.005073
+        },
+        {
+          "bytes": 9663698,
+          "filled_lines": 2732933,
+          "name": "Actor1Geo_ADM1Code",
+          "position": 39,
+          "share_of_field_bytes": 0.008968
+        },
+        {
+          "bytes": 8475284,
+          "filled_lines": 1692345,
+          "name": "Actor1Geo_ADM2Code",
+          "position": 40,
+          "share_of_field_bytes": 0.007865
+        },
+        {
+          "bytes": 15782230,
+          "filled_lines": 2732155,
+          "name": "Actor1Geo_Lat",
+          "position": 41,
+          "share_of_field_bytes": 0.014646
+        },
+        {
+          "bytes": 17218100,
+          "filled_lines": 2732584,
+          "name": "Actor1Geo_Long",
+          "position": 42,
+          "share_of_field_bytes": 0.015979
+        },
+        {
+          "bytes": 14754073,
+          "filled_lines": 2732933,
+          "name": "Actor1Geo_FeatureID",
+          "position": 43,
+          "share_of_field_bytes": 0.013692
+        },
+        {
+          "bytes": 3102544,
+          "filled_lines": 3102544,
+          "name": "Actor2Geo_Type",
+          "position": 44,
+          "share_of_field_bytes": 0.002879
+        },
+        {
+          "bytes": 52987261,
+          "filled_lines": 2131590,
+          "name": "Actor2Geo_FullName",
+          "position": 45,
+          "share_of_field_bytes": 0.049174
+        },
+        {
+          "bytes": 4264222,
+          "filled_lines": 2132111,
+          "name": "Actor2Geo_CountryCode",
+          "position": 46,
+          "share_of_field_bytes": 0.003957
+        },
+        {
+          "bytes": 7481672,
+          "filled_lines": 2132111,
+          "name": "Actor2Geo_ADM1Code",
+          "position": 47,
+          "share_of_field_bytes": 0.006943
+        },
+        {
+          "bytes": 5831407,
+          "filled_lines": 1164708,
+          "name": "Actor2Geo_ADM2Code",
+          "position": 48,
+          "share_of_field_bytes": 0.005412
+        },
+        {
+          "bytes": 12206807,
+          "filled_lines": 2131590,
+          "name": "Actor2Geo_Lat",
+          "position": 49,
+          "share_of_field_bytes": 0.011328
+        },
+        {
+          "bytes": 13314497,
+          "filled_lines": 2131886,
+          "name": "Actor2Geo_Long",
+          "position": 50,
+          "share_of_field_bytes": 0.012356
+        },
+        {
+          "bytes": 11450694,
+          "filled_lines": 2132111,
+          "name": "Actor2Geo_FeatureID",
+          "position": 51,
+          "share_of_field_bytes": 0.010627
+        },
+        {
+          "bytes": 3102544,
+          "filled_lines": 3102544,
+          "name": "ActionGeo_Type",
+          "position": 52,
+          "share_of_field_bytes": 0.002879
+        },
+        {
+          "bytes": 76926037,
+          "filled_lines": 3019296,
+          "name": "ActionGeo_FullName",
+          "position": 53,
+          "share_of_field_bytes": 0.07139
+        },
+        {
+          "bytes": 6040400,
+          "filled_lines": 3020200,
+          "name": "ActionGeo_CountryCode",
+          "position": 54,
+          "share_of_field_bytes": 0.005606
+        },
+        {
+          "bytes": 10719230,
+          "filled_lines": 3020200,
+          "name": "ActionGeo_ADM1Code",
+          "position": 55,
+          "share_of_field_bytes": 0.009948
+        },
+        {
+          "bytes": 8280939,
+          "filled_lines": 1653295,
+          "name": "ActionGeo_ADM2Code",
+          "position": 56,
+          "share_of_field_bytes": 0.007685
+        },
+        {
+          "bytes": 17509380,
+          "filled_lines": 3019296,
+          "name": "ActionGeo_Lat",
+          "position": 57,
+          "share_of_field_bytes": 0.016249
+        },
+        {
+          "bytes": 19106764,
+          "filled_lines": 3019813,
+          "name": "ActionGeo_Long",
+          "position": 58,
+          "share_of_field_bytes": 0.017732
+        },
+        {
+          "bytes": 16407349,
+          "filled_lines": 3020200,
+          "name": "ActionGeo_FeatureID",
+          "position": 59,
+          "share_of_field_bytes": 0.015227
+        },
+        {
+          "bytes": 43435616,
+          "filled_lines": 3102544,
+          "name": "DATEADDED",
+          "position": 60,
+          "share_of_field_bytes": 0.04031
+        },
+        {
+          "bytes": 327011721,
+          "filled_lines": 3102544,
+          "name": "SOURCEURL",
+          "position": 61,
+          "share_of_field_bytes": 0.303478
+        }
+      ],
+      "days": 30,
+      "event_ids_in_more_than_one_slot_of_a_day": {
+        "days_with_one_or_more": 0,
+        "largest_day": 0,
+        "total": 0
+      },
+      "files": 2880,
+      "lines": 3102544,
+      "lines_with_another_column_count": {},
+      "seconds": 39.9,
+      "text_bytes": 1263699896,
+      "zip_bytes": 196149481
+    },
+    "gkg": {
+      "by_day": {
+        "2026-10-26": {
+          "files": 96,
+          "lines": 101215,
+          "text_bytes": 1342459750,
+          "zip_bytes": 432769973
+        },
+        "2026-10-27": {
+          "files": 96,
+          "lines": 117445,
+          "text_bytes": 1563612541,
+          "zip_bytes": 503846895
+        },
+        "2026-10-28": {
+          "files": 96,
+          "lines": 120123,
+          "text_bytes": 1596475176,
+          "zip_bytes": 514980749
+        },
+        "2026-10-29": {
+          "files": 96,
+          "lines": 119299,
+          "text_bytes": 1598432757,
+          "zip_bytes": 515306720
+        },
+        "2026-10-30": {
+          "files": 96,
+          "lines": 108415,
+          "text_bytes": 1453251651,
+          "zip_bytes": 467945496
+        },
+        "2026-10-31": {
+          "files": 96,
+          "lines": 62008,
+          "text_bytes": 845996097,
+          "zip_bytes": 271561864
+        },
+        "2026-11-01": {
+          "files": 96,
+          "lines": 54361,
+          "text_bytes": 736440591,
+          "zip_bytes": 236983255
+        },
+        "2026-11-02": {
+          "files": 96,
+          "lines": 102905,
+          "text_bytes": 1360384932,
+          "zip_bytes": 439075137
+        },
+        "2026-11-03": {
+          "files": 96,
+          "lines": 113571,
+          "text_bytes": 1511486440,
+          "zip_bytes": 487216867
+        },
+        "2026-11-04": {
+          "files": 96,
+          "lines": 125779,
+          "text_bytes": 1680344206,
+          "zip_bytes": 540822235
+        },
+        "2026-11-05": {
+          "files": 96,
+          "lines": 116472,
+          "text_bytes": 1570799694,
+          "zip_bytes": 506281300
+        },
+        "2026-11-06": {
+          "files": 96,
+          "lines": 112318,
+          "text_bytes": 1499093315,
+          "zip_bytes": 483441370
+        },
+        "2026-11-07": {
+          "files": 96,
+          "lines": 64211,
+          "text_bytes": 863796206,
+          "zip_bytes": 277707296
+        },
+        "2026-11-08": {
+          "files": 96,
+          "lines": 52071,
+          "text_bytes": 709227904,
+          "zip_bytes": 227347063
+        },
+        "2026-11-09": {
+          "files": 96,
+          "lines": 97057,
+          "text_bytes": 1303369958,
+          "zip_bytes": 419139753
+        },
+        "2026-11-10": {
+          "files": 96,
+          "lines": 114410,
+          "text_bytes": 1518527545,
+          "zip_bytes": 489725865
+        },
+        "2026-11-11": {
+          "files": 96,
+          "lines": 109390,
+          "text_bytes": 1456662236,
+          "zip_bytes": 469769570
+        },
+        "2026-11-12": {
+          "files": 96,
+          "lines": 109111,
+          "text_bytes": 1451685581,
+          "zip_bytes": 467195238
+        },
+        "2026-11-13": {
+          "files": 96,
+          "lines": 104883,
+          "text_bytes": 1377717032,
+          "zip_bytes": 444689095
+        },
+        "2026-11-14": {
+          "files": 96,
+          "lines": 62192,
+          "text_bytes": 819085099,
+          "zip_bytes": 263990219
+        },
+        "2026-11-15": {
+          "files": 96,
+          "lines": 50459,
+          "text_bytes": 673365258,
+          "zip_bytes": 216523329
+        },
+        "2026-11-16": {
+          "files": 96,
+          "lines": 96610,
+          "text_bytes": 1260691548,
+          "zip_bytes": 407305510
+        },
+        "2026-11-17": {
+          "files": 96,
+          "lines": 115340,
+          "text_bytes": 1515711722,
+          "zip_bytes": 488460168
+        },
+        "2026-11-18": {
+          "files": 96,
+          "lines": 118241,
+          "text_bytes": 1551288294,
+          "zip_bytes": 500681961
+        },
+        "2026-11-19": {
+          "files": 96,
+          "lines": 119181,
+          "text_bytes": 1567805543,
+          "zip_bytes": 506060994
+        },
+        "2026-11-20": {
+          "files": 96,
+          "lines": 111526,
+          "text_bytes": 1467449636,
+          "zip_bytes": 473453743
+        },
+        "2026-11-21": {
+          "files": 96,
+          "lines": 63550,
+          "text_bytes": 834305036,
+          "zip_bytes": 268771561
+        },
+        "2026-11-22": {
+          "files": 96,
+          "lines": 52109,
+          "text_bytes": 698787417,
+          "zip_bytes": 223947678
+        },
+        "2026-11-23": {
+          "files": 96,
+          "lines": 100164,
+          "text_bytes": 1303174895,
+          "zip_bytes": 419883519
+        },
+        "2026-11-24": {
+          "files": 96,
+          "lines": 111522,
+          "text_bytes": 1455288338,
+          "zip_bytes": 469123996
+        }
+      },
+      "columns": [
+        {
+          "bytes": 52477424,
+          "filled_lines": 2905938,
+          "name": "GKGRECORDID",
+          "position": 1,
+          "share_of_field_bytes": 0.001363
+        },
+        {
+          "bytes": 40683132,
+          "filled_lines": 2905938,
+          "name": "V2.1DATE",
+          "position": 2,
+          "share_of_field_bytes": 0.001056
+        },
+        {
+          "bytes": 2905938,
+          "filled_lines": 2905938,
+          "name": "V2SOURCECOLLECTIONIDENTIFIER",
+          "position": 3,
+          "share_of_field_bytes": 7.5e-05
+        },
+        {
+          "bytes": 42033675,
+          "filled_lines": 2905936,
+          "name": "V2SOURCECOMMONNAME",
+          "position": 4,
+          "share_of_field_bytes": 0.001091
+        },
+        {
+          "bytes": 310443043,
+          "filled_lines": 2905938,
+          "name": "V2DOCUMENTIDENTIFIER",
+          "position": 5,
+          "share_of_field_bytes": 0.008061
+        },
+        {
+          "bytes": 78339071,
+          "filled_lines": 330236,
+          "name": "V1COUNTS",
+          "position": 6,
+          "share_of_field_bytes": 0.002034
+        },
+        {
+          "bytes": 83648858,
+          "filled_lines": 330236,
+          "name": "V2.1COUNTS",
+          "position": 7,
+          "share_of_field_bytes": 0.002172
+        },
+        {
+          "bytes": 1626602381,
+          "filled_lines": 2593463,
+          "name": "V1THEMES",
+          "position": 8,
+          "share_of_field_bytes": 0.042237
+        },
+        {
+          "bytes": 3442627845,
+          "filled_lines": 2593414,
+          "name": "V2ENHANCEDTHEMES",
+          "position": 9,
+          "share_of_field_bytes": 0.089393
+        },
+        {
+          "bytes": 489331359,
+          "filled_lines": 2292671,
+          "name": "V1LOCATIONS",
+          "position": 10,
+          "share_of_field_bytes": 0.012706
+        },
+        {
+          "bytes": 1406388655,
+          "filled_lines": 2290049,
+          "name": "V2ENHANCEDLOCATIONS",
+          "position": 11,
+          "share_of_field_bytes": 0.036519
+        },
+        {
+          "bytes": 151056273,
+          "filled_lines": 2305325,
+          "name": "V1PERSONS",
+          "position": 12,
+          "share_of_field_bytes": 0.003922
+        },
+        {
+          "bytes": 263415783,
+          "filled_lines": 2281160,
+          "name": "V2ENHANCEDPERSONS",
+          "position": 13,
+          "share_of_field_bytes": 0.00684
+        },
+        {
+          "bytes": 156424569,
+          "filled_lines": 2226672,
+          "name": "V1ORGANIZATIONS",
+          "position": 14,
+          "share_of_field_bytes": 0.004062
+        },
+        {
+          "bytes": 255587360,
+          "filled_lines": 2144418,
+          "name": "V2ENHANCEDORGANIZATIONS",
+          "position": 15,
+          "share_of_field_bytes": 0.006637
+        },
+        {
+          "bytes": 278043237,
+          "filled_lines": 2905938,
+          "name": "V1.5TONE",
+          "position": 16,
+          "share_of_field_bytes": 0.00722
+        },
+        {
+          "bytes": 39751980,
+          "filled_lines": 1085596,
+          "name": "V2.1ENHANCEDDATES",
+          "position": 17,
+          "share_of_field_bytes": 0.001032
+        },
+        {
+          "bytes": 26611032386,
+          "filled_lines": 2905938,
+          "name": "V2GCAM",
+          "position": 18,
+          "share_of_field_bytes": 0.690995
+        },
+        {
+          "bytes": 289415098,
+          "filled_lines": 2533208,
+          "name": "V2.1SHARINGIMAGE",
+          "position": 19,
+          "share_of_field_bytes": 0.007515
+        },
+        {
+          "bytes": 164445852,
+          "filled_lines": 434251,
+          "name": "V2.1RELATEDIMAGES",
+          "position": 20,
+          "share_of_field_bytes": 0.00427
+        },
+        {
+          "bytes": 21747059,
+          "filled_lines": 169571,
+          "name": "V2.1SOCIALIMAGEEMBEDS",
+          "position": 21,
+          "share_of_field_bytes": 0.000565
+        },
+        {
+          "bytes": 146062039,
+          "filled_lines": 1497800,
+          "name": "V2.1SOCIALVIDEOEMBEDS",
+          "position": 22,
+          "share_of_field_bytes": 0.003793
+        },
+        {
+          "bytes": 88681702,
+          "filled_lines": 595808,
+          "name": "V2.1QUOTATIONS",
+          "position": 23,
+          "share_of_field_bytes": 0.002303
+        },
+        {
+          "bytes": 753057525,
+          "filled_lines": 2795054,
+          "name": "V2.1ALLNAMES",
+          "position": 24,
+          "share_of_field_bytes": 0.019554
+        },
+        {
+          "bytes": 314849469,
+          "filled_lines": 2237671,
+          "name": "V2.1AMOUNTS",
+          "position": 25,
+          "share_of_field_bytes": 0.008176
+        },
+        {
+          "bytes": 0,
+          "filled_lines": 0,
+          "name": "V2.1TRANSLATIONINFO",
+          "position": 26,
+          "share_of_field_bytes": 0.0
+        },
+        {
+          "bytes": 1402110297,
+          "filled_lines": 2905938,
+          "name": "V2EXTRASXML",
+          "position": 27,
+          "share_of_field_bytes": 0.036408
+        }
+      ],
+      "days": 30,
+      "files": 2880,
+      "lines": 2905938,
+      "lines_by_organisation_column": {
+        "with_a_title_tag": 2905938,
+        "with_v1_organisations_only": 82254,
+        "with_v2_organisations": 2144418,
+        "without_organisations": 679266
+      },
+      "lines_with_another_column_count": {},
+      "seconds": 225.7,
+      "text_bytes": 38586716398,
+      "zip_bytes": 12434008419
+    },
+    "mentions": {
+      "by_day": {
+        "2026-10-26": {
+          "files": 96,
+          "lines": 276387,
+          "text_bytes": 58894123,
+          "zip_bytes": 9057810
+        },
+        "2026-10-27": {
+          "files": 96,
+          "lines": 318197,
+          "text_bytes": 67974445,
+          "zip_bytes": 10766759
+        },
+        "2026-10-28": {
+          "files": 96,
+          "lines": 333683,
+          "text_bytes": 71325585,
+          "zip_bytes": 11098410
+        },
+        "2026-10-29": {
+          "files": 96,
+          "lines": 309373,
+          "text_bytes": 66269523,
+          "zip_bytes": 10558836
+        },
+        "2026-10-30": {
+          "files": 96,
+          "lines": 294813,
+          "text_bytes": 63235752,
+          "zip_bytes": 10223706
+        },
+        "2026-10-31": {
+          "files": 96,
+          "lines": 207303,
+          "text_bytes": 44921391,
+          "zip_bytes": 6238783
+        },
+        "2026-11-01": {
+          "files": 96,
+          "lines": 167648,
+          "text_bytes": 36327732,
+          "zip_bytes": 5151836
+        },
+        "2026-11-02": {
+          "files": 96,
+          "lines": 275706,
+          "text_bytes": 59005672,
+          "zip_bytes": 9263301
+        },
+        "2026-11-03": {
+          "files": 96,
+          "lines": 323789,
+          "text_bytes": 69500853,
+          "zip_bytes": 10727412
+        },
+        "2026-11-04": {
+          "files": 96,
+          "lines": 353999,
+          "text_bytes": 75690424,
+          "zip_bytes": 12004306
+        },
+        "2026-11-05": {
+          "files": 96,
+          "lines": 321490,
+          "text_bytes": 68530800,
+          "zip_bytes": 10810077
+        },
+        "2026-11-06": {
+          "files": 96,
+          "lines": 315477,
+          "text_bytes": 67548785,
+          "zip_bytes": 10245160
+        },
+        "2026-11-07": {
+          "files": 96,
+          "lines": 205767,
+          "text_bytes": 44804264,
+          "zip_bytes": 6152488
+        },
+        "2026-11-08": {
+          "files": 96,
+          "lines": 179838,
+          "text_bytes": 38735740,
+          "zip_bytes": 4969217
+        },
+        "2026-11-09": {
+          "files": 96,
+          "lines": 305161,
+          "text_bytes": 65180888,
+          "zip_bytes": 9540987
+        },
+        "2026-11-10": {
+          "files": 96,
+          "lines": 343277,
+          "text_bytes": 73171099,
+          "zip_bytes": 11209317
+        },
+        "2026-11-11": {
+          "files": 96,
+          "lines": 322248,
+          "text_bytes": 69015812,
+          "zip_bytes": 10734225
+        },
+        "2026-11-12": {
+          "files": 96,
+          "lines": 346891,
+          "text_bytes": 74254214,
+          "zip_bytes": 11101991
+        },
+        "2026-11-13": {
+          "files": 96,
+          "lines": 309739,
+          "text_bytes": 66854438,
+          "zip_bytes": 10054148
+        },
+        "2026-11-14": {
+          "files": 96,
+          "lines": 179871,
+          "text_bytes": 38368859,
+          "zip_bytes": 5697127
+        },
+        "2026-11-15": {
+          "files": 96,
+          "lines": 138886,
+          "text_bytes": 29495009,
+          "zip_bytes": 4351539
+        },
+        "2026-11-16": {
+          "files": 96,
+          "lines": 274923,
+          "text_bytes": 58045239,
+          "zip_bytes": 8752748
+        },
+        "2026-11-17": {
+          "files": 96,
+          "lines": 353634,
+          "text_bytes": 75323712,
+          "zip_bytes": 11463113
+        },
+        "2026-11-18": {
+          "files": 96,
+          "lines": 354427,
+          "text_bytes": 75288478,
+          "zip_bytes": 11697837
+        },
+        "2026-11-19": {
+          "files": 96,
+          "lines": 356130,
+          "text_bytes": 75893548,
+          "zip_bytes": 11731788
+        },
+        "2026-11-20": {
+          "files": 96,
+          "lines": 321260,
+          "text_bytes": 68405273,
+          "zip_bytes": 10633814
+        },
+        "2026-11-21": {
+          "files": 96,
+          "lines": 172985,
+          "text_bytes": 37269533,
+          "zip_bytes": 5628052
+        },
+        "2026-11-22": {
+          "files": 96,
+          "lines": 149366,
+          "text_bytes": 32135956,
+          "zip_bytes": 4501702
+        },
+        "2026-11-23": {
+          "files": 96,
+          "lines": 267938,
+          "text_bytes": 56787861,
+          "zip_bytes": 8750998
+        },
+        "2026-11-24": {
+          "files": 96,
+          "lines": 306978,
+          "text_bytes": 65225024,
+          "zip_bytes": 10262726
+        }
+      },
+      "columns": [
+        {
+          "bytes": 83871840,
+          "filled_lines": 8387184,
+          "name": "GLOBALEVENTID",
+          "position": 1,
+          "share_of_field_bytes": 0.050293
+        },
+        {
+          "bytes": 117420576,
+          "filled_lines": 8387184,
+          "name": "EventTimeDate",
+          "position": 2,
+          "share_of_field_bytes": 0.07041
+        },
+        {
+          "bytes": 117420576,
+          "filled_lines": 8387184,
+          "name": "MentionTimeDate",
+          "position": 3,
+          "share_of_field_bytes": 0.07041
+        },
+        {
+          "bytes": 8387184,
+          "filled_lines": 8387184,
+          "name": "MentionType",
+          "position": 4,
+          "share_of_field_bytes": 0.005029
+        },
+        {
+          "bytes": 123344365,
+          "filled_lines": 8387184,
+          "name": "MentionSourceName",
+          "position": 5,
+          "share_of_field_bytes": 0.073962
+        },
+        {
+          "bytes": 926815967,
+          "filled_lines": 8387184,
+          "name": "MentionIdentifier",
+          "position": 6,
+          "share_of_field_bytes": 0.555754
+        },
+        {
+          "bytes": 11353881,
+          "filled_lines": 8387184,
+          "name": "SentenceID",
+          "position": 7,
+          "share_of_field_bytes": 0.006808
+        },
+        {
+          "bytes": 28329336,
+          "filled_lines": 8387184,
+          "name": "Actor1CharOffset",
+          "position": 8,
+          "share_of_field_bytes": 0.016987
+        },
+        {
+          "bytes": 25408610,
+          "filled_lines": 8387184,
+          "name": "Actor2CharOffset",
+          "position": 9,
+          "share_of_field_bytes": 0.015236
+        },
+        {
+          "bytes": 30186008,
+          "filled_lines": 8387184,
+          "name": "ActionCharOffset",
+          "position": 10,
+          "share_of_field_bytes": 0.018101
+        },
+        {
+          "bytes": 8387184,
+          "filled_lines": 8387184,
+          "name": "InRawText",
+          "position": 11,
+          "share_of_field_bytes": 0.005029
+        },
+        {
+          "bytes": 18078226,
+          "filled_lines": 8387184,
+          "name": "Confidence",
+          "position": 12,
+          "share_of_field_bytes": 0.01084
+        },
+        {
+          "bytes": 33799309,
+          "filled_lines": 8387184,
+          "name": "MentionDocLen",
+          "position": 13,
+          "share_of_field_bytes": 0.020267
+        },
+        {
+          "bytes": 134869210,
+          "filled_lines": 8387184,
+          "name": "MentionDocTone",
+          "position": 14,
+          "share_of_field_bytes": 0.080873
+        },
+        {
+          "bytes": 0,
+          "filled_lines": 0,
+          "name": "MentionDocTranslationInfo",
+          "position": 15,
+          "share_of_field_bytes": 0.0
+        },
+        {
+          "bytes": 0,
+          "filled_lines": 0,
+          "name": "Extras",
+          "position": 16,
+          "share_of_field_bytes": 0.0
+        }
+      ],
+      "days": 30,
+      "files": 2880,
+      "lines": 8387184,
+      "lines_with_another_column_count": {},
+      "seconds": 29.2,
+      "text_bytes": 1793480032,
+      "zip_bytes": 273380213
+    }
+  },
+  "gkg": {
+    "by_day": {
+      "2026-10-26": {
+        "copies_of_a_title": 36329,
+        "distinct_normalised_titles": 64703,
+        "distinct_organisation_strings": 59221,
+        "documents": 101215,
+        "documents_with_a_title": 101032,
+        "documents_with_an_organisation": 77315,
+        "documents_with_v1_names_only": 3061,
+        "organisation_rows": 229058
+      },
+      "2026-10-27": {
+        "copies_of_a_title": 42789,
+        "distinct_normalised_titles": 74437,
+        "distinct_organisation_strings": 66589,
+        "documents": 117445,
+        "documents_with_a_title": 117226,
+        "documents_with_an_organisation": 89163,
+        "documents_with_v1_names_only": 3117,
+        "organisation_rows": 261712
+      },
+      "2026-10-28": {
+        "copies_of_a_title": 44460,
+        "distinct_normalised_titles": 75449,
+        "distinct_organisation_strings": 69895,
+        "documents": 120123,
+        "documents_with_a_title": 119909,
+        "documents_with_an_organisation": 93232,
+        "documents_with_v1_names_only": 3125,
+        "organisation_rows": 268887
+      },
+      "2026-10-29": {
+        "copies_of_a_title": 43836,
+        "distinct_normalised_titles": 75252,
+        "distinct_organisation_strings": 69391,
+        "documents": 119299,
+        "documents_with_a_title": 119088,
+        "documents_with_an_organisation": 91806,
+        "documents_with_v1_names_only": 3358,
+        "organisation_rows": 268047
+      },
+      "2026-10-30": {
+        "copies_of_a_title": 37865,
+        "distinct_normalised_titles": 70319,
+        "distinct_organisation_strings": 63771,
+        "documents": 108415,
+        "documents_with_a_title": 108184,
+        "documents_with_an_organisation": 82821,
+        "documents_with_v1_names_only": 3160,
+        "organisation_rows": 245063
+      },
+      "2026-10-31": {
+        "copies_of_a_title": 20052,
+        "distinct_normalised_titles": 41836,
+        "distinct_organisation_strings": 40010,
+        "documents": 62008,
+        "documents_with_a_title": 61888,
+        "documents_with_an_organisation": 46492,
+        "documents_with_v1_names_only": 1734,
+        "organisation_rows": 138042
+      },
+      "2026-11-01": {
+        "copies_of_a_title": 18157,
+        "distinct_normalised_titles": 36069,
+        "distinct_organisation_strings": 34203,
+        "documents": 54361,
+        "documents_with_a_title": 54226,
+        "documents_with_an_organisation": 39885,
+        "documents_with_v1_names_only": 1546,
+        "organisation_rows": 121656
+      },
+      "2026-11-02": {
+        "copies_of_a_title": 37248,
+        "distinct_normalised_titles": 65443,
+        "distinct_organisation_strings": 60475,
+        "documents": 102905,
+        "documents_with_a_title": 102691,
+        "documents_with_an_organisation": 78787,
+        "documents_with_v1_names_only": 2944,
+        "organisation_rows": 236736
+      },
+      "2026-11-03": {
+        "copies_of_a_title": 40014,
+        "distinct_normalised_titles": 73363,
+        "distinct_organisation_strings": 67274,
+        "documents": 113571,
+        "documents_with_a_title": 113377,
+        "documents_with_an_organisation": 87209,
+        "documents_with_v1_names_only": 3128,
+        "organisation_rows": 260644
+      },
+      "2026-11-04": {
+        "copies_of_a_title": 45003,
+        "distinct_normalised_titles": 80523,
+        "distinct_organisation_strings": 69820,
+        "documents": 125779,
+        "documents_with_a_title": 125526,
+        "documents_with_an_organisation": 96586,
+        "documents_with_v1_names_only": 3401,
+        "organisation_rows": 291651
+      },
+      "2026-11-05": {
+        "copies_of_a_title": 40747,
+        "distinct_normalised_titles": 75501,
+        "distinct_organisation_strings": 68686,
+        "documents": 116472,
+        "documents_with_a_title": 116248,
+        "documents_with_an_organisation": 90735,
+        "documents_with_v1_names_only": 3415,
+        "organisation_rows": 269607
+      },
+      "2026-11-06": {
+        "copies_of_a_title": 41412,
+        "distinct_normalised_titles": 70706,
+        "distinct_organisation_strings": 66043,
+        "documents": 112318,
+        "documents_with_a_title": 112118,
+        "documents_with_an_organisation": 86888,
+        "documents_with_v1_names_only": 2855,
+        "organisation_rows": 260941
+      },
+      "2026-11-07": {
+        "copies_of_a_title": 21177,
+        "distinct_normalised_titles": 42926,
+        "distinct_organisation_strings": 41379,
+        "documents": 64211,
+        "documents_with_a_title": 64103,
+        "documents_with_an_organisation": 47558,
+        "documents_with_v1_names_only": 1760,
+        "organisation_rows": 143030
+      },
+      "2026-11-08": {
+        "copies_of_a_title": 18027,
+        "distinct_normalised_titles": 33940,
+        "distinct_organisation_strings": 32337,
+        "documents": 52071,
+        "documents_with_a_title": 51967,
+        "documents_with_an_organisation": 38421,
+        "documents_with_v1_names_only": 1594,
+        "organisation_rows": 109630
+      },
+      "2026-11-09": {
+        "copies_of_a_title": 33882,
+        "distinct_normalised_titles": 62959,
+        "distinct_organisation_strings": 57127,
+        "documents": 97057,
+        "documents_with_a_title": 96841,
+        "documents_with_an_organisation": 74234,
+        "documents_with_v1_names_only": 3744,
+        "organisation_rows": 219741
+      },
+      "2026-11-10": {
+        "copies_of_a_title": 40102,
+        "distinct_normalised_titles": 74095,
+        "distinct_organisation_strings": 67078,
+        "documents": 114410,
+        "documents_with_a_title": 114197,
+        "documents_with_an_organisation": 89724,
+        "documents_with_v1_names_only": 3284,
+        "organisation_rows": 267300
+      },
+      "2026-11-11": {
+        "copies_of_a_title": 38425,
+        "distinct_normalised_titles": 70765,
+        "distinct_organisation_strings": 64968,
+        "documents": 109390,
+        "documents_with_a_title": 109190,
+        "documents_with_an_organisation": 84836,
+        "documents_with_v1_names_only": 3131,
+        "organisation_rows": 256661
+      },
+      "2026-11-12": {
+        "copies_of_a_title": 35229,
+        "distinct_normalised_titles": 73674,
+        "distinct_organisation_strings": 68940,
+        "documents": 109111,
+        "documents_with_a_title": 108903,
+        "documents_with_an_organisation": 84862,
+        "documents_with_v1_names_only": 2809,
+        "organisation_rows": 262857
+      },
+      "2026-11-13": {
+        "copies_of_a_title": 37166,
+        "distinct_normalised_titles": 67534,
+        "distinct_organisation_strings": 63461,
+        "documents": 104883,
+        "documents_with_a_title": 104700,
+        "documents_with_an_organisation": 80466,
+        "documents_with_v1_names_only": 2901,
+        "organisation_rows": 246842
+      },
+      "2026-11-14": {
+        "copies_of_a_title": 20330,
+        "distinct_normalised_titles": 41762,
+        "distinct_organisation_strings": 39045,
+        "documents": 62192,
+        "documents_with_a_title": 62092,
+        "documents_with_an_organisation": 47243,
+        "documents_with_v1_names_only": 1621,
+        "organisation_rows": 144483
+      },
+      "2026-11-15": {
+        "copies_of_a_title": 16513,
+        "distinct_normalised_titles": 33857,
+        "distinct_organisation_strings": 29944,
+        "documents": 50459,
+        "documents_with_a_title": 50370,
+        "documents_with_an_organisation": 37226,
+        "documents_with_v1_names_only": 1255,
+        "organisation_rows": 104715
+      },
+      "2026-11-16": {
+        "copies_of_a_title": 31760,
+        "distinct_normalised_titles": 64660,
+        "distinct_organisation_strings": 58869,
+        "documents": 96610,
+        "documents_with_a_title": 96420,
+        "documents_with_an_organisation": 72333,
+        "documents_with_v1_names_only": 3499,
+        "organisation_rows": 212448
+      },
+      "2026-11-17": {
+        "copies_of_a_title": 40684,
+        "distinct_normalised_titles": 74429,
+        "distinct_organisation_strings": 65777,
+        "documents": 115340,
+        "documents_with_a_title": 115113,
+        "documents_with_an_organisation": 89941,
+        "documents_with_v1_names_only": 2941,
+        "organisation_rows": 268113
+      },
+      "2026-11-18": {
+        "copies_of_a_title": 41690,
+        "distinct_normalised_titles": 76315,
+        "distinct_organisation_strings": 68549,
+        "documents": 118241,
+        "documents_with_a_title": 118005,
+        "documents_with_an_organisation": 92047,
+        "documents_with_v1_names_only": 3193,
+        "organisation_rows": 272214
+      },
+      "2026-11-19": {
+        "copies_of_a_title": 43160,
+        "distinct_normalised_titles": 75849,
+        "distinct_organisation_strings": 69105,
+        "documents": 119181,
+        "documents_with_a_title": 119009,
+        "documents_with_an_organisation": 92219,
+        "documents_with_v1_names_only": 2897,
+        "organisation_rows": 276085
+      },
+      "2026-11-20": {
+        "copies_of_a_title": 41499,
+        "distinct_normalised_titles": 69825,
+        "distinct_organisation_strings": 63479,
+        "documents": 111526,
+        "documents_with_a_title": 111324,
+        "documents_with_an_organisation": 85027,
+        "documents_with_v1_names_only": 3594,
+        "organisation_rows": 254250
+      },
+      "2026-11-21": {
+        "copies_of_a_title": 21721,
+        "distinct_normalised_titles": 41726,
+        "distinct_organisation_strings": 38269,
+        "documents": 63550,
+        "documents_with_a_title": 63447,
+        "documents_with_an_organisation": 48049,
+        "documents_with_v1_names_only": 2094,
+        "organisation_rows": 138284
+      },
+      "2026-11-22": {
+        "copies_of_a_title": 17988,
+        "distinct_normalised_titles": 34016,
+        "distinct_organisation_strings": 30189,
+        "documents": 52109,
+        "documents_with_a_title": 52004,
+        "documents_with_an_organisation": 39016,
+        "documents_with_v1_names_only": 1463,
+        "organisation_rows": 107978
+      },
+      "2026-11-23": {
+        "copies_of_a_title": 36314,
+        "distinct_normalised_titles": 63656,
+        "distinct_organisation_strings": 56574,
+        "documents": 100164,
+        "documents_with_a_title": 99970,
+        "documents_with_an_organisation": 77015,
+        "documents_with_v1_names_only": 2460,
+        "organisation_rows": 223196
+      },
+      "2026-11-24": {
+        "copies_of_a_title": 40127,
+        "distinct_normalised_titles": 71208,
+        "distinct_organisation_strings": 63307,
+        "documents": 111522,
+        "documents_with_a_title": 111335,
+        "documents_with_an_organisation": 85536,
+        "documents_with_v1_names_only": 3170,
+        "organisation_rows": 248426
+      }
+    },
+    "days": 30,
+    "distinct_organisation_strings_in_a_day": {
+      "max": 69895,
+      "median": 63470.0,
+      "min": 29944
+    },
+    "share_of_documents_with_a_title": 0.99813,
+    "share_of_documents_with_v1_names_only": 0.03694,
+    "share_of_titled_documents_which_copy_a_title": 0.352941,
+    "totals": {
+      "copies_of_a_title": 1023706,
+      "distinct_normalised_titles": 1876797,
+      "documents": 2905938,
+      "documents_with_a_title": 2900503,
+      "documents_with_an_organisation": 2226672,
+      "documents_with_v1_names_only": 82254,
+      "organisation_rows": 6608297
+    }
+  },
+  "measured_at": "2026-11-27T18:15:43+00:00",
+  "mentions_repeated_pairs": {
+    "days": 30,
+    "parsed_rows": 8387184,
+    "repeated_rows": 151649,
+    "share_max": 0.023588,
+    "share_median": 0.017704,
+    "share_min": 0.014274
+  },
+  "newest_slot_of_the_window": "20261124234500",
+  "peak_resident_mib": 777.1,
+  "window": {
+    "days": 30,
+    "from": "2026-10-26",
+    "to": "2026-11-24"
+  }
+}
