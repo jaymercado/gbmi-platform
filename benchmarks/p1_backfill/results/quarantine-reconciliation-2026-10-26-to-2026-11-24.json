@@ -1,0 +1,964 @@
+{
+  "evaluated_at": "2026-11-26T21:01:39+00:00",
+  "quarantined_files": {
+    "files_kept_in_quarantine": [],
+    "slots_in_state_quarantined": []
+  },
+  "quarantined_rows": {
+    "by_feed": {
+      "export": {
+        "raw_lines": 3102544,
+        "reasons": {},
+        "rows_in_quarantine_files": 0,
+        "rows_in_the_ledger": 0
+      },
+      "gkg": {
+        "raw_lines": 2905938,
+        "reasons": {},
+        "rows_in_quarantine_files": 0,
+        "rows_in_the_ledger": 0
+      },
+      "mentions": {
+        "raw_lines": 8387184,
+        "reasons": {},
+        "rows_in_quarantine_files": 0,
+        "rows_in_the_ledger": 0
+      }
+    },
+    "quarantine_files_of_units": 0
+  },
+  "reconciliation": {
+    "by_day": [
+      {
+        "bronze_bytes": 6811874,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 6811874,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-26",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 9057810,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 9057810,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-26",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 432769973,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 432769973,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-26",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 7704403,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 7704403,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-27",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 10766759,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 10766759,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-27",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 503846895,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 503846895,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-27",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 7962885,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 7962885,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-28",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 11098410,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 11098410,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-28",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 514980749,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 514980749,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-28",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 7707146,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 7707146,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-29",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 10558836,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 10558836,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-29",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 515306720,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 515306720,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-29",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 7344295,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 7344295,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-30",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 10223706,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 10223706,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-30",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 467945496,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 467945496,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-30",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 4455680,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 4455680,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-31",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 6238783,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 6238783,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-31",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 271561864,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 271561864,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-10-31",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 3785014,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 3785014,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-01",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 5151836,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 5151836,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-01",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 236983255,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 236983255,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-01",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 6630254,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 6630254,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-02",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 9263301,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 9263301,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-02",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 439075137,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 439075137,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-02",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 7668814,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 7668814,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-03",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 10727412,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 10727412,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-03",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 487216867,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 487216867,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-03",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 8052450,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 8052450,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-04",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 12004306,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 12004306,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-04",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 540822235,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 540822235,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-04",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 7546794,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 7546794,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-05",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 10810077,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 10810077,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-05",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 506281300,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 506281300,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-05",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 7282781,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 7282781,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-06",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 10245160,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 10245160,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-06",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 483441370,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 483441370,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-06",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 4358684,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 4358684,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-07",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 6152488,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 6152488,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-07",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 277707296,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 277707296,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-07",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 3422996,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 3422996,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-08",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 4969217,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 4969217,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-08",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 227347063,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 227347063,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-08",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 6514268,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 6514268,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-09",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 9540987,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 9540987,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-09",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 419139753,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 419139753,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-09",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 7886632,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 7886632,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-10",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 11209317,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 11209317,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-10",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 489725865,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 489725865,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-10",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 7599316,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 7599316,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-11",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 10734225,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 10734225,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-11",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 469769570,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 469769570,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-11",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 7731424,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 7731424,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-12",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 11101991,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 11101991,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-12",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 467195238,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 467195238,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-12",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 7089535,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 7089535,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-13",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 10054148,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 10054148,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-13",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 444689095,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 444689095,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-13",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 4462484,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 4462484,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-14",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 5697127,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 5697127,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-14",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 263990219,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 263990219,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-14",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 3627566,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 3627566,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-15",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 4351539,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 4351539,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-15",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 216523329,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 216523329,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-15",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 6790467,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 6790467,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-16",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 8752748,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 8752748,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-16",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 407305510,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 407305510,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-16",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 8105190,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 8105190,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-17",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 11463113,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 11463113,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-17",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 488460168,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 488460168,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-17",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 8232392,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 8232392,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-18",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 11697837,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 11697837,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-18",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 500681961,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 500681961,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-18",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 8249502,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 8249502,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-19",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 11731788,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 11731788,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-19",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 506060994,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 506060994,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-19",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 7540390,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 7540390,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-20",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 10633814,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 10633814,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-20",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 473453743,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 473453743,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-20",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 4441744,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 4441744,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-21",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 5628052,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 5628052,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-21",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 268771561,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 268771561,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-21",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 3524909,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 3524909,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-22",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 4501702,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 4501702,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-22",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 223947678,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 223947678,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-22",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 6375169,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 6375169,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-23",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 8750998,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 8750998,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-23",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 419883519,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 419883519,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-23",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 7244423,
+        "bronze_files": 96,
+        "feed": "export",
+        "ledger_bytes": 7244423,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-24",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 10262726,
+        "bronze_files": 96,
+        "feed": "mentions",
+        "ledger_bytes": 10262726,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-24",
+        "version_files": 96,
+        "version_kind": "day"
+      },
+      {
+        "bronze_bytes": 469123996,
+        "bronze_files": 96,
+        "feed": "gkg",
+        "ledger_bytes": 469123996,
+        "ledger_loaded_files": 96,
+        "slot_date": "2026-11-24",
+        "version_files": 96,
+        "version_kind": "day"
+      }
+    ],
+    "differences": [],
+    "feed_days": 90,
+    "feed_days_which_agree": 90,
+    "totals": {
+      "export": {
+        "bronze_bytes": 196149481,
+        "bronze_files": 2880,
+        "ledger_bytes": 196149481,
+        "ledger_loaded_files": 2880,
+        "version_files": 2880
+      },
+      "gkg": {
+        "bronze_bytes": 12434008419,
+        "bronze_files": 2880,
+        "ledger_bytes": 12434008419,
+        "ledger_loaded_files": 2880,
+        "version_files": 2880
+      },
+      "mentions": {
+        "bronze_bytes": 273380213,
+        "bronze_files": 2880,
+        "ledger_bytes": 273380213,
+        "ledger_loaded_files": 2880,
+        "version_files": 2880
+      }
+    }
+  },
+  "window": {
+    "from": "2026-10-26",
+    "to": "2026-11-24"
+  }
+}

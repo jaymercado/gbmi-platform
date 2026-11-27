@@ -1,0 +1,110 @@
+{
+  "accounting": {
+    "accounting": 1.0,
+    "balanced_files": 8640,
+    "bytes": 12903538113,
+    "loaded_files": 8640,
+    "parsed_rows": 14395666,
+    "quarantined_rows": 0,
+    "raw_lines": 14395666
+  },
+  "completeness": {
+    "below_99_5_percent": [],
+    "by_day": {
+      "2026-10-26": 1.0,
+      "2026-10-27": 1.0,
+      "2026-10-28": 1.0,
+      "2026-10-29": 1.0,
+      "2026-10-30": 1.0,
+      "2026-10-31": 1.0,
+      "2026-11-01": 1.0,
+      "2026-11-02": 1.0,
+      "2026-11-03": 1.0,
+      "2026-11-04": 1.0,
+      "2026-11-05": 1.0,
+      "2026-11-06": 1.0,
+      "2026-11-07": 1.0,
+      "2026-11-08": 1.0,
+      "2026-11-09": 1.0,
+      "2026-11-10": 1.0,
+      "2026-11-11": 1.0,
+      "2026-11-12": 1.0,
+      "2026-11-13": 1.0,
+      "2026-11-14": 1.0,
+      "2026-11-15": 1.0,
+      "2026-11-16": 1.0,
+      "2026-11-17": 1.0,
+      "2026-11-18": 1.0,
+      "2026-11-19": 1.0,
+      "2026-11-20": 1.0,
+      "2026-11-21": 1.0,
+      "2026-11-22": 1.0,
+      "2026-11-23": 1.0,
+      "2026-11-24": 1.0
+    },
+    "complete_days": 30,
+    "days": 30,
+    "lowest": {
+      "completeness": 1.0,
+      "slot_date": "2026-10-26"
+    }
+  },
+  "evaluated_at": "2026-11-26T20:46:20+00:00",
+  "silver": {
+    "gdelt_event": {
+      "build_seconds_max": 2.8,
+      "build_seconds_median": 2.6,
+      "days_with_a_day_level_version": 30,
+      "days_without": [],
+      "files": 2880,
+      "rows": 3102544
+    },
+    "gdelt_gkg_doc": {
+      "build_seconds_max": 19.8,
+      "build_seconds_median": 16.9,
+      "days_with_a_day_level_version": 30,
+      "days_without": [],
+      "files": 2880,
+      "rows": 2905938
+    },
+    "gdelt_gkg_org": {
+      "build_seconds_max": 19.8,
+      "build_seconds_median": 16.9,
+      "days_with_a_day_level_version": 30,
+      "days_without": [],
+      "files": 2880,
+      "rows": 6608297
+    },
+    "gdelt_mention": {
+      "build_seconds_max": 3.4,
+      "build_seconds_median": 3.0,
+      "days_with_a_day_level_version": 30,
+      "days_without": [],
+      "files": 2880,
+      "rows": 8235535
+    }
+  },
+  "slots": {
+    "by_feed": {
+      "export": {
+        "loaded": 2880
+      },
+      "gkg": {
+        "loaded": 2880
+      },
+      "mentions": {
+        "loaded": 2880
+      }
+    },
+    "by_state": {
+      "loaded": 8640
+    },
+    "calendar_slots": 8640,
+    "closed": 8640,
+    "ledger_slots": 8640
+  },
+  "window": {
+    "from": "2026-10-26",
+    "to": "2026-11-24"
+  }
+}

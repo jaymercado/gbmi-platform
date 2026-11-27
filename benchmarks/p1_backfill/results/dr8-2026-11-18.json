@@ -1,0 +1,78 @@
+{
+  "checks": 12,
+  "drill": "DR8",
+  "facts": {
+    "day": "2026-11-18",
+    "gdelt_event": {
+      "first": {
+        "committed_rows": 128905,
+        "content_digest": "339f708996dde8b1",
+        "file_count": 96,
+        "fileset_hash": "2624f04cc56b68bf8b725074a4695ed891bf62e8496ca7d5374bda67447980ea",
+        "snapshot_id": 640911521887984926
+      },
+      "second": {
+        "committed_rows": 128905,
+        "content_digest": "339f708996dde8b1",
+        "file_count": 96,
+        "fileset_hash": "2624f04cc56b68bf8b725074a4695ed891bf62e8496ca7d5374bda67447980ea",
+        "snapshot_id": 4948495940827758580
+      }
+    },
+    "gdelt_gkg_doc": {
+      "first": {
+        "committed_rows": 118241,
+        "content_digest": "6a95d590c580bcf3",
+        "file_count": 96,
+        "fileset_hash": "47a6755c21f0590ad8dd78da6a26f32421360ebcc8f54560cd8e5c58fbf1a53f",
+        "snapshot_id": 7494771056374431816
+      },
+      "second": {
+        "committed_rows": 118241,
+        "content_digest": "6a95d590c580bcf3",
+        "file_count": 96,
+        "fileset_hash": "47a6755c21f0590ad8dd78da6a26f32421360ebcc8f54560cd8e5c58fbf1a53f",
+        "snapshot_id": 7822012790433497789
+      }
+    },
+    "gdelt_gkg_org": {
+      "first": {
+        "committed_rows": 272214,
+        "content_digest": "ad08d58c29f05763",
+        "file_count": 96,
+        "fileset_hash": "47a6755c21f0590ad8dd78da6a26f32421360ebcc8f54560cd8e5c58fbf1a53f",
+        "snapshot_id": 5858886958023665685
+      },
+      "second": {
+        "committed_rows": 272214,
+        "content_digest": "ad08d58c29f05763",
+        "file_count": 96,
+        "fileset_hash": "47a6755c21f0590ad8dd78da6a26f32421360ebcc8f54560cd8e5c58fbf1a53f",
+        "snapshot_id": 3980627899673718295
+      }
+    },
+    "gdelt_mention": {
+      "first": {
+        "committed_rows": 348367,
+        "content_digest": "d4a1733fd2477d9b",
+        "file_count": 96,
+        "fileset_hash": "77810f3ad6f9ba908749abc8429c9995e8188c3a52fb67eae8f6078cafe02163",
+        "snapshot_id": 4512002795773100207
+      },
+      "second": {
+        "committed_rows": 348367,
+        "content_digest": "d4a1733fd2477d9b",
+        "file_count": 96,
+        "fileset_hash": "77810f3ad6f9ba908749abc8429c9995e8188c3a52fb67eae8f6078cafe02163",
+        "snapshot_id": 8772451211060512084
+      }
+    },
+    "seconds": {
+      "export": 3.0,
+      "gkg": 17.9,
+      "mentions": 3.4
+    }
+  },
+  "failed": [],
+  "title": "a second build of the day 2026-11-18 gives equal checksums (stack)"
+}
