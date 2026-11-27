@@ -1,0 +1,55 @@
+{
+  "pinned_snapshots": {
+    "b2_gkg_doc": 6157057316771845990,
+    "b2_gkg_org": 6432657404428073308
+  },
+  "rounds": 23,
+  "queries_finished": 69,
+  "seconds": 117.3,
+  "slowest_query_seconds": {
+    "count": 2.38,
+    "organisations": 1.63,
+    "themes": 3.76
+  },
+  "peak_query_memory_mib": 316.8,
+  "rows_read": 311137100,
+  "sample": {
+    "count": [
+      [
+        3165932,
+        3165932
+      ]
+    ],
+    "organisations": [
+      [
+        "981e5b3967260083",
+        "united states",
+        220950
+      ],
+      [
+        "5ede56738376a8c5",
+        "instagram",
+        85443
+      ],
+      [
+        "c75bae7088edffaf",
+        "white house",
+        84795
+      ]
+    ],
+    "themes": [
+      [
+        "TAX_FNCACT",
+        2487429
+      ],
+      [
+        "EPU_POLICY",
+        1234117
+      ],
+      [
+        "TAX_ETHNICITY",
+        1061314
+      ]
+    ]
+  }
+}

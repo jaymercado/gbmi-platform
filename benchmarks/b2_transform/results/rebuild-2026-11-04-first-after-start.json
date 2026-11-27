@@ -1,0 +1,229 @@
+{
+  "benchmark": "B2",
+  "command": "gbmi silver build-day --day <day> --feed <feed>",
+  "day": "2026-11-04",
+  "label": "first-after-start",
+  "machine": {
+    "container_memory_limit": "max",
+    "cpus": 12,
+    "platform": "Linux-6.10.14-linuxkit-aarch64-with-glibc2.41",
+    "python": "3.12.16"
+  },
+  "measured_at": "2026-11-27T18:08:46+00:00",
+  "runs": [
+    {
+      "committed_rows": 125229,
+      "committed_rows_per_second": 33666,
+      "container_memory_samples": 38,
+      "container_peak_anonymous_mib": 278.1,
+      "container_peak_mib": 308.8,
+      "cpu_seconds": 4.64,
+      "cpu_system_seconds": 0.85,
+      "cpu_user_seconds": 3.79,
+      "day": "2026-11-04",
+      "error": null,
+      "exit_code": 0,
+      "feed": "export",
+      "label": "first-after-start",
+      "peak_resident_mib": 330.4,
+      "raw_lines": 125229,
+      "raw_lines_per_second": 33666,
+      "run": 1,
+      "started_at": "2026-11-27T18:08:18+00:00",
+      "tables": {
+        "gdelt_event": {
+          "build_milliseconds": 2988,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 125229,
+          "duplicate_rows": 0,
+          "new_version": 480,
+          "raw_lines": 125229
+        }
+      },
+      "wall_seconds": 3.72
+    },
+    {
+      "committed_rows": 348557,
+      "committed_rows_per_second": 85442,
+      "container_memory_samples": 42,
+      "container_peak_anonymous_mib": 747.8,
+      "container_peak_mib": 828.0,
+      "cpu_seconds": 5.82,
+      "cpu_system_seconds": 1.28,
+      "cpu_user_seconds": 4.54,
+      "day": "2026-11-04",
+      "error": null,
+      "exit_code": 0,
+      "feed": "mentions",
+      "label": "first-after-start",
+      "peak_resident_mib": 802.7,
+      "raw_lines": 353999,
+      "raw_lines_per_second": 86776,
+      "run": 2,
+      "started_at": "2026-11-27T18:08:22+00:00",
+      "tables": {
+        "gdelt_mention": {
+          "build_milliseconds": 3458,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 348557,
+          "duplicate_rows": 5442,
+          "new_version": 481,
+          "raw_lines": 353999
+        }
+      },
+      "wall_seconds": 4.08
+    },
+    {
+      "committed_rows": 417430,
+      "committed_rows_per_second": 20628,
+      "container_memory_samples": 200,
+      "container_peak_anonymous_mib": 975.7,
+      "container_peak_mib": 1463.5,
+      "cpu_seconds": 23.31,
+      "cpu_system_seconds": 3.25,
+      "cpu_user_seconds": 20.06,
+      "day": "2026-11-04",
+      "error": null,
+      "exit_code": 0,
+      "feed": "gkg",
+      "label": "first-after-start",
+      "peak_resident_mib": 1023.0,
+      "raw_lines": 125779,
+      "raw_lines_per_second": 6216,
+      "run": 3,
+      "started_at": "2026-11-27T18:08:26+00:00",
+      "tables": {
+        "gdelt_gkg_doc": {
+          "build_milliseconds": 19638,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 125779,
+          "duplicate_rows": 0,
+          "new_version": 482,
+          "raw_lines": 125779
+        },
+        "gdelt_gkg_org": {
+          "build_milliseconds": 19638,
+          "checksum_equals_the_version_before": true,
+          "committed_rows": 291651,
+          "duplicate_rows": null,
+          "new_version": 483,
+          "raw_lines": null
+        }
+      },
+      "wall_seconds": 20.24
+    }
+  ],
+  "summary": {
+    "export": {
+      "container_peak_anonymous_mib": {
+        "max": 278.1,
+        "median": 278.1,
+        "min": 278.1
+      },
+      "container_peak_mib": {
+        "max": 308.8,
+        "median": 308.8,
+        "min": 308.8
+      },
+      "cpu_seconds": {
+        "max": 4.64,
+        "median": 4.64,
+        "min": 4.64
+      },
+      "every_checksum_equals_the_version_before": true,
+      "every_run_ended_with_exit_code_0": true,
+      "peak_resident_mib": {
+        "max": 330.4,
+        "median": 330.4,
+        "min": 330.4
+      },
+      "raw_lines_per_second": {
+        "max": 33666,
+        "median": 33666,
+        "min": 33666
+      },
+      "runs": 1,
+      "wall_seconds": {
+        "max": 3.72,
+        "median": 3.72,
+        "min": 3.72
+      }
+    },
+    "gkg": {
+      "container_peak_anonymous_mib": {
+        "max": 975.7,
+        "median": 975.7,
+        "min": 975.7
+      },
+      "container_peak_mib": {
+        "max": 1463.5,
+        "median": 1463.5,
+        "min": 1463.5
+      },
+      "cpu_seconds": {
+        "max": 23.31,
+        "median": 23.31,
+        "min": 23.31
+      },
+      "every_checksum_equals_the_version_before": true,
+      "every_run_ended_with_exit_code_0": true,
+      "peak_resident_mib": {
+        "max": 1023.0,
+        "median": 1023.0,
+        "min": 1023.0
+      },
+      "raw_lines_per_second": {
+        "max": 6216,
+        "median": 6216,
+        "min": 6216
+      },
+      "runs": 1,
+      "wall_seconds": {
+        "max": 20.24,
+        "median": 20.24,
+        "min": 20.24
+      }
+    },
+    "mentions": {
+      "container_peak_anonymous_mib": {
+        "max": 747.8,
+        "median": 747.8,
+        "min": 747.8
+      },
+      "container_peak_mib": {
+        "max": 828.0,
+        "median": 828.0,
+        "min": 828.0
+      },
+      "cpu_seconds": {
+        "max": 5.82,
+        "median": 5.82,
+        "min": 5.82
+      },
+      "every_checksum_equals_the_version_before": true,
+      "every_run_ended_with_exit_code_0": true,
+      "peak_resident_mib": {
+        "max": 802.7,
+        "median": 802.7,
+        "min": 802.7
+      },
+      "raw_lines_per_second": {
+        "max": 86776,
+        "median": 86776,
+        "min": 86776
+      },
+      "runs": 1,
+      "wall_seconds": {
+        "max": 4.08,
+        "median": 4.08,
+        "min": 4.08
+      }
+    }
+  },
+  "versions": {
+    "duckdb": "2.0.1",
+    "pyarrow": "26.0.1",
+    "pyiceberg": "0.12.0"
+  },
+  "weekday": "Wednesday"
+}

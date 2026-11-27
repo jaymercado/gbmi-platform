@@ -1,0 +1,54 @@
+{
+  "benchmark": "B4",
+  "dbt": {
+    "exit_code": 0,
+    "last_lines": [
+      "\u001b[0m18:03:39  ",
+      "\u001b[0m18:03:39  \u001b[32mCompleted successfully\u001b[0m",
+      "\u001b[0m18:03:39  ",
+      "\u001b[0m18:03:39  Done. PASS=11 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=11"
+    ],
+    "seconds": 5.2
+  },
+  "events_in_the_mart": {
+    "202610": 656819,
+    "202611": 2726234
+  },
+  "mart": {
+    "bytes_on_disk": 5340838,
+    "partitions": {
+      "202610": {
+        "bytes_on_disk": 1021125,
+        "compressed_bytes": 1010002,
+        "parts": 1,
+        "rows": 63662,
+        "uncompressed_bytes": 8294409
+      },
+      "202611": {
+        "bytes_on_disk": 4319713,
+        "compressed_bytes": 4304903,
+        "parts": 1,
+        "rows": 272366,
+        "uncompressed_bytes": 35482417
+      }
+    },
+    "rows": 336028,
+    "table": "marts.fct_gdelt_event_daily"
+  },
+  "mart_agrees_with_silver": true,
+  "measured_at": "2026-11-27T18:03:40+00:00",
+  "months": [
+    202610,
+    202611
+  ],
+  "pinned": {
+    "metadata_file": "metadata/00127-49bb5ff5-4486-4b41-b216-437e8d737559.metadata.json",
+    "rows": 3383053,
+    "snapshot_id": 4607750694628898859,
+    "table": "lake.gdelt_event"
+  },
+  "rows_in_pinned_silver": {
+    "202610": 656819,
+    "202611": 2726234
+  }
+}

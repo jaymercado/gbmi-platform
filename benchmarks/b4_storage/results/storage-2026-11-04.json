@@ -1,0 +1,101 @@
+{
+  "benchmark": "B4",
+  "day": "2026-11-04",
+  "feeds": {
+    "export": {
+      "bronze": {
+        "files": 96,
+        "text_bytes": 51238248,
+        "zip_bytes": 8052450
+      },
+      "silver": {
+        "gdelt_event": {
+          "bytes": 3956792,
+          "data_files": 1,
+          "rows": 125229
+        }
+      },
+      "silver_bytes": 3956792,
+      "silver_to_text": 0.0772,
+      "silver_to_zip": 0.4914,
+      "zip_to_text": 0.1572
+    },
+    "gkg": {
+      "bronze": {
+        "files": 96,
+        "text_bytes": 1680469983,
+        "zip_bytes": 540822235
+      },
+      "silver": {
+        "gdelt_gkg_doc": {
+          "bytes": 19104037,
+          "data_files": 1,
+          "rows": 125779
+        },
+        "gdelt_gkg_org": {
+          "bytes": 6618336,
+          "data_files": 1,
+          "rows": 291651
+        }
+      },
+      "silver_bytes": 25722373,
+      "silver_to_text": 0.0153,
+      "silver_to_zip": 0.0476,
+      "zip_to_text": 0.3218
+    },
+    "mentions": {
+      "bronze": {
+        "files": 96,
+        "text_bytes": 76044423,
+        "zip_bytes": 12004306
+      },
+      "silver": {
+        "gdelt_mention": {
+          "bytes": 4593308,
+          "data_files": 1,
+          "rows": 348557
+        }
+      },
+      "silver_bytes": 4593308,
+      "silver_to_text": 0.0604,
+      "silver_to_zip": 0.3826,
+      "zip_to_text": 0.1579
+    }
+  },
+  "gkg_as_parquet_with_zstd": {
+    "bytes": {
+      "silver_documents_with_v2gcam": 332769139,
+      "silver_documents_without_v2gcam": 19116670,
+      "source_columns_with_v2gcam": 429293318,
+      "source_columns_without_v2gcam": 115664310
+    },
+    "documents": 125779,
+    "lines": 125779,
+    "seconds_to_write_the_four_files": 36.6,
+    "share_of_v2gcam": {
+      "silver_documents": 0.9426,
+      "source_columns": 0.7306
+    },
+    "to_text": {
+      "silver_documents_with_v2gcam": 0.198,
+      "silver_documents_without_v2gcam": 0.0114,
+      "source_columns_with_v2gcam": 0.2555,
+      "source_columns_without_v2gcam": 0.0688
+    },
+    "to_zip": {
+      "silver_documents_with_v2gcam": 0.6153,
+      "silver_documents_without_v2gcam": 0.0353,
+      "source_columns_with_v2gcam": 0.7938,
+      "source_columns_without_v2gcam": 0.2139
+    }
+  },
+  "machine": {
+    "platform": "Linux-6.10.14-linuxkit-aarch64-with-glibc2.41",
+    "python": "3.12.16"
+  },
+  "measured_at": "2026-11-26T21:25:18+00:00",
+  "versions": {
+    "pyarrow": "26.0.1"
+  },
+  "weekday": "Wednesday"
+}
