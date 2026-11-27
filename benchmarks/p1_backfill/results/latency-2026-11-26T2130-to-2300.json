@@ -1,0 +1,90 @@
+{
+  "evaluated_at": "2026-11-27T01:43:56+00:00",
+  "latency": {
+    "all": {
+      "listed_to_silver": {
+        "max_seconds": 182.8,
+        "median_seconds": 180.5,
+        "p95_seconds": 182.5,
+        "slots": 21
+      },
+      "listed_to_verified": {
+        "max_seconds": 1.6,
+        "median_seconds": 0.2,
+        "p95_seconds": 1.5,
+        "slots": 21
+      },
+      "upload_to_listed": {
+        "max_seconds": 263.0,
+        "median_seconds": 242.6,
+        "p95_seconds": 262.0,
+        "slots": 21
+      }
+    },
+    "export": {
+      "listed_to_silver": {
+        "max_seconds": 181.3,
+        "median_seconds": 180.1,
+        "p95_seconds": 181.3,
+        "slots": 7
+      },
+      "listed_to_verified": {
+        "max_seconds": 0.8,
+        "median_seconds": 0.2,
+        "p95_seconds": 0.8,
+        "slots": 7
+      },
+      "upload_to_listed": {
+        "max_seconds": 262.0,
+        "median_seconds": 242.6,
+        "p95_seconds": 262.0,
+        "slots": 7
+      }
+    },
+    "gkg": {
+      "listed_to_silver": {
+        "max_seconds": 182.5,
+        "median_seconds": 180.8,
+        "p95_seconds": 182.5,
+        "slots": 7
+      },
+      "listed_to_verified": {
+        "max_seconds": 1.6,
+        "median_seconds": 1.2,
+        "p95_seconds": 1.6,
+        "slots": 7
+      },
+      "upload_to_listed": {
+        "max_seconds": 263.0,
+        "median_seconds": 244.6,
+        "p95_seconds": 263.0,
+        "slots": 7
+      }
+    },
+    "mentions": {
+      "listed_to_silver": {
+        "max_seconds": 182.8,
+        "median_seconds": 181.0,
+        "p95_seconds": 182.8,
+        "slots": 7
+      },
+      "listed_to_verified": {
+        "max_seconds": 0.3,
+        "median_seconds": 0.2,
+        "p95_seconds": 0.3,
+        "slots": 7
+      },
+      "upload_to_listed": {
+        "max_seconds": 262.0,
+        "median_seconds": 242.6,
+        "p95_seconds": 262.0,
+        "slots": 7
+      }
+    }
+  },
+  "slots_by_state": {
+    "loaded": 21
+  },
+  "slots_from": "2026-11-26T21:30:00+00:00",
+  "slots_to": "2026-11-26T23:00:00+00:00"
+}

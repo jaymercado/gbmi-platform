@@ -21,7 +21,8 @@ The order follows change C1 of the week 2 plan (§3.5). Every time is UTC. The w
 | 07 | DAGs, DAG tests, tracer on the new path | 2026-11-26 18:21 | 2026-11-26 18:59 | [#10](https://github.com/jaymercado/gbmi-platform/pull/10) | Done. Working time about 27 minutes; the GitHub checks took about 11 minutes |
 | 08 | Operational models in dbt | 2026-11-26 18:48 | 2026-11-26 19:12 | [#11](https://github.com/jaymercado/gbmi-platform/pull/11) | Done. Working time about 15 minutes of the time box of 90 minutes; cut 1 is not applied. The GitHub checks took about 9 minutes |
 | 11 | Drills DR2, DR4, DR8 and two runbooks (before WP-09: change C1) | 2026-11-26 19:02 | 2026-11-26 19:25 | [#12](https://github.com/jaymercado/gbmi-platform/pull/12) | Done. Working time about 11 minutes; the GitHub checks took about 12 minutes |
-| — | Review of the code before the backfill, and the repairs (change C6) | 2026-11-26 19:10 | | | In progress |
+| — | Review of the code before the backfill, and the repairs (change C6) | 2026-11-26 19:10 | 2026-11-26 20:12 | [#13](https://github.com/jaymercado/gbmi-platform/pull/13) | Done. The review agent worked from 19:10 to 19:46. The repairs and the local checks ended at 20:00; the GitHub checks took about 12 minutes |
+| 09 | Thirty-day backfill and live run | 2026-11-26 20:14 | | [#14](https://github.com/jaymercado/gbmi-platform/pull/14) | The pull request is open. The drain, the backfill and the evidence took 33 minutes (20:14 to 20:47). The live run took 20 hours and 55 minutes of elapsed time, with four sleeps of the laptop. Working time about 90 minutes, an estimate: the work was mixed with the preparation of WP-10 during the live run |
 
 ## Version pins
 
@@ -93,6 +94,204 @@ Three facts of the review for the run, which are no defects:
 - A synthetic GKG day of 341 MB (zipped) built in 8.9 seconds with a peak of 835 MB of resident memory, and a day of 682 MB in 16.2 seconds with about 1.29 GB, on macOS outside a container. The largest real day of the window has 541 MB (finding F4 of the week 2 plan). The limit of the scheduler container is 2.6 GB.
 
 The review did not reach: Airflow at run time (the scheduler, `airflow backfill create`, the order in the pool), the live GDELT servers, real Events and Mentions files beyond the fixture hour, dbt and ClickHouse.
+
+## The 30-day backfill (WP-09)
+
+Every time is UTC. S, the UTC date of the start of WP-09, is 2026-11-26. The window is the 30 days from 2026-10-26 (S−31) to 2026-11-24 (S−2): 8,640 expected files, 96 slots of 15 minutes for each of three feeds and each day.
+
+### Start
+
+| Step | Time | Result |
+|---|---|---|
+| Start of WP-09 | 20:14 | The demo stack is stopped. The working stack runs with six containers, without Metabase, and `make smoke` passes with 15 checks. The command `caffeinate -is` keeps the laptop awake. The working folder is at commit `6ee85dd`: `main` at `1a26fa8` plus four scripts under `benchmarks/`. No file under `src/` and `dags/` changes until the live run ends (finding V2) |
+| Check before the enqueue (finding V4) | 20:15 | The table `ops.source_slot` holds 0 rows |
+| `gbmi gdelt enqueue --from 2026-10-26 --to 2026-11-24` | 20:15 | 8,640 rows created; the master list names all 8,640 files: 12.90 GB |
+
+### The drain of bronze
+
+The script `benchmarks/b1_ingest/drain_bronze.py` started one run of the DAG `gdelt_ingest` after another through the REST API of Airflow, each with a batch limit of 1,500 files and 4 parallel downloads, until no slot of the window was `listed`. Raw result: `benchmarks/b1_ingest/results/drain-2026-10-26-to-2026-11-24.jsonl`.
+
+| Run | Start | Seconds of the task | Files | MB | MB for each second | Files for each minute |
+|---|---|---:|---:|---:|---:|---:|
+| 1 | 20:16:19 | 151.9 | 1,500 | 2,587.3 | 17.03 | 592.5 |
+| 2 | 20:18:57 | 140.3 | 1,500 | 2,158.9 | 15.39 | 641.4 |
+| 3 | 20:21:21 | 135.0 | 1,500 | 2,082.9 | 15.43 | 666.7 |
+| 4 | 20:24:11 | 139.4 | 1,500 | 1,959.9 | 14.06 | 645.8 |
+| 5 | 20:26:35 | 135.0 | 1,500 | 2,530.4 | 18.74 | 666.7 |
+| 6 | 20:28:57 | 112.3 | 1,477 | 2,053.1 | 18.29 | 789.4 |
+| All six | 20:16:19 to 20:30:53 | 813.9 | 8,977 | 13,372.6 | 16.43 | 661.8 |
+
+- The drain took 14 minutes and 34 seconds from the first start to the last end. The week 2 plan expected about 12 minutes at 19 MB for each second.
+- An ingest run takes the oldest listed files first, and the ledger also held the files of the two days after the window. The six runs landed 8,440 files of the window and 537 newer files. The scheduled run of `gdelt_ingest` at 20:23 landed the other 200 files of the window, between run 3 and run 4.
+- Gate G1 rejected no file. No download needed a second attempt, and the servers of GDELT answered no request with HTTP 429.
+- Check after the drain (finding V3): each of the 8,640 slots of the window was `verified`. No slot was `listed` or `quarantined`.
+- The check for overdue slots wrote six failed results between 20:18 and 20:28, with 7,602 slots in the first result and 1,402 slots in the last one. A slot is overdue when the file is not verified six hours after the slot time, so every file which waited for the download counted. Since 20:30 each result of the check has passed with 0 slots.
+
+### The backfill
+
+1. `gdelt_silver_daily` was unpaused at 20:31. `gdelt_silver_hourly` stayed paused.
+2. The dry run printed 30 logical dates, from 2026-10-26 08:25 to 2026-11-24 08:25: the 30 days of the window (change C2).
+
+   ```bash
+   airflow backfill create --dag-id gdelt_silver_daily \
+     --from-date 2026-10-27T08:25:00+00:00 --to-date 2026-11-25T08:25:00+00:00 \
+     --max-active-runs 1 --dry-run
+   ```
+
+3. The same command without `--dry-run` created the backfill with the identifier 1 at 20:31:37. Airflow records the backfill as completed at 20:45:53.
+
+| Fact | Value |
+|---|---|
+| Backfill identifier | 1 (table `backfill` of Airflow: from 2026-10-27 08:25, to 2026-11-25 08:25, one active run at a time, reprocess behaviour `none`) |
+| Runs | 30, from `backfill__2026-10-27T08:25:00+00:00` to `backfill__2026-11-25T08:25:00+00:00`. Each run has the state `success`; each task ran once, without a retry |
+| Duration | 13 minutes and 54 seconds, from 20:31:37 to 20:45:31. One run took 27.4 seconds in the median (17.4 to 47.4) |
+| Build of one day, from `ops.silver_partition` | Events: median 2.6 seconds, highest 2.8. Mentions: median 3.0, highest 3.4. GKG: median 16.9, highest 19.8 |
+| Run list | `benchmarks/p1_backfill/results/gdelt_silver_daily-runs.json` |
+| Gate G3 | Every check of every build passed. The volume check compares a day with four earlier days of the same weekday in silver. The backfill built the days in date order, so the check ran for two days only (2026-11-23 and 2026-11-24, 8 results, each passed) and was recorded as skipped for the 28 days before (112 results) |
+| Memory of the scheduler container (limit 2,600 MiB) | Two samples of `docker stats` during the backfill: 828 MiB and 987 MiB. The highest value of the control group since the start of the container: 2,480 MiB, page cache included. The counters `max`, `oom` and `oom_kill` of the control group stayed at 0 |
+
+**The day before the start day (change C4).** The second backfill for the single day 2026-11-25 was not needed. Eleven seconds after the backfill command, the scheduler created the run `scheduled__2026-11-26T08:25:00+00:00`, and the run built the day 2026-11-25 between 20:31:49 and 20:33:02, beside the first runs of the backfill. The pool `silver_writer` let one build write at a time. The code of Airflow 3.4.0 explains the run: the newest run of a backfill counts as the last automated run of a DAG (`airflow/dag_processing/collection.py`), and the next scheduled run is the later one of two times, the newest trigger time before now and the trigger time after the last automated run (`airflow/timetables/trigger.py`). Both times were 2026-11-26 08:25, which had passed.
+
+### Evidence for the exit gate, rows 1 to 4
+
+**Row 1: every slot of the window is `loaded`, and each silver table holds a day-level version for each day.** The command `gbmi ledger status --from 2026-10-26 --to 2026-11-24` (run at 21:01) returns 90 entries, one for each feed and day, each with 96 slots in the state `loaded`. The script `benchmarks/p1_backfill/evidence.py` (run at 20:46:20; raw result `benchmarks/p1_backfill/results/evidence-2026-10-26-to-2026-11-24.json`) confirms 8,640 of 8,640 calendar slots as `loaded` and finds a day-level partition version for each of the 30 days in each table:
+
+| Silver table | Days with a day-level version | Files | Rows |
+|---|---:|---:|---:|
+| `gdelt_event` | 30 | 2,880 | 3,102,544 |
+| `gdelt_mention` | 30 | 2,880 | 8,235,535 |
+| `gdelt_gkg_doc` | 30 | 2,880 | 2,905,938 |
+| `gdelt_gkg_org` | 30 | 2,880 | 6,608,297 |
+
+**Row 2: completeness.** The dbt model `ops.ops_slot_status_daily` was built at 20:46:45 in the toolbox (`dbt build --select +ops_slot_status_daily`: 16 of 16 steps passed). The feed `all` counts the three feeds together.
+
+```sql
+SELECT feed, count() AS days, min(completeness) AS lowest_completeness,
+       countIf(is_complete) AS complete_days, sum(loaded_slots) AS loaded_slots,
+       sum(confirmed_missing_slots) AS confirmed_missing_slots, max(_built_at) AS built_at
+FROM ops.ops_slot_status_daily
+WHERE source = 'gdelt' AND slot_date BETWEEN '2026-10-26' AND '2026-11-24'
+GROUP BY feed ORDER BY feed
+```
+
+```text
+┌─feed─────┬─days─┬─lowest_completeness─┬─complete_days─┬─loaded_slots─┬─confirmed_missing_slots─┬────────────────built_at─┐
+│ all      │   30 │                   1 │            30 │         8640 │                       0 │ 2026-11-26 20:46:45.480 │
+│ export   │   30 │                   1 │            30 │         2880 │                       0 │ 2026-11-26 20:46:45.480 │
+│ gkg      │   30 │                   1 │            30 │         2880 │                       0 │ 2026-11-26 20:46:45.480 │
+│ mentions │   30 │                   1 │            30 │         2880 │                       0 │ 2026-11-26 20:46:45.480 │
+└──────────┴──────┴─────────────────────┴───────────────┴──────────────┴─────────────────────────┴─────────────────────────┘
+```
+
+The completeness is 100% for each of the 30 days; the gate asks for 99.5%. The report of the ledger code (`Ledger.completeness`, in the evidence script) gives the same result.
+
+**Row 3: accounting.** One query over the ledger, run at 21:33 with `make psql`:
+
+```sql
+SELECT count(*) AS loaded_files,
+       count(*) FILTER (WHERE raw_lines = parsed_rows + quarantined_rows) AS balanced_files,
+       sum(raw_lines) AS raw_lines, sum(parsed_rows) AS parsed_rows,
+       sum(quarantined_rows) AS quarantined_rows
+FROM ops.source_slot
+WHERE source = 'gdelt' AND state = 'loaded'
+  AND slot_ts >= '2026-10-26 00:00+00' AND slot_ts < '2026-11-25 00:00+00'
+```
+
+```text
+ loaded_files | balanced_files | raw_lines | parsed_rows | quarantined_rows
+--------------+----------------+-----------+-------------+------------------
+         8640 |           8640 |  14395666 |    14395666 |                0
+```
+
+For each of the 8,640 loaded files, the raw lines equal the parsed rows plus the quarantined rows: the accounting is 100%. The report `docs/reports/p1-quarantine-reconciliation.md` shows the numbers by feed and by day.
+
+**Row 4, the part on real days: a rerun gives equal checksums.** Drill DR8 in the form `make drill DR=8 ARGS="--day <day>"` built the three feeds of a real day again with `gbmi silver build-day` and compared the content checksum of each table with the stored checksum. Both drills passed with 12 checks each, between 20:46 and 20:47. Raw results: `benchmarks/p1_backfill/results/dr8-2026-11-18.json` and `dr8-2026-11-22.json`.
+
+| Table | 2026-11-18 (Wednesday): rows | Checksum, stored and after the rerun | 2026-11-22 (Sunday): rows | Checksum, stored and after the rerun |
+|---|---:|---|---:|---|
+| `gdelt_event` | 128,905 | `339f708996dde8b1`, equal | 59,805 | `d836ca7b3701b694`, equal |
+| `gdelt_mention` | 348,367 | `d4a1733fd2477d9b`, equal | 146,721 | `c1307e258a76af59`, equal |
+| `gdelt_gkg_doc` | 118,241 | `6a95d590c580bcf3`, equal | 52,109 | `0affe2685bbcbd07`, equal |
+| `gdelt_gkg_org` | 272,214 | `ad08d58c29f05763`, equal | 107,978 | `2db1159631eae87b`, equal |
+
+## The live run (WP-09)
+
+Every time is UTC. The laptop clock is 8 hours ahead.
+
+| Fact | Value |
+|---|---|
+| Start | 2026-11-26 20:47:52. `gdelt_silver_hourly` was unpaused; `gdelt_ingest` and `gdelt_silver_daily` were unpaused already |
+| End | 2026-11-27 17:43:03. The three DAGs were paused (change C7) |
+| Length | 20 hours and 55 minutes. The laptop slept four times in between |
+| Manual action on the pipeline | None. A watcher script read the state every five minutes and changed nothing |
+| Code of the stack | The working folder was at commit `6ee85dd` at the start and at `82d067d` at the end. No file under `src/` and `dags/` differs between the two commits, and no such file was changed in between (finding V2) |
+| DAG runs | 54 scheduled runs of `gdelt_ingest`, 62 of `gdelt_silver_hourly` and 1 of `gdelt_silver_daily`. Each DAG run ended with the state `success` |
+| Work | 252 files landed (298 MB); 237 units built by the hourly job; 1 day built by the daily job. No file was rejected by gate G1, no unit failed, no slot was quarantined |
+| State at the end | 288 of 288 files of 2026-11-26 and 216 of 216 files of 2026-11-27 up to the slot 17:45 are `loaded` |
+
+Raw results, all under `benchmarks/p1_backfill/results/`: `awake-periods.json` (the power log of macOS, read by `awake_periods.py`), `live-run-2026-11-26-to-2026-11-27.json` (the tries of each job from `ops.pipeline_run`, read by `live_run.py`), two latency files (read by `latency.py`) and `gdelt_silver_daily-runs.json` (the 32 runs of the daily DAG).
+
+### The laptop slept four times
+
+The power log gives the cause "Clamshell Sleep" for each of the four sleeps: the lid was closed. In three of the four cases the laptop ran on battery. The first sleep came five seconds before the log shows battery power. The table shows each period in which the laptop was fully awake, and the short wakes of the sleeping laptop in one row. A short wake lasts some seconds, most of the time without a network; the containers run during a short wake.
+
+| Period of the live run | Length | Runs of `gdelt_ingest` | Runs of `gdelt_silver_hourly` | Failed tries | Files landed | Units built |
+|---|---|---:|---:|---:|---:|---:|
+| 2026-11-26 20:47:52 to 23:14:06, awake | 2 h 26 min | 10 | 10 | 0 | 29 | 91 |
+| 2026-11-27 01:34:20 to 02:24:00, awake | 50 min | 6 | 5 | 0 | 38 | 15 |
+| 2026-11-27 04:43:09 to 05:38:58, awake | 56 min | 6 | 4 | 1 | 39 | 18 |
+| 2026-11-27 08:07:09 to 08:08:25, awake | 1 min | 3 | 2 | 0 | 30 | 0 |
+| 2026-11-27 11:26:18 to 17:43:03, awake | **6 h 17 min** | 25 | 25 | 0 | 75 | 75 |
+| Short wakes during the four sleeps | | 4 | 16 | 8 | 41 | 38 |
+| The whole live run | 20 h 55 min | 54 | 62 | 9 | 252 | 237 |
+
+What the pipeline did without help:
+
+- **The gap after a sleep.** The first ingest run after a wake found the newest file of GDELT more than one slot ahead of the newest listed slot, read the end of the master list, listed the missed files and landed the files: 27 files at 01:38, 30 files at 04:53 and 36 files at 11:18. At 08:08 the daily reconciliation listed 27 missed files, and the ingest task of the same run landed 30 files. The hourly silver job built the waiting hours in the next run. No slot of the two days is missing.
+- **Failed tries.** Nine tries of the task `ingest` failed with a connection error ("Name or service not known", and once a cut TLS connection). Eight tries ran in a short wake of the sleeping laptop, and one try ran nine seconds after a full wake. A later try of the same run passed each time: the working stack runs with three retries (review before the backfill).
+- **In the first and in the last period every run started on time.** Outside the two periods, 18 tries of the ingest task and 20 tries of the hourly silver job started more than one minute after the scheduled time, which is the mark of a sleep.
+- **A file which GDELT listed and did not serve.** The servers of GDELT answered HTTP 404 for the GKG file of the slot 2026-11-26 23:15 at 23:08 and at 23:27, and for the GKG file of the slot 23:30 at 23:27. Both files landed at 01:34, after the wake. How long the servers did not serve the two files is not known, because the laptop slept. The ledger kept both slots as `listed` with the time of the first 404, as the runbook describes.
+
+One observation corrects the execution plan. The plan said: `caffeinate` does not keep a laptop with a closed lid awake. The statement holds on battery. On mains power the laptop stayed awake with a closed lid from about 11:56 to 17:43 under `caffeinate -is`.
+
+### The scheduled daily run
+
+The live run held one scheduled run of `gdelt_silver_daily`: `scheduled__2026-11-27T08:25:00+00:00`. The laptop slept at 08:25, so the run started at 09:08:22, in a short wake, and ended at 09:08:49 with the state `success`. The run built the day 2026-11-26 from the 288 files in bronze:
+
+| Table | Rows of 2026-11-26 | Build |
+|---|---:|---|
+| `gdelt_event` | 95,311 | 2.5 seconds |
+| `gdelt_mention` | 226,211 (230,139 parsed rows, 3,928 duplicates) | 2.9 seconds |
+| `gdelt_gkg_doc` | 88,072 | 15.9 seconds, together with the organisations |
+| `gdelt_gkg_org` | 195,786 | |
+
+Each table holds a day-level version for the day, and every check of gate G3 passed. The volume check ran, because silver held four earlier Thursdays: the day lies inside the band from 0.5 to 2.0 times the median.
+
+The daily reconciliation was due from 08:00 and ran at 08:08:00, in the one minute in which the laptop was awake: 2,022 files in the master list for the trailing seven days, no absent slot, no difference between bronze and the ledger (`docs/reports/p1-quarantine-reconciliation.md`).
+
+### Latency
+
+The script `benchmarks/p1_backfill/latency.py` reads three times for each file from the ledger. A sample starts with the first slot which GDELT uploaded after the backlog was empty. Each cell gives the median and the 95th percentile.
+
+| Sample | Files | From the upload by GDELT to `listed` | From `listed` to `verified` | From `listed` to the silver commit |
+|---|---:|---|---|---|
+| First period: the 7 slots from 2026-11-26 21:30 to 23:00 | 21 | 242.6 s / 262.0 s | 0.2 s / 1.5 s | 180.5 s / 182.5 s |
+| Last period: the 25 slots from 2026-11-27 11:45 to 17:45 | 75 | 200.1 s / 219.5 s | 0.3 s / 1.8 s | 180.9 s / 186.8 s |
+
+The last period by feed, from `listed` to the silver commit: Events 180.2 s / 183.6 s, Mentions 181.4 s / 186.8 s, GKG 181.2 s / 186.3 s. The longest time of the 75 files was 192.2 seconds.
+
+- **Against the targets of the blueprint.** From `listed` to `verified`: 1.8 seconds at the 95th percentile; the target is 10 minutes (§8.3). From `listed` to the silver commit: 187 seconds at the 95th percentile; the target is 45 minutes (§3.4).
+- **The three minutes are the schedule.** The ingest job runs at minute 8 and the silver job at minute 11 (difference D15 and D16 of the week 2 plan). A file is in silver about 6.4 minutes after the upload by GDELT, in the median (200 seconds plus 181 seconds).
+- **Limit.** The two samples cover 2.4 hours and 6.3 hours on one laptop. The samples say nothing about a day with a slow source.
+
+### Exit-gate row 7, as measured
+
+Row 7 asks for two facts.
+
+1. *`gdelt_ingest` and `gdelt_silver_hourly` ran on the live source for at least 6 hours in a row without manual action.* The fact holds for the last period: 6 hours and 17 minutes, from 11:26:18 to 17:43:03 on 2026-11-27, with 25 of 25 runs of each of the two DAGs on time and no failed try.
+2. *The live run held one scheduled run of `gdelt_silver_daily` (08:25 UTC).* The fact holds: the run of 2026-11-27 started at 09:08 and built 2026-11-26.
+
+The two facts lie in different periods of the live run. The daily run did not happen inside the 6 unbroken hours, and the daily run started 43 minutes late, because the laptop slept at 08:25. The week 2 plan gives the rule for a sleep: the count of 6 hours starts again (§10). A run of 6 unbroken hours which holds 08:25 UTC was not done on the laptop. The host of phase P2 runs the schedules without a lid, and the soak of phase P6 measures the same latency over 14 days.
 
 ## Choices made during the run
 
@@ -171,3 +370,10 @@ The review did not reach: Airflow at run time (the scheduler, `airflow backfill 
 | 71 | WP-11 | The runbook for silver builds describes the restore of a bronze file of a loaded slot by hand: download from the address in the ledger, compare the MD5, build again | Phase P1 has no command for the case, and no state leads out of `loaded`. The build refuses a loaded file whose bytes changed |
 | 72 | Review | Gate G2 rejects a number which is not finite. Before, a text such as `1e999` passed as infinity | "Nothing is coerced silently" (blueprint §5.7). An infinity in a tone column is no value of the source |
 | 73 | Review | The working stack runs with 3 task retries, the demo stack and CI with 0 | Phase P0 set 0 for the local stack: a failure then shows at once. The working stack now runs the schedules on live data, where a transient error has to be tried again. The silver DAGs use 2 of the 3 (blueprint §8.4) |
+| 74 | WP-09 | The drain of bronze starts one run of `gdelt_ingest` after another through the REST API of Airflow, each with a batch limit of 1,500 files. The script stops when a run verifies no file | The backfill uses the code path of the routine job (week 2 plan, WP-09, step 3). A run which lands nothing would otherwise repeat without end |
+| 75 | WP-09 | No second backfill for the day before the start day (change C4). A scheduled run, which the scheduler created right after the backfill command, built the day 2026-11-25 | The condition of change C4, "when no scheduled run builds day S−1", did not hold. The section on the backfill names the two places in the code of Airflow |
+| 76 | WP-09 | The rerun proof on two real days uses drill DR8 in the form `--day` | The drill runs `gbmi silver build-day` for the three feeds and compares the stored checksums, as the verification table of the week 2 plan asks (§9) |
+| 77 | WP-09 | A watcher script reads the state of the live run every five minutes: failed runs, failed checks, quarantined slots, the memory events of the scheduler container, the running containers. The script changes nothing and lies outside the repository | "Without manual action" (exit-gate row 7) needs a witness which only reads. A problem during the night has to end the wait at once |
+| 78 | WP-09 | The source profile and benchmark B4 ran during the live run, in a separate container, and only read files and tables | The laptop is busy with the live run for about 12 hours. Reading bronze and silver does not change the ledger. Benchmarks B1 and B2 download and rebuild, so both wait for the end of the live run (change C7) |
+| 79 | WP-09 | After each sleep of the laptop the count of 6 hours started again. The live run ended after the first period of 6 unbroken hours | The week 2 plan gives the rule (§10). The scheduled daily run lies in the live run and outside the 6 unbroken hours; the section on the live run says so |
+| 80 | WP-09 | Two read-only scripts describe the live run: `awake_periods.py` reads the power log of macOS, and `live_run.py` counts the tries of each job from `ops.pipeline_run` | "6 hours in a row" needs a source which is independent of the pipeline: the power log says when the laptop was awake |
