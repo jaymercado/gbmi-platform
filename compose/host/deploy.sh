@@ -11,7 +11,7 @@
 #   1. write the environment file from Parameter Store
 #   2. pull the images of the release
 #   3. start the stack: the one-shot services run the migrations and the initialisation
-#   4. the smoke test of the host, with one ingest run
+#   4. the smoke test of the host, which lands and builds one live hour with the tracer DAG
 #   5. only after a passed smoke test: write DEPLOYED, which the start at boot reads
 #
 # A deployment which fails leaves DEPLOYED as it was: the next start at boot brings the
