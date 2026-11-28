@@ -27,6 +27,7 @@ from common import (
     DEFAULT_ARGS,
     GBMI_PYTHON,
     POOL_SILVER_WRITER,
+    dbt_target,
 )
 
 # Values that dbt receives from the tasks before it, read from XCom when the dbt task runs.
@@ -109,7 +110,7 @@ def tracer_gdelt_events() -> None:
         ),
         profile_config=ProfileConfig(
             profile_name="gbmi",
-            target_name="local",
+            target_name=dbt_target(),
             profiles_yml_filepath=DBT_PROFILES_YML,
         ),
         execution_config=ExecutionConfig(

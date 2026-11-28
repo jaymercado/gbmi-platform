@@ -1,5 +1,7 @@
 # Connection profiles, configured entirely from the environment (blueprint 9.5).
-# Targets: local (Compose), ci (service-container ClickHouse). prod is added in phase P2.
+# Targets: local (Compose on the laptop), ci (service-container ClickHouse), prod (Compose on
+# the AWS host). The three connect in the same way; the setting DBT_TARGET of a stack selects
+# the target, and a model can read the name as target.name.
 gbmi:
   target: "{{ env_var('DBT_TARGET', 'local') }}"
   outputs:
@@ -16,4 +18,6 @@ gbmi:
       secure: false
       threads: 2
     ci:
+      <<: *clickhouse
+    prod:
       <<: *clickhouse
