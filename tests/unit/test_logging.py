@@ -55,3 +55,27 @@ def test_logger_created_before_configuration_follows_it() -> None:
 
     (line,) = _lines(stream)
     assert (line["event"], line["logger"], line["run_id"]) == ("kept", "gbmi.early", "run-3")
+
+
+def test_a_logged_exception_never_renders_local_variables() -> None:
+    """A local variable can hold a secret, for example a user agent with a contact address."""
+    stream = io.StringIO()
+    configure_logging(stream=stream)
+
+    def send(user_agent: str) -> None:
+        headers = {"User-Agent": user_agent}
+        raise RuntimeError(f"the request with {len(headers)} header failed")
+
+    try:
+        send("Sample Company Name contact@example.org")
+    except RuntimeError:
+        get_logger("gbmi.test").exception("request_failed")
+
+    (line,) = _lines(stream)
+    assert line["event"] == "request_failed"
+    (error,) = line["exception"]  # type: ignore[misc]
+    assert error["exc_type"] == "RuntimeError"
+    assert error["exc_value"] == "the request with 1 header failed"
+    assert [frame["name"] for frame in error["frames"]][-1] == "send"
+    assert not [frame for frame in error["frames"] if frame.get("locals")]
+    assert "contact@example.org" not in stream.getvalue()

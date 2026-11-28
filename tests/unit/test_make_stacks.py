@@ -20,6 +20,7 @@ _MAKE_STATE = {
     "GBMI_LAKE_DIR",
     "GBMI_DAG_SCHEDULES",
     "GBMI_TASK_RETRIES",
+    "GBMI_SEC_SOURCE",
     "CONFIRM",
     "MAKEFLAGS",
     "MFLAGS",
@@ -95,6 +96,35 @@ def test_the_working_stack_retries_a_failed_task_and_the_demo_stack_does_not() -
     # Three retries on live data (blueprint 8.1); on the fixtures a failure shows at once.
     assert "GBMI_TASK_RETRIES := 3" in working.stdout
     assert "GBMI_TASK_RETRIES := 0" in demo.stdout
+
+
+def test_the_stack_decides_where_the_sec_client_reads() -> None:
+    # The value reaches the containers through compose/compose.yaml; gbmi.config reads the value.
+    working = dry_run("--print-data-base", "up")
+    demo = dry_run("--print-data-base", "up", "STACK=gbmi-demo")
+    inherited = dry_run("--print-data-base", "up", "STACK=gbmi-demo", GBMI_SEC_SOURCE="live")
+    one_command = dry_run("--print-data-base", "up", "STACK=gbmi-demo", "GBMI_SEC_SOURCE=live")
+
+    # The working stack asks the SEC; the demo stack reads the recorded files.
+    assert "GBMI_SEC_SOURCE := live" in working.stdout
+    assert "GBMI_SEC_SOURCE := fixture" in demo.stdout
+    # A value from the shell does not make the demo stack ask the SEC.
+    assert "GBMI_SEC_SOURCE := fixture" in inherited.stdout
+    # A value on the command line of make does, for the one command (week 3 plan, change C12).
+    assert "GBMI_SEC_SOURCE = live" in one_command.stdout
+    assert "GBMI_SEC_SOURCE := fixture" not in one_command.stdout
+    compose = (REPO / "compose" / "compose.yaml").read_text(encoding="utf-8")
+    assert "GBMI_SEC_SOURCE: ${GBMI_SEC_SOURCE:-off}" in compose
+
+
+@pytest.mark.parametrize("target", ["demo", "e2e"])
+def test_the_demo_never_asks_the_sec(target: str) -> None:
+    result = dry_run("--print-data-base", target, "GBMI_SEC_SOURCE=live")
+
+    assert result.returncode == 0, result.stderr
+    # make demo starts make again for the demo stack, with the source of the recorded files.
+    assert f"STACK=gbmi-demo GBMI_SEC_SOURCE=fixture _{target}" in result.stdout
+    assert "GBMI_SEC_SOURCE = fixture" in result.stdout
 
 
 def test_an_unknown_stack_is_refused() -> None:

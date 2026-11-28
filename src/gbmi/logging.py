@@ -31,7 +31,11 @@ def configure_logging(
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="iso", utc=True),
             structlog.processors.StackInfoRenderer(),
-            structlog.processors.dict_tracebacks,
+            # A traceback never renders local variables: a local can hold a secret, for
+            # example the user agent with the contact address for the SEC (week 3 plan 3.3).
+            structlog.processors.ExceptionRenderer(
+                structlog.tracebacks.ExceptionDictTransformer(show_locals=False)
+            ),
             structlog.processors.JSONRenderer(sort_keys=True),
         ],
         wrapper_class=structlog.make_filtering_bound_logger(logging.getLevelNamesMapping()[level]),

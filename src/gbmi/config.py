@@ -11,7 +11,7 @@ from enum import StrEnum
 from functools import lru_cache
 from typing import Self
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from gbmi import __version__
@@ -32,6 +32,14 @@ class LakeBackend(StrEnum):
     AWS = "aws"  # S3 with the Glue Data Catalog
 
 
+class SecSource(StrEnum):
+    """Where the SEC client reads from (week 3 plan 3.3)."""
+
+    FIXTURE = "fixture"  # the recorded files: make demo and CI, no network
+    LIVE = "live"  # the servers of the SEC, with the declared user agent
+    OFF = "off"  # no client can start: the stack sends no request to the SEC
+
+
 _LAKE_SCHEME = {LakeBackend.LOCAL: "file://", LakeBackend.AWS: "s3://"}
 _CATALOG_SCHEME = {LakeBackend.LOCAL: "sqlite:///", LakeBackend.AWS: "glue://"}
 
@@ -39,7 +47,10 @@ _CATALOG_SCHEME = {LakeBackend.LOCAL: "sqlite:///", LakeBackend.AWS: "glue://"}
 class Settings(BaseSettings):
     """All runtime configuration of the ``gbmi`` package."""
 
-    model_config = SettingsConfigDict(env_prefix="GBMI_", extra="ignore", frozen=True)
+    # A validation error never shows the value which failed: a setting can be a secret.
+    model_config = SettingsConfigDict(
+        env_prefix="GBMI_", extra="ignore", frozen=True, hide_input_in_errors=True
+    )
 
     env: Environment = Environment.LOCAL
     lake_backend: LakeBackend = LakeBackend.LOCAL
@@ -60,12 +71,27 @@ class Settings(BaseSettings):
     ingest_concurrency: int = Field(default=4, ge=1, le=8)
     #: One silver run builds at most this many units (blueprint 8.1: bounded batches).
     silver_max_units: int = Field(default=48, ge=1)
-    sec_user_agent: str | None = None
+    #: The declared identity of every request to the SEC: a name and a contact address
+    #: (blueprint 4.3). A secret: no command, log line or table shows the value.
+    sec_user_agent: SecretStr | None = None
+    #: ``off`` unless a stack says otherwise: a process without settings never calls the SEC.
+    sec_source: SecSource = SecSource.OFF
+    #: Requests to the SEC in any second. The SEC allows 10; the platform never sends more
+    #: than 8, and the setting refuses a higher value (blueprint 4.3).
+    sec_max_rps: int = Field(default=8, ge=1, le=8)
+    #: Recorded SEC files for the source ``fixture`` (make demo and CI).
+    sec_fixtures_dir: str = "/fixtures/sec"
     watchlist_size: int = Field(default=50, ge=1, le=10_000)
     alert_webhook: SecretStr | None = None
     #: Written to the ``_pipeline_version`` provenance column (blueprint 7.12). The image sets
     #: it to the Git commit; outside an image it falls back to the package version.
     pipeline_version: str = __version__
+
+    @field_validator("sec_user_agent", mode="before")
+    @classmethod
+    def _empty_user_agent_is_none(cls, value: object) -> object:
+        # Compose passes an unset variable as an empty text.
+        return None if isinstance(value, str) and not value.strip() else value
 
     @model_validator(mode="after")
     def _backend_matches_uris(self) -> Self:
