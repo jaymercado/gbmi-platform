@@ -266,10 +266,14 @@ def main() -> int:
     print(f"{len(result['rows'])} rows; {len(result['skipped'])} candidates were skipped")
     for item in result["skipped"][:40]:
         print("skipped:", json.dumps(item))
-    if args.write:
-        write(result)
-        print(f"wrote {SEED.relative_to(REPO)} and {RESULT.relative_to(REPO)}")
-    return 0 if len(result["rows"]) == SIZE or not args.write else 1
+    if not args.write:
+        return 0
+    if len(result["rows"]) != SIZE:
+        print(f"the list has {len(result['rows'])} rows, not {SIZE}: nothing was written")
+        return 1
+    write(result)
+    print(f"wrote {SEED.relative_to(REPO)} and {RESULT.relative_to(REPO)}")
+    return 0
 
 
 if __name__ == "__main__":

@@ -15,21 +15,25 @@ from collections import Counter
 from collections.abc import Callable, Iterator
 from datetime import UTC, date, datetime
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
 from typer.testing import CliRunner
 
 from gbmi.cli import app
-from gbmi.config import get_settings
+from gbmi.config import Settings, get_settings
 from gbmi.lake.catalog import load_lake_catalog
 from gbmi.ledger.db import Connection, connect
 from gbmi.ops.partitions import PartitionVersion, record_versions
 from gbmi.ops.requests import max_requests_in_window
+from gbmi.sources.sec import bulk, silver, tasks
+from gbmi.sources.sec import filings as filings_module
 from gbmi.sources.sec import reference as reference_module
-from gbmi.sources.sec import silver, tasks
 from gbmi.sources.sec.client import SecClient
 from gbmi.sources.sec.errors import SecTransportError
+from gbmi.sources.sec.land import Lander
+from gbmi.sources.sec.models import PayloadError, Submissions
 from gbmi.sources.sec.silver import PipelineError
 from gbmi.sources.sec.urls import (
     SUBMISSIONS_ARCHIVE_URL,
@@ -54,7 +58,22 @@ EASYJET, ALPHABET, HASBRO, AMAZON, NETFLIX = 1470419, 1652044, 46080, 1018724, 1
 LISTING = index_listing_url(2026, 4)
 INDEX_FILE = index_file_url(INDEX_DAY)
 
+#: The rows of each table after one run of the three pipelines on the recorded files.
+TABLES = {
+    "sec_filing_index": 298,
+    "sec_filing_detail": 293,
+    "sec_company_snapshot": 10,
+    "sec_company_former_name": 4,
+    "sec_xbrl_fact": 12264,
+}
+
 runner = CliRunner()
+
+
+def fast_client() -> Any:
+    """The client of the tasks with a clock which does not wait."""
+    clock = FakeTime()
+    return functools.partial(SecClient, clock=clock.clock, sleep=clock.sleep, now=clock.now)
 
 
 @pytest.fixture
@@ -73,9 +92,7 @@ def sec_stack(stack: str, recorded: Path, monkeypatch: pytest.MonkeyPatch) -> It
     monkeypatch.setenv("GBMI_WATCHLIST_FILE", str(REPO / "dbt" / "seeds" / "watchlist.csv"))
     monkeypatch.setenv("GBMI_WATCHLIST_SIZE", "5")
     get_settings.cache_clear()
-    clock = FakeTime()
-    fast = functools.partial(SecClient, clock=clock.clock, sleep=clock.sleep, now=clock.now)
-    monkeypatch.setattr(tasks, "SecClient", fast)
+    monkeypatch.setattr(tasks, "SecClient", fast_client())
     yield stack
     get_settings.cache_clear()
 
@@ -151,6 +168,14 @@ def sec(*arguments: str) -> tuple[int, Any, str]:
     result = runner.invoke(app, ["sec", *arguments])
     value = json.loads(result.stdout) if result.exit_code == 0 and result.stdout.strip() else None
     return result.exit_code, value, result.output
+
+
+def requeue(dataset: str, day: str, note: str = "ok") -> tuple[int, Any]:
+    """The command of the operator for the quarantined objects of one dataset and one day."""
+    code, value, _ = sec(
+        "objects", "requeue", "--dataset", dataset, "--from", day, "--to", day, "--note", note
+    )
+    return code, value
 
 
 # --- the recorded files, end to end -------------------------------------------------------------
@@ -312,7 +337,8 @@ def test_a_second_run_of_the_day_sends_no_request_and_gives_the_same_content(
     assert (facts["selected"], facts["documents"]) == (0, 0)
     assert facts["selection"] == "companies with a new filing since their last facts load"
     assert (full["selected"], full["checksum"]) == (5, first[2]["checksum"])
-    assert len(rows_of("sec_xbrl_fact")) == 12264
+    # The tables themselves hold the rows of one run, not of two.
+    assert {name: len(rows_of(name)) for name in TABLES} == TABLES
     assert not database.execute(
         "SELECT 1 FROM ops.source_object WHERE state IN ('expected', 'verified', 'quarantined')"
     ).fetchall()
@@ -431,7 +457,9 @@ def test_an_index_file_with_too_many_bad_lines_is_quarantined_as_a_whole(
 def test_an_index_file_outside_the_volume_band_needs_the_note_of_an_operator(
     database: Connection,
 ) -> None:
-    # Four files of the same weekday with 5,000 rows each: 298 rows are below a third.
+    # Four files of the same weekday with 5,000 rows each: 298 rows are below a third. The
+    # third week before has no file, as after a holiday: the rule takes the four files
+    # which exist (review 2, finding R2-11).
     earlier = [
         PartitionVersion(
             feed="index",
@@ -444,7 +472,7 @@ def test_an_index_file_outside_the_volume_band_needs_the_note_of_an_operator(
             content_digest="0" * 16,
             pipeline_version="test",
         )
-        for week in range(1, 5)
+        for week in (1, 2, 4, 5)
     ]
     record_versions(database, earlier, source="sec")
 
@@ -455,10 +483,11 @@ def test_an_index_file_outside_the_volume_band_needs_the_note_of_an_operator(
     assert "298 rows are outside 0.33 to 3.0 times the median 5000" in index_file["reason"]
     assert refused["index"]["rows"] == 0
 
-    code, requeued, _ = sec(
-        "objects", "requeue", "--from", "2026-11-25", "--to", "2026-11-25", "--note", "a short day"
+    # Gate G3 refused the file: the bytes are in bronze, and no request is needed.
+    assert requeue("index", "2026-11-25", "a short day") == (
+        0,
+        {"requeued": ["index/2026-11-25/form.20261125.idx"], "asked_again": []},
     )
-    assert (code, requeued) == (0, {"requeued": ["index/2026-11-25/form.20261125.idx"]})
     sent = len(requested(database))
     code, accepted, _ = sec(
         "filings", "--as-of", THURSDAY, "--accept-volume", "the day before a holiday"
@@ -502,6 +531,14 @@ def test_a_document_which_does_not_open_is_asked_three_times_and_quarantined(
     assert database.execute(
         "SELECT gate, check_name FROM ops.dq_result WHERE status = 'failed'"
     ).fetchall() == [("G1", "format_opens")]
+    # The bytes never reached bronze: a requeue means new requests, and the command says so.
+    assert requeue("submissions", "2026-11-26", "the SEC repaired the file") == (
+        0,
+        {
+            "requeued": ["submissions/2026-11-26/CIK0000063276.json"],
+            "asked_again": ["submissions/2026-11-26/CIK0000063276.json"],
+        },
+    )
 
 
 def test_a_document_without_a_required_field_is_quarantined(
@@ -658,10 +695,7 @@ def test_a_new_company_without_a_document_is_inactive_and_the_universe_rule_need
     assert requested(database).count("/submissions/CIK0000999999.json") == 1
     assert state_of(database, "submissions", "2026-11-27", "CIK0000999999.json") == "not_published"
 
-    assert (
-        sec("objects", "requeue", "--from", "2026-11-27", "--to", "2026-11-27", "--note", "ok")[0]
-        == 0
-    )
+    assert requeue("reference", "2026-11-27")[0] == 0
     code, accepted, _ = sec(
         "reference", "--as-of", FRIDAY, "--accept-volume", "one new company among ten"
     )
@@ -762,14 +796,19 @@ def test_a_facts_document_with_fewer_facts_is_quarantined_and_the_old_facts_stay
         "raw/sec/companyfacts/dt=2026-11-27/CIK0001326801.json"
     }
     # An operator who knows the reason accepts the fall with a note.
-    assert (
-        sec("objects", "requeue", "--from", "2026-11-27", "--to", "2026-11-27", "--note", "ok")[0]
-        == 0
+    assert requeue("companyfacts", "2026-11-27") == (
+        0,
+        {"requeued": ["companyfacts/2026-11-27/CIK0000063276.json"], "asked_again": []},
     )
     code, accepted, _ = sec(
         "facts", "--as-of", FRIDAY, "--full", "--accept-volume", "the SEC removed old facts"
     )
     assert (code, accepted["documents"], accepted["refused"]) == (0, 5, {})
+    assert len(by_cik("sec_xbrl_fact")[MATTEL]) == 3118
+    # The accepted document is loaded: a later run of the day without the note builds the
+    # same rows and does not ask for the note again (review 2, finding R2-10).
+    again = tasks.facts_task(as_of=FRIDAY, full=True)
+    assert (again["documents"], again["refused"], again["requests"]["sent"]) == (5, {}, 0)
     assert len(by_cik("sec_xbrl_fact")[MATTEL]) == 3118
 
 
@@ -978,12 +1017,209 @@ def test_an_archive_which_does_not_arrive_does_not_stop_the_run(
         "requested": True,
         "state": "failed",
         "error": "ReadTimeout for www.sec.gov/Archives/.../submissions.zip",
+        "attempts": 1,
     }
     assert (reference["companies"], reference["stale"]) == (10, 10)
     bulk = database.execute(
         "SELECT state, attempts, last_error FROM ops.source_object WHERE dataset = 'bulk'"
     ).fetchone()
     assert bulk == ("expected", 1, "ReadTimeout for www.sec.gov/Archives/.../submissions.zip")
+
+
+# --- the repairs of review 2 --------------------------------------------------------------------
+
+
+def test_a_listed_index_file_which_is_missing_is_asked_again_when_the_listing_still_names_it(
+    database: Connection, recorded: Path
+) -> None:
+    # The listing names a file which the SEC does not serve (review 2, finding R2-3).
+    edit(
+        recorded,
+        LISTING,
+        lambda listing: listing["directory"]["item"].append({"name": "form.20261124.idx"}),
+    )
+    tasks.filings_task(as_of=THURSDAY)
+    missing = database.execute(
+        "SELECT state, http_status FROM ops.source_object WHERE object_name = 'form.20261124.idx'"
+    ).fetchone()
+    assert missing == ("not_published", 403)
+
+    # A week later the day lies outside the days of the run, and the SEC serves the file.
+    other_day = path_of(recorded, index_file_url(date(2026, 11, 24)))
+    shutil.copy(path_of(recorded, INDEX_FILE), other_day)
+    later = tasks.filings_task(as_of="2026-12-03T12:00:00+00:00")
+
+    assert later["window"] == ["2026-11-26", "2026-12-02"]
+    assert state_of(database, "index", "2026-11-24", "form.20261124.idx") == "loaded"
+    assert [item["file"] for item in later["index"]["files"]] == ["form.20261124.idx"]
+    asked = requested(database).count("/Archives/edgar/daily-index/2026/QTR4/form.20261124.idx")
+    assert asked == 2
+
+
+def test_a_run_which_stops_after_the_commit_is_repaired_by_the_next_run(
+    database: Connection, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls = []
+
+    def stopped(*arguments: Any, **options: Any) -> None:
+        calls.append(arguments)
+        raise RuntimeError("the process stopped between the commit and its record")
+
+    with monkeypatch.context() as patched:
+        patched.setattr(filings_module, "record", stopped)
+        with pytest.raises(RuntimeError, match="between the commit and its record"):
+            tasks.filings_task(as_of=THURSDAY)
+
+    # The table holds the rows, and the ledger does not know yet.
+    assert len(rows_of("sec_filing_index")) == 298
+    assert state_of(database, "index", "2026-11-25", "form.20261125.idx") == "verified"
+    assert database.execute("SELECT count(*) FROM ops.silver_partition").fetchone() == (0,)
+    sent = len(requested(database))
+
+    again = tasks.filings_task(as_of=THURSDAY)
+
+    assert len(calls) == 1
+    assert again["index"]["files"][0]["state"] == "loaded"
+    assert len(rows_of("sec_filing_index")) == 298  # the same unit, replaced
+    assert state_of(database, "index", "2026-11-25", "form.20261125.idx") == "loaded"
+    # The files of the stopped run were in bronze: only the five documents were asked.
+    assert len(requested(database)) - sent == 5
+
+
+def test_a_requeued_document_of_a_company_outside_the_watchlist_is_read_again(
+    database: Connection, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The model refuses the document of Hasbro, as a model with a defect would.
+    real = Submissions.parse.__func__  # type: ignore[attr-defined]
+
+    def strict(cls: type[Submissions], content: bytes | str) -> Submissions:
+        document: Submissions = real(cls, content)
+        if document.cik == HASBRO:
+            raise PayloadError("Submissions", ["name: the model has a defect"])
+        return document
+
+    with monkeypatch.context() as patched:
+        patched.setattr(Submissions, "parse", classmethod(strict))
+        first = tasks.reference_task(as_of=THURSDAY)
+    assert first["documents_refused"] == 1
+    assert state_of(database, "submissions", "2026-11-26", "CIK0000046080.json") == "quarantined"
+    hasbro = next(row for row in rows_of("sec_company_snapshot") if row["cik"] == HASBRO)
+    assert (hasbro["sic"], hasbro["is_stale"]) == (None, True)
+
+    # The model is repaired, and the operator sends the document back.
+    assert requeue("submissions", "2026-11-26", "the model is repaired") == (
+        0,
+        {"requeued": ["submissions/2026-11-26/CIK0000046080.json"], "asked_again": []},
+    )
+    sent = len(requested(database))
+    second = tasks.reference_task(as_of=THURSDAY)
+
+    # The bytes were in bronze: no request, and the snapshot of the day has the attributes.
+    assert len(requested(database)) == sent
+    assert (second["documents_refused"], second["archive"]["requested"]) == (0, False)
+    assert state_of(database, "submissions", "2026-11-26", "CIK0000046080.json") == "loaded"
+    hasbro = next(row for row in rows_of("sec_company_snapshot") if row["cik"] == HASBRO)
+    assert (hasbro["sic"], hasbro["is_stale"]) == ("3944", False)
+    assert sorted(row["former_name"] for row in rows_of("sec_company_former_name")) == [
+        "Facebook Inc",
+        "HASBRO INC",
+        "NVIDIA CORP/CA",
+        "THOMSON CORP /CAN/",
+    ]
+
+
+def test_one_member_which_cannot_be_stored_does_not_lose_the_archive(
+    database: Connection, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real = Lander.store
+
+    def store(self: Lander, expected: Any, content: bytes, **options: Any) -> Any:
+        if expected.cik == ALPHABET:
+            raise OSError("no space left on device")
+        return real(self, expected, content, **options)
+
+    monkeypatch.setattr(Lander, "store", store)
+
+    first = tasks.reference_task(as_of=THURSDAY)
+    second = tasks.reference_task(as_of=THURSDAY)
+
+    # The archive is used up and recorded: the second run sends no request for 1.6 GB.
+    archive = first["archive"]
+    assert (archive["state"], archive["copied"], archive["refused"]) == ("loaded", 7, 1)
+    assert (second["archive"]["requested"], second["requests"]["sent"]) == (False, 0)
+    manifest = json.loads(
+        (tmp_path / "raw/sec/bulk/dt=2026-11-26/submissions.manifest.json").read_bytes()
+    )
+    assert manifest["refused"] == ["CIK0001652044.json"]
+    assert (manifest["wanted"], len(manifest["copied"]), manifest["not_in_archive"]) == (10, 7, 2)
+    accounting = database.execute(
+        "SELECT state, raw_records, parsed_rows, quarantined_rows FROM ops.source_object "
+        "WHERE dataset = 'bulk'"
+    ).fetchone()
+    assert accounting == ("loaded", 10, 7, 3)
+    assert state_of(database, "submissions", "2026-11-26", "CIK0001652044.json") == "expected"
+
+
+def test_after_three_failed_tries_of_a_day_no_run_asks_for_the_archive_again(
+    database: Connection, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tries = []
+
+    def no_download(self: SecClient, url: str, path: Path, **options: Any) -> None:
+        tries.append(url)
+        raise SecTransportError("ReadTimeout for www.sec.gov")
+
+    monkeypatch.setattr(SecClient, "download", no_download)
+
+    runs = [tasks.reference_task(as_of=THURSDAY)["archive"] for _ in range(4)]
+
+    assert [run["state"] for run in runs] == ["failed", "failed", "failed", "quarantined"]
+    assert [run.get("attempts") for run in runs] == [1, 2, 3, None]
+    assert (len(tries), runs[3]["requested"]) == (3, False)
+    row = database.execute(
+        "SELECT state, attempts, reason FROM ops.source_object WHERE dataset = 'bulk'"
+    ).fetchone()
+    assert row == (
+        "quarantined",
+        3,
+        "3 tries failed; the last one: the download failed: ReadTimeout for www.sec.gov",
+    )
+
+
+def test_no_download_of_the_archive_starts_while_the_sec_builds_the_archive(
+    database: Connection, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def at(text: str) -> datetime:
+        return datetime.fromisoformat(text)
+
+    assert [
+        bulk.in_build_window(at(moment))
+        for moment in (
+            "2026-11-29T04:29:59+00:00",
+            "2026-11-29T04:30:00+00:00",
+            "2026-11-29T05:29:59+00:00",
+            "2026-11-29T05:30:00+00:00",
+            "2026-11-29T12:45:00+08:00",  # 04:45 UTC
+        )
+    ] == [False, True, True, False, True]
+    # The rule holds for the live source only: the recorded files have no build.
+    night = at("2026-11-29T05:00:00+00:00")
+    live: Any = SimpleNamespace(settings=Settings(_env_file=None, sec_source="live"))
+    files: Any = SimpleNamespace(settings=Settings(_env_file=None, sec_source="fixture"))
+    assert bulk.waits_for_the_build(live, night)
+    assert not bulk.waits_for_the_build(files, night)
+    assert not bulk.waits_for_the_build(live, at("2026-11-29T09:30:00+00:00"))
+
+    with monkeypatch.context() as patched:
+        patched.setattr(bulk, "waits_for_the_build", lambda run, moment: True)
+        early = tasks.reference_task(as_of=THURSDAY)
+    later = tasks.reference_task(as_of=THURSDAY)
+
+    # The early run builds the snapshot without the archive and leaves no object behind.
+    assert (early["archive"]["state"], early["archive"]["requested"]) == ("not now", False)
+    assert (early["companies"], early["documents_read"]) == (10, 0)
+    assert (later["archive"]["state"], later["archive"]["copied"]) == ("loaded", 8)
+    assert states(database, "bulk") == {"loaded": 1}
 
 
 # --- the commands -------------------------------------------------------------------------------
@@ -1033,9 +1269,24 @@ def test_a_refused_command_is_one_line(sec_stack: str, monkeypatch: pytest.Monke
     assert output.strip() == "gbmi sec filings: the range starts on 2026-11-26, after 2026-11-25"
     assert sec("objects", "--from", "soon")[0] == 1
     code, _, output = sec(
-        "objects", "requeue", "--from", "2026-11-25", "--to", "2026-11-25", "--note", " "
+        "objects",
+        "requeue",
+        "--dataset",
+        "index",
+        "--from",
+        "2026-11-25",
+        "--to",
+        "2026-11-25",
+        "--note",
+        " ",
     )
     assert (code, "the note is empty" in output) == (1, True)
+    assert requeue("news", "2026-11-25")[0] == 1  # no such dataset
+    # The dataset is required: a requeue of every dataset could ask for the archive again.
+    assert (
+        sec("objects", "requeue", "--from", "2026-11-25", "--to", "2026-11-25", "--note", "x")[0]
+        == 2
+    )
     assert sec("requests", "max-burst", "--from", "soon")[0] == 1
 
     monkeypatch.setenv("GBMI_SEC_SOURCE", "off")

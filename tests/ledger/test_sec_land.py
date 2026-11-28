@@ -124,6 +124,22 @@ def test_bytes_which_a_run_before_left_in_bronze_need_no_request(
     assert lander.counts.from_bronze == 1
 
 
+def test_recover_never_sends_a_request(lander: Lander, server: SecServer) -> None:
+    # An operator sent a quarantined object back: the bytes are in bronze (review 2, R2-2).
+    lander.ledger.ensure_expected([EXPECTED])
+    without_bytes = lander.recover(KEY, check=json_opens)
+    lander.bronze.write(bronze_key(KEY), b"half a docu")
+    broken_bytes = lander.recover(KEY, check=json_opens)
+    lander.bronze.write(bronze_key(KEY), BODY)
+    with_bytes = lander.recover(KEY, check=json_opens)
+
+    assert without_bytes.state is ObjectState.EXPECTED
+    assert broken_bytes.state is ObjectState.EXPECTED
+    assert (with_bytes.state, with_bytes.md5) == (ObjectState.VERIFIED, md5_hex(BODY))
+    assert lander.recover(KEY, check=json_opens) == with_bytes
+    assert server.asked(URL) == 0
+
+
 def test_broken_bytes_in_bronze_are_fetched_again(lander: Lander, server: SecServer) -> None:
     lander.bronze.write(bronze_key(KEY), b"half a docu")
 

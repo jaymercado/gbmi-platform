@@ -100,8 +100,11 @@ def select_companies(
     answered = run.ledger.newest_by_cik(Dataset.COMPANYFACTS, states=_ANSWERED)
     since: dict[int, datetime] = {}
     for cik, item in answered.items():
-        if item.state is ObjectState.LOADED and item.loaded_at is not None:
-            since[cik] = item.loaded_at
+        moment = item.verified_at or item.loaded_at
+        if item.state is ObjectState.LOADED and moment is not None:
+            # The time of the download: a filing which arrived between the download and a
+            # late load of the document still counts (review 2, finding R2-10).
+            since[cik] = moment
         else:
             # The SEC had no facts document on the day: every later filing counts.
             since[cik] = datetime.combine(item.key.object_date, clock_time.max, tzinfo=UTC)
@@ -245,7 +248,9 @@ def _check_document(
         build = facts(document, run.source_file(item), run.facts)
     except (PayloadError, RowsError) as error:
         reason = str(error)
-    if build is not None:
+    # A document which is loaded already passed the rule, or an operator accepted the fall:
+    # a rebuild of the day does not ask again (review 2, finding R2-10).
+    if build is not None and item.state is ObjectState.VERIFIED:
         before = run.ledger.newest(
             Dataset.COMPANYFACTS,
             cik=cik,
@@ -263,12 +268,12 @@ def _check_document(
             accept_note=run.accept_volume,
         )
         results.append(fall)
-        if build.repeated_keys:
-            gate, check = G3, "key_unique"
-            reason = f"{build.repeated_keys} keys stand in two rows with different values"
-        elif fall.status == FAILED:
+        if fall.status == FAILED:
             gate, check = G3, "facts_fall"
             reason = str(fall.detail["problem"])
+    if build is not None and build.repeated_keys:
+        gate, check = G3, "key_unique"
+        reason = f"{build.repeated_keys} keys stand in two rows with different values"
     if not reason:
         return build, ""
     if item.state is not ObjectState.VERIFIED:

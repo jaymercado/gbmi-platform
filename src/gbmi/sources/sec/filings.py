@@ -13,6 +13,12 @@ Each run (week 3 plan 3.3, with the differences D32 to D34):
    more stays (finding F4).
 
 The pipeline does not depend on Airflow. A manual run takes a range of days for a backfill.
+
+The listing of a quarter is one object of the UTC day of the run: the first run of a day asks
+for the listing, and every later run of the day reads the stored one. The SEC publishes the
+index file of a day at about 03:00 UTC of the next day (finding F10), so a run before that
+time does not see the newest file, and the next run of the day does not either. The schedule
+is 08:30 UTC; do not start a run by hand between 00:00 and 03:30 UTC (review 2, R2-5).
 """
 
 from __future__ import annotations
@@ -75,6 +81,8 @@ TRAILING_DAYS = 7
 #: The rows of an index file against the median of four files of the same weekday. The files
 #: of one quarter differ by a factor of 2.7 in size (week 3 plan, finding F10).
 INDEX_BAND = (0.33, 3.0)
+#: The volume rule looks so many weeks back for four files of the same weekday.
+LOOK_BACK_WEEKS = 8
 #: A file with a larger share of lines which are no row is quarantined as a whole.
 BAD_ROW_SHARE = 0.01
 BAD_ROWS_RULE = f"at most {BAD_ROW_SHARE:.0%} of the lines of a file are no row"
@@ -111,7 +119,15 @@ def run_filings(
         raise ValueError(f"the range starts on {first.isoformat()}, after {last.isoformat()}")
     days = weekdays(first, last)
     listed, known = _read_listings(run, days)
-    waiting = _expect_index_files(run, days, listed, known)
+    # A file which the SEC lists and which answered "no such object" before is asked again,
+    # also when its day lies outside the days of the run (review 2, finding R2-3).
+    closed = run.ledger.select(states={ObjectState.NOT_PUBLISHED}, dataset=Dataset.INDEX)
+    again = {
+        item.key.object_date
+        for item in closed
+        if item.key.object_date in listed and item.key.name == index_file_name(item.key.object_date)
+    }
+    waiting = _expect_index_files(run, sorted({*days, *again}), listed, known)
     verified = run.ledger.select(states={ObjectState.VERIFIED}, dataset=Dataset.INDEX)
     files = [_build_index(run, item) for item in verified if item.key.name.startswith("form.")]
     detail = _build_detail(run, watchlist)
@@ -263,10 +279,13 @@ def _build_index(run: SecRun, item: ObjectRecord) -> dict[str, Any]:
         duplicates=build.duplicate_rows,
         committed=build.table.num_rows,
     )
-    same_weekday = [index_date - timedelta(weeks=week) for week in range(1, VOLUME_HISTORY + 1)]
-    history = day_rows(
+    # The four newest earlier files of the same weekday which exist: a holiday leaves a
+    # week without a file, and the rule must not rest for four weeks (review 2, R2-11).
+    same_weekday = [index_date - timedelta(weeks=week) for week in range(1, LOOK_BACK_WEEKS + 1)]
+    stored = day_rows(
         run.ledger.connection, source=run.source, table_name=SEC_FILING_INDEX, dates=same_weekday
     )
+    history = [rows for rows in stored if rows is not None][:VOLUME_HISTORY]
     names = {"table": SEC_FILING_INDEX, "feed": INDEX_FEED}
     key_columns = build.table.select(list(SEC_TABLE_KEYS[SEC_FILING_INDEX]))
     results = [

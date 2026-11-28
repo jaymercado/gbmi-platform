@@ -317,7 +317,38 @@ def test_the_times_of_a_former_name_are_days_in_new_york() -> None:
         ("Open Name Inc", date(2021, 10, 27), None),
     ]
     assert set(build.table["cik"].to_pylist()) == {1234567}
+    assert build.not_midnight == 0
     assert sec.former_names([(submissions(), SOURCE)], RUN).table.num_rows == 0
+
+
+def test_a_time_which_is_not_midnight_in_new_york_is_counted() -> None:
+    # Midnight UTC is the evening before in New York: the day moves, and the count says so
+    # (review 2, finding R2-13).
+    document = submissions(
+        formerNames=[
+            {
+                "name": "Odd Start Inc",
+                "from": "2010-06-01T00:00:00.000Z",
+                "to": "2012-03-01T05:00:00.000Z",
+            },
+            {
+                "name": "Odd End Inc",
+                "from": "2012-03-01T05:00:00.000Z",
+                "to": "2015-01-01T12:00:00.000Z",
+            },
+        ]
+    )
+
+    build = sec.former_names([(document, SOURCE)], RUN)
+
+    rows = [
+        (row["former_name"], row["valid_from"], row["valid_to"]) for row in build.table.to_pylist()
+    ]
+    assert rows == [
+        ("Odd Start Inc", date(2010, 5, 31), date(2012, 3, 1)),
+        ("Odd End Inc", date(2012, 3, 1), date(2015, 1, 1)),
+    ]
+    assert build.not_midnight == 2
 
 
 # --- sec_xbrl_fact ------------------------------------------------------------------------------
@@ -409,6 +440,37 @@ def test_the_value_keeps_six_decimal_places_and_the_text_keeps_every_digit() -> 
         sec.fact_value(Decimal(10**32))
     with pytest.raises(RowsError, match="more than 32 digits"):
         sec.fact_value(Decimal(-(10**33)))
+    # A number far beyond any amount is refused like any other number which does not fit;
+    # the first version raised an error of the decimal module (review 2, finding R2-6).
+    for huge in ("1E+74", "-9E+500", "NaN", "Infinity"):
+        with pytest.raises(RowsError, match="more than 32 digits"):
+            sec.fact_value(Decimal(huge))
+    # A rounding which reaches the limit is refused, too.
+    with pytest.raises(RowsError, match="more than 32 digits"):
+        sec.fact_value(Decimal("99999999999999999999999999999999.9999999"))
+
+
+def test_the_text_of_a_value_has_no_exponent() -> None:
+    # str() of a decimal writes 0.0000004 as 4E-7 (review 2, finding R2-7).
+    assert sec.plain_text(Decimal("0.0000004")) == "0.0000004"
+    assert sec.plain_text(Decimal("1E+2")) == "100"
+    assert sec.plain_text(Decimal("1.10")) == "1.10"
+    assert sec.plain_text(Decimal("-12345678901234567890")) == "-12345678901234567890"
+    text = json.dumps(
+        {
+            "cik": 1,
+            "entityName": "Small Corp",
+            "facts": {"us-gaap": {"Ratio": {"units": {"pure": [fact(), fact(accn=SECOND)]}}}},
+        }
+    )
+    text = text.replace("100", "0.0000004", 1).replace("100", "1e2", 1)
+
+    rows = sec.facts(CompanyFacts.parse(text), SOURCE, RUN).table.to_pylist()
+
+    assert [(row["value"], row["value_text"]) for row in rows] == [
+        (Decimal("0.000000"), "0.0000004"),
+        (Decimal("100.000000"), "100"),
+    ]
 
 
 def test_a_period_which_ends_before_it_starts_gives_no_rows() -> None:

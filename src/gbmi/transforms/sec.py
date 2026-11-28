@@ -12,7 +12,7 @@ import decimal
 import hashlib
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -37,9 +37,11 @@ NEW_YORK = ZoneInfo("America/New_York")
 STALE_AFTER_DAYS = 8
 #: The value of a fact has six decimal places and at most 32 digits before the point.
 _SIX_PLACES = Decimal("0.000001")
-_VALUE_LIMIT = Decimal(10) ** 32
+_WHOLE_DIGITS = 32
+_VALUE_LIMIT = Decimal(10) ** _WHOLE_DIGITS
 _WIDE = decimal.Context(prec=80, rounding=decimal.ROUND_HALF_EVEN)
 _NULL, _SEPARATOR = "\x00", "\x1f"
+_MIDNIGHT = time(0, 0)
 
 
 class RowsError(ValueError):
@@ -381,6 +383,9 @@ class FormerNamesBuild:
     duplicate_rows: int
     #: Names without a first day: the key of the table needs the day.
     without_start: int
+    #: Times of the SEC which are not midnight in New York: the day of such a time is the
+    #: day in New York at the time, which can be the day before the day the SEC meant.
+    not_midnight: int = 0
 
 
 class FormerNames:
@@ -395,6 +400,7 @@ class FormerNames:
         self._sources: list[SourceFile] = []
         self.names = 0
         self.without_start = 0
+        self.not_midnight = 0
 
     def add(self, document: Submissions, source: SourceFile) -> None:
         """The former names of one document, with the two times of the SEC as days in New York."""
@@ -404,8 +410,11 @@ class FormerNames:
             if former.since is None:
                 self.without_start += 1
                 continue
-            start = former.since.astimezone(NEW_YORK).date()
-            end = former.until.astimezone(NEW_YORK).date() if former.until else None
+            since = former.since.astimezone(NEW_YORK)
+            until = former.until.astimezone(NEW_YORK) if former.until else None
+            self.not_midnight += since.time() != _MIDNIGHT
+            self.not_midnight += until is not None and until.time() != _MIDNIGHT
+            start, end = since.date(), until.date() if until else None
             if (former.name, start) in seen:
                 continue
             seen.add((former.name, start))
@@ -429,6 +438,7 @@ class FormerNames:
             names=self.names,
             duplicate_rows=self.names - self.without_start - len(rows),
             without_start=self.without_start,
+            not_midnight=self.not_midnight,
         )
 
 
@@ -465,11 +475,25 @@ class FactsBuild:
 
 def fact_value(value: Decimal) -> Decimal:
     """The value with six decimal places. Raises RowsError when the value does not fit."""
-    rounded = _WIDE.quantize(value, _SIX_PLACES)
+    too_large = RowsError("a value has more than 32 digits before the decimal point")
+    if not value.is_finite() or value.adjusted() >= _WHOLE_DIGITS:
+        raise too_large
+    try:
+        rounded = _WIDE.quantize(value, _SIX_PLACES)
+    except decimal.InvalidOperation:
+        raise too_large from None
     # copy_abs does not round; abs() would round to the 28 digits of the default context.
     if rounded.copy_abs() >= _VALUE_LIMIT:
-        raise RowsError("a value has more than 32 digits before the decimal point")
+        raise too_large
     return rounded
+
+
+def plain_text(value: Decimal) -> str:
+    """The number with every digit of the document, without an exponent.
+
+    ``str`` would write 0.0000004 as 4E-7 (review 2, finding R2-7).
+    """
+    return format(value, "f")
 
 
 def facts(document: CompanyFacts, source: SourceFile, run: RunFacts) -> FactsBuild:
@@ -496,7 +520,7 @@ def facts(document: CompanyFacts, source: SourceFile, run: RunFacts) -> FactsBui
             *key,
             fact.start is None,
             value,
-            str(fact.val),
+            plain_text(fact.val),
             fact.fy,
             fact.fp,
             fact.form,
