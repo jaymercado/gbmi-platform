@@ -68,6 +68,10 @@ jobs:
           make drill DR=4
           make drill DR=8
 
+      # The recorded SEC files with a source which throttles; no request leaves the runner.
+      - name: Drill DR5 on the recorded SEC files
+        run: make drill DR=5
+
       - name: Service logs
         if: failure()
         run: make logs-dump

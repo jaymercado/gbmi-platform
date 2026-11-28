@@ -24,12 +24,12 @@ from typing import Any
 
 from pyiceberg.table import Table
 
-from gbmi.config import Environment, LakeBackend, Settings
+from gbmi.config import Environment, LakeBackend, SecSource, Settings
 from gbmi.core.checksum import ContentChecksum, content_checksum
 from gbmi.core.gdelt import Feed
 from gbmi.lake.catalog import ensure_silver_namespace, load_lake_catalog
 from gbmi.lake.commit import Unit
-from gbmi.lake.tables import TABLE_KEYS
+from gbmi.lake.tables import ALL_TABLE_KEYS, TABLE_KEYS
 from gbmi.ledger.repository import Ledger, open_ledger
 from gbmi.ledger.scratch import scratch_database
 from gbmi.sources.gdelt import ingest
@@ -43,6 +43,21 @@ AS_OF = datetime(2026, 11, 25, 9, 0, tzinfo=UTC)
 #: The mount of the lake in the containers. A drill on the laptop uses a temporary directory.
 SHARED_LAKE = Path("/lake")
 _REPOSITORY = Path(__file__).resolve().parents[1]
+
+
+#: The clock of the SEC drills: the clock of the demo, the day after the recorded index file.
+SEC_AS_OF = datetime(2026, 11, 26, 12, 0, tzinfo=UTC)
+#: The five demo companies: the watchlist of the recorded SEC files (week 3 plan 3.3).
+SEC_WATCHLIST = (1326801, 1045810, 789019, 63276, 1075124)
+
+
+def sec_fixtures_dir() -> Path:
+    """The recorded SEC files: the mount of the containers, or the files of the checkout."""
+    configured = os.environ.get("GBMI_SEC_FIXTURES_DIR")
+    if configured and Path(configured).is_dir():
+        return Path(configured)
+    mounted = Path("/fixtures/sec")
+    return mounted if mounted.is_dir() else _REPOSITORY / "tests" / "fixtures" / "sec"
 
 
 def fixtures_dir() -> Path:
@@ -131,6 +146,26 @@ class World:
         rows = (
             self.table(name).scan(row_filter=unit.row_filter, selected_fields=tuple(key)).to_arrow()
         )
+        return int(rows.num_rows - rows.group_by(key).aggregate([]).num_rows)
+
+    def sec_settings(self) -> Settings:
+        """The settings of the world with the recorded SEC files as the source."""
+        return self.settings.model_copy(
+            update={
+                "sec_source": SecSource.FIXTURE,
+                "sec_user_agent": None,
+                "sec_fixtures_dir": str(sec_fixtures_dir()),
+            }
+        )
+
+    def table_checksum(self, name: str) -> ContentChecksum:
+        """The checksum of every row which a table holds now."""
+        return content_checksum(self.table(name).scan().to_arrow())
+
+    def repeated_table_keys(self, name: str) -> int:
+        """The rows of a table whose logical key another row of the table has too."""
+        key = list(ALL_TABLE_KEYS[name])
+        rows = self.table(name).scan(selected_fields=tuple(key)).to_arrow()
         return int(rows.num_rows - rows.group_by(key).aggregate([]).num_rows)
 
     def states(self, feed: Feed | None = None) -> dict[str, int]:
