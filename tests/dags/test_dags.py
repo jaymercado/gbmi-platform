@@ -7,6 +7,7 @@ added to the Airflow environment without need.
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import unittest
@@ -24,7 +25,10 @@ GDELT_DAGS = ("gdelt_ingest", "gdelt_silver_hourly", "gdelt_silver_daily")
 #: The three SEC DAGs of week 3, each with its one task which asks the SEC.
 SEC_DAGS = {"sec_filings": "filings", "sec_reference_daily": "reference", "sec_xbrl_facts": "facts"}
 TRACER = "tracer_gdelt_events"
+#: The mart build of week 3: the pin task, the dbt tasks of Cosmos and the record task.
+MARTS = "marts_build"
 GBMI_PYTHON = "/opt/venvs/gbmi/bin/python"
+DBT_MANIFEST = Path(__file__).resolve().parents[2] / "dbt" / "target" / "manifest.json"
 #: The tasks which commit to silver tables, for each DAG.
 SILVER_WRITERS = {
     "gdelt_ingest": set(),
@@ -34,6 +38,8 @@ SILVER_WRITERS = {
     # The SEC tasks commit to the five SEC tables only, and no other job writes the five
     # tables: the tasks take the pool sec_api and not the pool silver_writer (D49).
     **{dag_id: set() for dag_id in SEC_DAGS},
+    # The mart build reads the pinned tables and writes to ClickHouse only.
+    MARTS: set(),
 }
 #: The task after each task, for the scheduled DAGs.
 ORDER = {
@@ -53,8 +59,11 @@ ORDER = {
 }
 
 
-def load(schedules: str = "on") -> tuple[Any, list[str]]:
-    """Load the DAG files as the DAG processor does; also give the commands the import started."""
+def load(schedules: str = "on", **settings: str) -> tuple[Any, list[str]]:
+    """Load the DAG files as the DAG processor does; also give the commands the import started.
+
+    ``settings`` are more variables of the environment of the stack, for example DBT_TARGET.
+    """
     from airflow.dag_processing.dagbag import BundleDagBag
 
     started: list[str] = []
@@ -65,7 +74,7 @@ def load(schedules: str = "on") -> tuple[Any, list[str]]:
         real(self, args, *rest, **options)
 
     with (
-        mock.patch.dict(os.environ, {"GBMI_DAG_SCHEDULES": schedules}),
+        mock.patch.dict(os.environ, {"GBMI_DAG_SCHEDULES": schedules, **settings}),
         mock.patch.object(subprocess.Popen, "__init__", recording),
     ):
         bag = BundleDagBag(dag_folder=DAGS, bundle_path=DAGS, bundle_name="gbmi")
@@ -98,7 +107,7 @@ class DagFilesTest(unittest.TestCase):
 
     def test_every_dag_file_imports_without_an_error(self) -> None:
         self.assertEqual(self.bag.import_errors, {})
-        self.assertEqual(sorted(self.bag.dags), sorted([*GDELT_DAGS, *SEC_DAGS, TRACER]))
+        self.assertEqual(sorted(self.bag.dags), sorted([*GDELT_DAGS, *SEC_DAGS, TRACER, MARTS]))
 
     def test_the_import_starts_no_dbt_command(self) -> None:
         # Cosmos renders the dbt models from the prebuilt manifest (spike answer B3).
@@ -172,7 +181,7 @@ class DagFilesTest(unittest.TestCase):
     def test_no_scheduled_dag_has_a_start_date(self) -> None:
         # With a start date, an unpause would create a run for the most recent past time at
         # once, beside the runs of a backfill (week 2 plan 3.5, change C3).
-        for dag_id in (*GDELT_DAGS, *SEC_DAGS):
+        for dag_id in (*GDELT_DAGS, *SEC_DAGS, MARTS):
             with self.subTest(dag=dag_id):
                 self.assertIsNone(self.bag.dags[dag_id].start_date)
 
@@ -257,7 +266,7 @@ class SecDagsTest(unittest.TestCase):
                 self.assertEqual({task.task_id for task in tasks}, {name, "summary"})
                 in_the_pool = {task.task_id for task in tasks if task.pool == "sec_api"}
                 self.assertEqual(in_the_pool, {name})
-        for dag_id in (*GDELT_DAGS, TRACER):
+        for dag_id in (*GDELT_DAGS, TRACER, MARTS):
             pools = {task.pool for task in self.bag.dags[dag_id].tasks}
             self.assertNotIn("sec_api", pools)
 
@@ -322,12 +331,187 @@ class SecDagsTest(unittest.TestCase):
         self.assertEqual(render("{{ params.first_day or '' }}", params={"first_day": None}), "")
 
 
+class MartsBuildTest(unittest.TestCase):
+    """The wiring of the mart build (week 3 plan, WP-08 step 8; blueprint 8.9)."""
+
+    bag: Any
+    dag: Any
+    #: The models of the run: the SEC models and the two operational models.
+    MODELS: frozenset[str] = frozenset(
+        {
+            "stg_sec__company_snapshot",
+            "stg_sec__company_former_name",
+            "stg_sec__filing_index",
+            "stg_sec__filing_detail",
+            "stg_sec__xbrl_fact",
+            "stg_ops__source_slot",
+            "int_company__watchlist",
+            "int_company__snapshot_versions",
+            "int_company__former_name_versions",
+            "int_financials__metric_facts",
+            "int_financials__quarters",
+            "dim_company",
+            "fct_filing",
+            "fct_filing_item",
+            "fct_financial_fact",
+            "fct_financial_metric",
+            "ops_slot_status_daily",
+        }
+    )
+    SEEDS: frozenset[str] = frozenset({"watchlist", "metric_concept_map"})
+    #: The tests which read two models, each with the tasks which have to end first.
+    DETACHED: dict[str, set[str]] = {  # noqa: RUF012 (a table of the test, never changed)
+        "dbt.assert_dim_company_covers_every_snapshot_company_test": {
+            "dbt.dim_company.test",
+            "dbt.stg_sec__company_snapshot.test",
+        },
+        "dbt.assert_fct_filing_covers_index_and_submissions_test": {
+            "dbt.fct_filing.test",
+            "dbt.stg_sec__filing_index.test",
+            "dbt.stg_sec__filing_detail.test",
+        },
+        "dbt.assert_fct_financial_fact_holds_every_silver_fact_test": {
+            "dbt.fct_financial_fact.test",
+            "dbt.stg_sec__xbrl_fact.test",
+        },
+    }
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.bag, _ = load()
+        cls.dag = cls.bag.dags[MARTS]
+
+    def kind(self, name: str) -> list[Any]:
+        return [task for task in self.dag.tasks if type(task).__name__ == name]
+
+    def test_the_schedule_is_1145_utc_after_the_three_sec_dags(self) -> None:
+        self.assertEqual(
+            timetable_of(self.dag),
+            {
+                "type": "CronTriggerTimetable",
+                "timezone": "UTC",
+                "run_immediately": False,
+                "interval": timedelta(0),
+                "expression": "45 11 * * *",
+            },
+        )
+
+    def test_the_run_pins_first_and_records_last(self) -> None:
+        self.assertEqual([task.task_id for task in self.dag.roots], ["pin_lake"])
+        self.assertEqual([task.task_id for task in self.dag.leaves], ["record"])
+        # The Cosmos group has the name dbt: every other task is a dbt task.
+        others = {task.task_id for task in self.dag.tasks} - {"pin_lake", "record"}
+        self.assertTrue(others)
+        self.assertEqual({task_id.split(".")[0] for task_id in others}, {"dbt"})
+
+    def test_the_run_builds_the_sec_models_the_ops_models_and_the_two_seeds(self) -> None:
+        built = {task.task_id.split(".")[1] for task in self.kind("DbtRunLocalOperator")}
+        seeded = {task.task_id.split(".")[1] for task in self.kind("DbtSeedLocalOperator")}
+
+        self.assertEqual(built, self.MODELS)
+        # Cosmos builds a seed only when the selection holds the seed.
+        self.assertEqual(seeded, self.SEEDS)
+        # No model of the news marts: their partitions belong to the tracer until phase P3.
+        self.assertEqual({name for name in built if "gdelt" in name}, set())
+
+    def test_each_model_and_each_seed_is_followed_by_its_tests(self) -> None:
+        tests = {task.task_id for task in self.kind("DbtTestLocalOperator")}
+
+        self.assertEqual(
+            tests,
+            {f"dbt.{name}.test" for name in self.MODELS | self.SEEDS} | set(self.DETACHED),
+        )
+        for name in self.MODELS:
+            with self.subTest(model=name):
+                test = self.dag.get_task(f"dbt.{name}.test")
+                self.assertEqual(test.upstream_task_ids, {f"dbt.{name}.run"})
+
+    def test_no_task_runs_a_dbt_unit_test(self) -> None:
+        # A unit test checks the code on made-up rows; it runs in make demo, not in a build.
+        manifest = json.loads(DBT_MANIFEST.read_text(encoding="utf-8"))
+        self.assertGreaterEqual(len(manifest["unit_tests"]), 8)
+        tests = self.kind("DbtTestLocalOperator")
+        self.assertTrue(tests)
+        for task in tests:
+            with self.subTest(task=task.task_id):
+                self.assertIn("resource_type:unit_test", (task.exclude or "").split())
+        commands = {type(task).__name__ for task in self.dag.tasks if "dbt." in task.task_id}
+        # Neither dbt build nor dbt test without the exclusion: three kinds of command only.
+        self.assertEqual(
+            commands, {"DbtRunLocalOperator", "DbtSeedLocalOperator", "DbtTestLocalOperator"}
+        )
+
+    def test_a_test_which_reads_two_models_runs_after_both(self) -> None:
+        for task_id, parents in self.DETACHED.items():
+            with self.subTest(task=task_id):
+                self.assertEqual(self.dag.get_task(task_id).upstream_task_ids, parents)
+                # The test is no part of the tests of one of its models.
+                name = task_id.split(".")[1].removesuffix("_test")
+                for parent in parents:
+                    self.assertIn(name, self.dag.get_task(parent).exclude.split())
+
+    def test_dbt_receives_the_pinned_snapshots_as_a_mapping(self) -> None:
+        from jinja2.nativetypes import NativeEnvironment
+
+        self.assertIs(self.dag.render_template_as_native_obj, True)
+        expected = {
+            "silver_snapshot_ids": "{{ ti.xcom_pull(task_ids='pin_lake')['snapshot_ids'] }}",
+            "pipeline_version": "{{ ti.xcom_pull(task_ids='pin_lake')['pipeline_version'] }}",
+        }
+        for task in self.dag.tasks:
+            if task.task_id.startswith("dbt."):
+                with self.subTest(task=task.task_id):
+                    self.assertEqual(task.vars, expected)
+        # An Iceberg snapshot is a number of 63 bits: the mapping keeps every digit.
+        pinned = {"snapshot_ids": {"sec_xbrl_fact": 9115200626639295309}}
+        instance = SimpleNamespace(xcom_pull=lambda task_ids: pinned)
+        rendered = (
+            NativeEnvironment().from_string(expected["silver_snapshot_ids"]).render(ti=instance)
+        )
+        self.assertEqual(rendered, {"sec_xbrl_fact": 9115200626639295309})
+
+    def test_the_record_task_receives_what_the_pin_task_returned(self) -> None:
+        record = self.dag.get_task("record")
+
+        self.assertEqual(set(record.op_kwargs), {"pinned", "run_id"})
+        self.assertEqual(record.op_kwargs["run_id"], "{{ run_id }}")
+        self.assertEqual(record.op_kwargs["pinned"].operator.task_id, "pin_lake")
+
+    def test_a_dbt_task_has_two_retries_at_most(self) -> None:
+        configured = int(os.environ.get("GBMI_TASK_RETRIES", "3"))
+        for task in self.dag.tasks:
+            with self.subTest(task=task.task_id):
+                limit = min(configured, 2) if task.task_id.startswith("dbt.") else configured
+                self.assertEqual(task.retries, limit)
+
+    def test_the_stack_decides_the_dbt_target(self) -> None:
+        targets = {task.profile_config.target_name for task in self.kind("DbtRunLocalOperator")}
+        self.assertEqual(targets, {os.environ.get("DBT_TARGET", "local")})
+
+        bag, _ = load(DBT_TARGET="prod")
+
+        self.assertEqual(bag.import_errors, {})
+        on_the_host = {
+            task.profile_config.target_name
+            for task in bag.dags[MARTS].tasks
+            if type(task).__name__ == "DbtRunLocalOperator"
+        }
+        self.assertEqual(on_the_host, {"prod"})
+        # The tracer stays on the laptop and in CI: its target is fixed.
+        tracer = {
+            task.profile_config.target_name
+            for task in bag.dags[TRACER].tasks
+            if type(task).__name__ == "DbtRunLocalOperator"
+        }
+        self.assertEqual(tracer, {"local"})
+
+
 class SchedulesOffTest(unittest.TestCase):
     def test_the_demo_stack_runs_its_dags_by_hand_only(self) -> None:
         bag, _ = load(schedules="off")
 
         self.assertEqual(bag.import_errors, {})
-        for dag_id in (*GDELT_DAGS, *SEC_DAGS, TRACER):
+        for dag_id in (*GDELT_DAGS, *SEC_DAGS, TRACER, MARTS):
             with self.subTest(dag=dag_id):
                 self.assertEqual(type(bag.dags[dag_id].timetable).__name__, "NullTimetable")
 
