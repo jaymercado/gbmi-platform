@@ -35,9 +35,9 @@ The order follows change C10 of the week 3 plan (§3.5). Every time is UTC. The 
 |---|---|---|---|---|---|
 | 01 | Start: checks, pins, plan in the repository | 2026-11-28 03:10 | 2026-11-28 03:30 | [#17](https://github.com/jaymercado/gbmi-platform/pull/17) | Done. Working time about 9 minutes; the GitHub checks took about 12 minutes |
 | 02 | Operational tables for SEC objects, circuit and requests | 2026-11-28 03:19 | 2026-11-28 03:44 | [#18](https://github.com/jaymercado/gbmi-platform/pull/18) | Done. Working time about 12 minutes, during the GitHub checks of WP-01; the GitHub checks took about 12 minutes |
-| 03 | Fair-access client; review 1 | 2026-11-28 03:32 | | | Review 1 ran from 03:49 to 04:05 and reported two blocking defects and eleven smaller ones; the repairs took from 04:06 to 04:25, in the same pull request (change C11). Working time about 15 minutes before the review and about 20 minutes for the repairs |
-| 05 | Lake: general units and five SEC tables | 2026-11-28 03:49 | | | Written while review 1 reads WP-03 (change C10). Working time about 12 minutes. The pull request follows the merge of WP-03 |
-| 04 | Recorded files and payload models | | | | |
+| 03 | Fair-access client; review 1 | 2026-11-28 03:32 | 2026-11-28 04:36 | [#19](https://github.com/jaymercado/gbmi-platform/pull/19) | Done. Review 1 ran from 03:49 to 04:05 and reported two blocking defects and eleven smaller ones; the repairs took from 04:06 to 04:25, in the same pull request (change C11). Working time about 15 minutes before the review and about 20 minutes for the repairs; the GitHub checks of the repaired pull request took about 10 minutes |
+| 05 | Lake: general units and five SEC tables | 2026-11-28 03:49 | 2026-11-28 04:51 | [#20](https://github.com/jaymercado/gbmi-platform/pull/20) | Done. Written while review 1 read WP-03 (change C10). Working time about 12 minutes for the code and about 5 minutes for the merge of the repairs and the pull request; the GitHub checks took about 11 minutes |
+| 04 | Recorded files and payload models | 2026-11-28 04:03 | | | The recorder and the metric seed were drafted from 04:03 to 04:08, during review 1. The work went on at 04:26, after the repairs of review 1. The 18 requests left at 04:37, one minute after the merge of WP-03. Working time about 35 minutes up to the pull request |
 | 06 | Pipelines PL-3, PL-4 and PL-5; the watchlist; review 2; one live load | | | | |
 | 09 | Drill DR5 and one runbook | | | | |
 | 07 | DAGs, DAG tests and the demo | | | | |
@@ -89,7 +89,7 @@ On 2026-11-28, before the first work package, four read-only agents (further ins
 | RF6 | 03 | `HttpFetcher` belongs to GDELT: index lines, redirects followed, no header (`src/gbmi/sources/gdelt/land.py:142-182`). The fake GDELT server records file names only (`tests/ledger/gdelt_server.py:81`). `Settings` is frozen and cached, and `fixtures_dir` is the GDELT folder | `SecClient` is new code with an own `httpx.Client`. `tests/ledger/sec_server.py` records time, host, path and headers. A new field `sec_fixtures_dir`; a test which changes the environment clears the cache of the settings | [RV] | Handled in WP-03: `gbmi.sources.sec.client.SecClient`, `tests/ledger/sec_server.py`, the setting `sec_fixtures_dir`, and `tests/conftest.py`, which removes an inherited SEC source from every test |
 | RF7 | 03, 06 | The coverage gate is the list `COVERAGE_GATE` of the Makefile (`Makefile:117-124`). `make test` runs `tests/unit`, `tests/ledger`, `tests/transforms` and `tests/contract` only | WP-03 adds `src/gbmi/sources/sec/*` to the list. The pipeline tests which count for the gate live in `tests/ledger` | [RV] | Half handled in WP-03: `src/gbmi/sources/sec/*` is part of the coverage gate (client 96%, the four other modules 100%). The pipeline tests follow in WP-06 |
 | RF8 | 03, 12 | The value of `GBMI_SEC_USER_AGENT` stands in double quotes in `.env` | `make host-secrets` and `make redact-check` remove the quotes. One test of WP-03 proves which value a container receives through Compose | [V]; Compose [S] | Half handled in WP-03: `tests/unit/test_compose_env.py` renders the Compose file and proves that a quoted value arrives without the quotes; `tools/redact_check.py` removes the quotes. `make host-secrets` follows in WP-12 |
-| RF9 | 04, 07 | The fixtures hold one index file, and the demo clock is fixed. A weekday without a file stays `expected` until the listing names a newer file, and the volume band needs four earlier files | The recorded listing names the one recorded index file, so each earlier weekday of the window becomes `not_published`. The volume rule records "skipped" below four files. The demo clock lies after the publication of the file | [S] | Open |
+| RF9 | 04, 07 | The fixtures hold one index file, and the demo clock is fixed. A weekday without a file stays `expected` until the listing names a newer file, and the volume band needs four earlier files | The recorded listing names the one recorded index file, so each earlier weekday of the window becomes `not_published`. The volume rule records "skipped" below four files. The demo clock lies after the publication of the file | [S] | Half handled in WP-04: the recorded listing names one form index file, `form.20261125.idx`, and the fixture transport answers 403 with the recorded body for every other index file. The volume rule and the demo clock follow in WP-06 and WP-07 |
 | RF10 | 05 | `Unit` is imported in about 25 places and used by the quarantine helper, the audit functions and `DayFile` (`src/gbmi/lake/commit.py:51-159`, `src/gbmi/quality/audit.py:65,181`) | `Scope` is a protocol with `label`, `row_filter` and `check`. `Unit` keeps the constructor and fulfils the protocol. `overwrite_scope` is the general function, and `overwrite_unit` calls `overwrite_scope` | [RV] | Handled in WP-05, with other names: the protocol is `UnitOfWork` (label, kind, row filter, check); `Scope` is the class with the three builders; `Unit` is unchanged and fulfils the protocol; `overwrite_unit` calls `overwrite_scope` |
 | RF11 | 05 | `create_table_if_missing` always partitions by `slot_date`, and `_schema` always adds `_slot_ts` (`src/gbmi/lake/tables.py:51-83`). `tests/integration/lake/test_silver_tables.py:57` compares the fixture hour with `SILVER_SCHEMAS`. The contract test fixes the partition `slot_date` and six provenance columns (`tests/contract/test_silver_contracts.py:52-74`) | A parameter for the partition column and a switch for `_slot_ts`. The SEC schemas live in an own dictionary. The contract test reads the partition and the provenance columns from the definition of the table | [RV] | Handled in WP-05: `create_table_if_missing(..., partition_column=...)`, `_schema(..., slot_ts=False)`, the dictionary `SEC_SCHEMAS` beside `SILVER_SCHEMAS`, and a contract test which reads the key, the partition and the provenance columns from the definition of each of the nine tables |
 | RF12 | 05, 06 | `check_volume` has a fixed band of 0.5 to 2.0 and a fixed history of four values (`src/gbmi/quality/audit.py:36-38,257-298`). One commit of PyIceberg can hold three snapshots; the comment in `src/gbmi/lake/commit.py:8` says two | Parameters with the values of phase P1 as defaults; the 5% rule and the 2% rule are new functions. WP-05 tests the maintenance code with a commit of three snapshots | [RV] | Half handled in WP-05: `check_volume` takes a band; `check_change` (5% rule) and `check_fall` (2% rule) are new. An integration test builds a commit of three snapshots (delete, overwrite, append): the maintenance code counts the commit as one commit and keeps the commit whole. The pipelines of WP-06 call the rules |
@@ -154,6 +154,49 @@ Not repaired, by decision: the review noted that `make redact-check` searches th
 
 The numbers confirm change C15: `sec_xbrl_fact` is partitioned by `cik`. The made-up rows compress far better than real facts, so the bytes are a lower bound; the ratio between the two columns is the result. A unit of keys holds at most 200 values: above 200 values PyIceberg 0.12.0 reads every data file.
 
+## The recording of the SEC test files (WP-04)
+
+The 18 requests of the recording are the first requests of week 3 to the SEC. Every time is UTC on 2026-11-28.
+
+**Before the first request.**
+
+| Step | Result |
+|---|---|
+| Review 1 | Pull request #19 with every repair of review 1 was merged at 04:36:08 |
+| Rehearsal | The step `rehearse` of the recorder ran the same code against a made-up SEC inside the process, with a throwaway database, on the demo stack: 18 requests, at most 8 in any second, and no request left the laptop |
+| Copy of the working database | The working stack was stopped. One cold copy of the PostgreSQL volume of the working stack stands in `data/backups/gbmi-postgres-data-20261128T0437Z-before-0004.tgz` (19 MB, git-ignored) |
+| Migrations | `0004_sec_objects.sql` and `0005_partition_units.sql` were applied to the working database at 04:37:25. The two files are frozen from this moment (change C22): a later change of the schema is a new file |
+| Ledger of phase P1 after the migrations | Unchanged: 9,432 slots in the state `loaded`, and 507 partition versions for 2026-10-26 to 2026-11-27 |
+| Stack | `gbmi config show` in the toolbox of the working stack: `sec_source` is `live`, `sec_max_rps` is 8, and `sec_user_agent` shows a mask. `gbmi sec circuit status`: `closed`, no event |
+
+**The recording.** `make toolbox CMD="python -m benchmarks.source_profile.record_sec_fixtures fetch"`, in the toolbox of the working stack, with the database of the working stack.
+
+| Measure | Value |
+|---|---|
+| Run in `ops.source_request` | `record-sec-fixtures-20261128T043750Z` |
+| First and last request | 04:37:51 and 04:37:58 |
+| Requests | 18: one for each address of the plan, no second try |
+| Outcomes | 16 `ok` (HTTP 200) and 2 `missing`: HTTP 404 for the facts document of easyJet, and HTTP 403 with the body `AccessDenied` for the index file of the holiday 2026-11-26 |
+| Largest number of requests in any second | 4 by the wall clock, and 4 by the monotonic clock of the client (`max_requests_in_window` and `max_requests_in_session_window`). The ceiling is 8 |
+| Blocks | None. The circuit of the working stack is `closed` |
+| Raw answers | 19 MB in `data/sec-raw/`, git-ignored, with the manifest and the 18 rows of the request log |
+| Test files | 19 files with 1.94 MB in `tests/fixtures/sec/`, written by the step `shorten` without a network. `ATTRIBUTION.md` in the folder lists the size and the MD5 hash of each raw answer and of each test file |
+
+**What the recorded files show beside the findings of the plan.** The models follow the files (week 3 plan, WP-04, "When the work fails").
+
+| Finding of the plan | The recorded files |
+|---|---|
+| F4: `filings.recent` holds "at most 1,000 filings" | The lists hold 1,010 filings for Mattel, 1,005 for Nvidia and 1,001 for Alphabet. The model sets no upper limit |
+| F5: "Every fact has `end`, `val`, `accn`, `fy`, `fp`, `form` and `filed`"; `fp` is null for some forms | `fy` is null wherever `fp` is null: 40 facts of Mattel, 46 of Nvidia, 160 of Meta and 1,219 of Microsoft. Both fields are optional in the model. `label` and `description` of a concept are null for 398 of the 399 concepts of Thomson Reuters |
+| F9: the body of the 403 answer has 211 bytes | 263 bytes on 2026-11-28. The client reads the code `AccessDenied` and no length |
+| F10: the listing names 38 index files up to 2026-11-25 | 39 files: the file of 2026-11-27 arrived. The listing names five files for each day (`company`, `crawler`, `form`, `master`, `sitemap`): the platform reads `form.YYYYMMDD.idx` only |
+| F11 (d): 13 rows carry an earlier date | 40 rows carry an earlier date, on 29 dates back to 2025-12-01. The forms are `DRS`, `DRS/A`, `CORRESP`, `UPLOAD`, `EFFECT`, `QUALIF`, `ATS-N/CA`, `TA-1` and `TA-1/A`: drafts, letters and notices which the SEC publishes later. The unit of work stays the index file (difference D33) |
+| F11 (c): 124 rows repeat a pair | Confirmed: 116 pairs stand in 240 rows, so 124 rows are repeats |
+| §3.3: the metric `employees` reads `dei:EntityNumberOfEmployees` | None of the five recorded facts documents holds the concept. The demo has no value for the metric. The live load of WP-06 measures the coverage for the 50 watchlist companies |
+| WP-04 step 3: the index rows of the five demo companies | Two of the five demo companies have a row in the index file of 2026-11-25: Meta (form `4`) and Microsoft (form `PX14A6G`). Hasbro has the third row (form `4`). The contract test compares the three rows with the submissions documents, and all 300 rows with the positions of finding F11 (a) |
+
+**Not verified.** The recorded index file holds no form longer than 14 characters and no byte above 127. The parser has tests on made-up lines for both cases, and no test on a real line.
+
 ## Choices made during the run
 
 Decisions which the week 3 plan left open, in the order of the work.
@@ -183,3 +226,12 @@ Decisions which the week 3 plan left open, in the order of the work.
 | 21 | 05 | The made-up facts table and the measurement of change C15 live in `benchmarks/p2_lake/` | The plan lists no folder for the measurement. The rule of phase P1: a measuring script writes the raw result beside the script |
 | 22 | 03 | The operator commands `gbmi sec circuit status` and `gbmi sec circuit close --note` arrive in WP-03; the plan lists the command group `gbmi sec` under WP-06 | Review 1 (finding B2): the error text of a locked circuit names the close command, so the command has to exist before the first live request |
 | 23 | 03 | The client has no HEAD request, and the plan names `head` | Review 1 (finding 1): a HEAD answer has no body, so a missing file cannot be told from a block. The answer of a download carries the size and the time which the manifest of the archive needs |
+| 24 | 04 | The recorder continues a run which stopped early, and has a step `rehearse` | A stored answer is not asked again, so a failure after request 12 costs 6 more requests and not 18. The rehearsal runs the same code against a made-up SEC inside the process before the first live request |
+| 25 | 04 | One cold copy of the PostgreSQL volume of the working stack before the two migration files were applied | The working database holds the ledger of 33 days, and a migration cannot be taken back. The copy is the way back to the state before `0004` |
+| 26 | 04 | The two recorded "no such object" bodies hold the letter X in place of the request identifier and the host identifier | The two values name one request of the recording in the logs of the SEC and nothing else. The length of each body stays as recorded |
+| 27 | 04 | The shortened listing keeps the five entries of the index day, and a shortened submissions document also keeps every filing which the recorded index file names | The pipeline of WP-06 has to pick the form index among the files of a day. The contract test compares the form of an index row with the form of the same filing |
+| 28 | 04 | A document without a required value fails as a whole with `PayloadError`. The error names at most five problems, each with its path, and shows no value of the document | The plan: "A document without a required field is quarantined" (WP-06). A value of a document does not belong in a log line or a run record |
+| 29 | 04 | A number of a facts document is read as a decimal from the text of the JSON document | Choice 18: `value_text` keeps the number as the SEC wrote the number. A binary float would turn `1.10` into `1.1` and would lose digits of a long number |
+| 30 | 04 | The index parser refuses a row without a company name, a row whose form runs past position 16, and a row whose CIK column differs from the CIK of the file name | The contract of `sec_filing_index` requires the name. Finding F11 (a) and (e): no row of the recorded file breaks one of the three rules, so a row which does is a sign of a changed format |
+| 31 | 04 | The transport of the recorded files reports one fixed time of the last change for every file: 2026-11-26 05:06:36 UTC | The demo runs with a fixed clock, and two runs have to see the same answers. The time lies before the clock of the demo |
+| 32 | 04 | The block `seeds` of `dbt/dbt_project.yml` arrives with the metric seed in WP-04; the plan lists the block under WP-08 | Without the block, `dbt seed` would write the seed into the database `marts` with guessed column types. `dbt seed` ran on the demo stack: 22 rows in `seeds.metric_concept_map` |
