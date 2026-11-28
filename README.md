@@ -17,7 +17,7 @@ GDELT files → ledger (each expected file) → bronze (verified zips) → silve
 | Proven on 30 real days | The 8,640 files of 2026-10-26 to 2026-11-24 (12.9 GB) are in silver. Completeness is 100% for each day. Accounting is 100%: 14,395,666 raw lines = parsed rows + quarantined rows. A second build of a day gives the same checksum. See the [P1 status report](docs/reports/p1-gdelt-production.md) and the [quarantine and reconciliation report](docs/reports/p1-quarantine-reconciliation.md) |
 | Proven on the live source | The jobs ran for 6 hours and 17 minutes in a row without manual action. A file was in silver about 6 minutes after the upload by GDELT. The laptop slept four times during the 21 hours of the run, and the pipeline caught up without help each time |
 | Measured | [Benchmark report v1](docs/reports/benchmark-v1.md): the largest day of the largest feed builds in 20 seconds with a peak of about 1.0 GiB of memory; 30 days need 12.9 GB as zip files and 0.8 GB in silver; the master list of GDELT lacks 1.8% of the 15-minute slots since 2015 |
-| Failure drills | Three scripts (`make drill`): a crash during the silver commit, a corrupt file, a rerun of a day. Two [runbooks](docs/runbooks/) say what to do when the pipeline reports a problem |
+| Failure drills | Four scripts (`make drill`): a crash during the silver commit, a corrupt file, a rerun of a day, and a source which throttles the client (the SEC, on recorded files). Three [runbooks](docs/runbooks/) say what to do when the pipeline reports a problem |
 | Decided | Four decision records so far, each with evidence. The newest one is [ADR-007](docs/adr/007-ledger-state-machine-and-completeness.md): the ledger state machine and the meaning of completeness. The [spike report](docs/reports/p0-spikes.md) and the [memory report](docs/reports/p0-memory.md) are from phase P0 |
 | On GitHub and AWS | The four workflows are green on `main`. The Terraform baseline of phase P0 is applied in `us-east-1`; phase P1 changed no AWS resource |
 | Labelled | The first 200 organisation strings of the entity-resolution gold set, by an AI model; a review by a person is open. See the [labelling README](config/labelling/README.md) |
@@ -58,7 +58,7 @@ make integration-aws  # the Glue/S3 halves of the spikes; needs an AWS sign-in (
 make tf-check       # Terraform format, validate, tflint and checkov, with no AWS access
 ```
 
-Two runbooks say what to do when the pipeline reports a problem: [a slot is quarantined or overdue](docs/runbooks/gdelt-slot-quarantined-or-overdue.md) and [a silver build failed, or silver holds wrong data](docs/runbooks/silver-build-failed-or-wrong-data.md).
+Three runbooks say what to do when the pipeline reports a problem: [a slot is quarantined or overdue](docs/runbooks/gdelt-slot-quarantined-or-overdue.md), [a silver build failed, or silver holds wrong data](docs/runbooks/silver-build-failed-or-wrong-data.md), and [the circuit of the SEC is open or locked](docs/runbooks/sec-circuit-open.md).
 
 ## Run the pipeline on real data
 
