@@ -5,8 +5,15 @@ for the daily finalisation. A commit replaces exactly one unit, in one catalog c
 overwrite that is filtered on the unit. The unit comes from the task, never from the rows, so an
 empty result empties the unit instead of leaving stale rows behind (week 1 plan 3.3).
 
+The SEC tables are replaced by other units (week 3 plan 3.3): one date of a column, a set of
+key values, or the whole table. ``Scope`` describes such a unit. ``Unit`` and ``Scope`` both
+are a ``UnitOfWork``: a label, a row filter and a check that every row belongs to the unit.
+``overwrite_scope`` commits any unit of work; ``overwrite_unit`` is the same call for a GDELT
+unit.
+
 PyIceberg writes an overwrite as up to two snapshots - a delete and an append - inside that one
-catalog commit (week 1 plan, D8). Every snapshot of a commit carries the same
+catalog commit (week 1 plan, D8). An overwrite of a set of keys which has to rewrite a data
+file adds a third snapshot, between the two. Every snapshot of a commit carries the same
 ``gbmi.commit-id``, which is how maintenance counts commits, not snapshots. The last
 snapshot of a commit is the one a mart records as ``_silver_snapshot_id``; the snapshot before
 the commit is the rollback target.
@@ -15,17 +22,19 @@ the commit is the rollback target.
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import uuid
 import warnings
-from collections.abc import Callable, Iterable, Iterator, Sequence
+from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from datetime import date
+from typing import Protocol
 
 import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 from pyiceberg.exceptions import CommitFailedException, ValidationException
-from pyiceberg.expressions import And, BooleanExpression, EqualTo, Reference
+from pyiceberg.expressions import AlwaysTrue, And, BooleanExpression, EqualTo, In, Reference
 from pyiceberg.expressions.literals import literal
 from pyiceberg.io import OutputStream
 from pyiceberg.table import Table
@@ -41,11 +50,43 @@ SLOT_HOUR = "slot_hour"
 #: A commit which loses a conflict is tried again up to three times (blueprint 8.4).
 COMMIT_RETRIES = 3
 
+#: The kinds of a unit, as ``ops.silver_partition.unit_kind`` stores them.
+KIND_HOUR = "hour"
+KIND_DAY = "day"
+KIND_KEYS = "keys"
+KIND_TABLE = "table"
+#: The largest set of key values of one unit. Above 200 values PyIceberg 0.12 no longer uses
+#: the values to choose the data files, and reads every file (week 3 plan, change C15).
+MAX_SCOPE_KEYS = 200
+
 Audit = Callable[[pa.Table], None]
 
 
 class UnitMismatchError(ValueError):
     """The rows handed to a commit do not all belong to the unit being replaced."""
+
+
+class UnitOfWork(Protocol):
+    """What one commit replaces as a whole: a GDELT ``Unit`` or a ``Scope``."""
+
+    @property
+    def label(self) -> str:
+        """The name of the unit in a snapshot property, a partition version and a log line."""
+        ...
+
+    @property
+    def kind(self) -> str:
+        """``hour``, ``day``, ``keys`` or ``table``."""
+        ...
+
+    @property
+    def row_filter(self) -> BooleanExpression:
+        """The overwrite filter: everything the unit owns, and nothing else."""
+        ...
+
+    def check(self, data: pa.Table) -> None:
+        """Raise UnitMismatchError unless every row of ``data`` belongs to the unit."""
+        ...
 
 
 @dataclass(frozen=True)
@@ -63,6 +104,10 @@ class Unit:
     def label(self) -> str:
         day = self.slot_date.isoformat()
         return day if self.slot_hour is None else f"{day}T{self.slot_hour:02d}"
+
+    @property
+    def kind(self) -> str:
+        return KIND_DAY if self.slot_hour is None else KIND_HOUR
 
     @property
     def row_filter(self) -> BooleanExpression:
@@ -90,6 +135,80 @@ class Unit:
 
 
 @dataclass(frozen=True)
+class Scope:
+    """A unit of work of a table which has no slots: a date, a set of keys, or the whole table.
+
+    Build a scope with ``Scope.for_date``, ``Scope.for_keys`` or ``Scope.for_table``.
+    """
+
+    kind: str
+    #: The column which decides whether a row belongs to the unit; None for the whole table.
+    column: str | None = None
+    day: date | None = None
+    keys: frozenset[int] = frozenset()
+
+    @classmethod
+    def for_date(cls, column: str, day: date) -> Scope:
+        """The rows of one date of a date column, for example one snapshot date."""
+        return cls(KIND_DAY, column, day=day)
+
+    @classmethod
+    def for_keys(cls, column: str, keys: Collection[int]) -> Scope:
+        """The rows of a set of key values, for example the facts of the refreshed companies.
+
+        The set holds 1 to 200 values. A job with more values replaces the whole table.
+        """
+        values = frozenset(keys)
+        if not 1 <= len(values) <= MAX_SCOPE_KEYS:
+            raise ValueError(
+                f"a unit of keys holds 1 to {MAX_SCOPE_KEYS} values of {column}, "
+                f"got {len(values)}: use the whole table as the unit"
+            )
+        return cls(KIND_KEYS, column, keys=values)
+
+    @classmethod
+    def for_table(cls) -> Scope:
+        """Every row of the table."""
+        return cls(KIND_TABLE)
+
+    @property
+    def label(self) -> str:
+        if self.kind == KIND_DAY and self.day is not None:
+            return self.day.isoformat()
+        if self.kind == KIND_KEYS:
+            # The same set of keys gives the same label; the values stand in the detail of
+            # the partition version.
+            text = ",".join(str(key) for key in sorted(self.keys))
+            digest = hashlib.sha256(text.encode("ascii")).hexdigest()[:8]
+            return f"{self.column}:{len(self.keys)}:{digest}"
+        return KIND_TABLE
+
+    @property
+    def row_filter(self) -> BooleanExpression:
+        if self.kind == KIND_DAY and self.column is not None and self.day is not None:
+            return _equals(self.column, self.day.isoformat())
+        if self.kind == KIND_KEYS and self.column is not None:
+            # In() returns EqualTo for one value, which lets PyIceberg drop whole files.
+            values = {literal(key) for key in self.keys}
+            return In(term=Reference(self.column), literals=values)
+        return AlwaysTrue()
+
+    def check(self, data: pa.Table) -> None:
+        """Raise unless every row of ``data`` belongs to this unit."""
+        if data.num_rows == 0 or self.column is None:
+            return
+        found = set(pc.unique(data[self.column]).to_pylist())
+        allowed: Collection[object] = {self.day} if self.kind == KIND_DAY else self.keys
+        outside = [value for value in found if value not in allowed]
+        if outside:
+            foreign = [str(value) for value in sorted(v for v in outside if v is not None)]
+            if None in outside:
+                foreign.append("NULL")
+            shown = ", ".join(foreign[:5]) + (" ..." if len(foreign) > 5 else "")
+            raise UnitMismatchError(f"unit {self.label} was given rows of {self.column} {shown}")
+
+
+@dataclass(frozen=True)
 class CommitResult:
     """What one commit did to a table."""
 
@@ -111,6 +230,21 @@ def overwrite_unit(
     table: Table,
     data: pa.Table,
     unit: Unit,
+    *,
+    audit: Audit | None = None,
+    run_id: str | None = None,
+    pipeline_version: str | None = None,
+) -> CommitResult:
+    """Replace one GDELT unit with ``data``: ``overwrite_scope`` for a slot-hour or a slot-date."""
+    return overwrite_scope(
+        table, data, unit, audit=audit, run_id=run_id, pipeline_version=pipeline_version
+    )
+
+
+def overwrite_scope(
+    table: Table,
+    data: pa.Table,
+    unit: UnitOfWork,
     *,
     audit: Audit | None = None,
     run_id: str | None = None,
@@ -259,7 +393,7 @@ def overwrite_day_streaming(
     return day.commit(run_id=run_id, pipeline_version=pipeline_version)
 
 
-def unit_rows(table: Table, unit: Unit) -> int:
+def unit_rows(table: Table, unit: UnitOfWork) -> int:
     """The rows which the table holds for a unit now."""
     if table.current_snapshot() is None:
         return 0
@@ -304,7 +438,7 @@ def _equals(column: str, value: str | int) -> BooleanExpression:
 
 
 def _properties(
-    commit_id: str, unit: Unit, run_id: str | None, pipeline_version: str | None
+    commit_id: str, unit: UnitOfWork, run_id: str | None, pipeline_version: str | None
 ) -> dict[str, str]:
     properties = {COMMIT_ID_PROPERTY: commit_id, UNIT_PROPERTY: unit.label}
     if run_id:
@@ -315,14 +449,14 @@ def _properties(
 
 
 def _commit_properties(
-    unit: Unit, run_id: str | None, pipeline_version: str | None
+    unit: UnitOfWork, run_id: str | None, pipeline_version: str | None
 ) -> tuple[str, dict[str, str]]:
     commit_id = uuid.uuid4().hex
     return commit_id, _properties(commit_id, unit, run_id, pipeline_version)
 
 
 def _result(
-    table: Table, unit: Unit, commit_id: str, previous_snapshot_id: int | None, rows: int
+    table: Table, unit: UnitOfWork, commit_id: str, previous_snapshot_id: int | None, rows: int
 ) -> CommitResult:
     created = sorted(
         (
