@@ -60,7 +60,7 @@ case "${1:-}" in
     fi
     aws ssm describe-instance-information --filters "Key=InstanceIds,Values=$id" --output table \
       --query 'InstanceInformationList[0].{Agent:PingStatus,LastPing:LastPingDateTime,AgentVersion:AgentVersion}'
-    on_host "$id" '["echo deployed: $(cat /opt/gbmi/DEPLOYED 2>/dev/null || echo none)","docker ps --format \"{{.Names}} {{.Status}}\" | sort","uptime","df -h / | tail -1","free -m | sed -n 2p"]'
+    on_host "$id" '["echo deployed: $(cat /opt/gbmi/DEPLOYED 2>/dev/null || echo none)","echo previous: $(cat /opt/gbmi/PREVIOUS 2>/dev/null || echo none)","docker ps --format \"{{.Names}} {{.Status}}\" | sort","uptime","df -h / | tail -1","free -m | sed -n 2p"]'
     ;;
   shell)
     aws ssm start-session --target "$(instance)"

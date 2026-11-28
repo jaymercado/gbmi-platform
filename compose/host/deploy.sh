@@ -12,7 +12,8 @@
 #   2. pull the images of the release
 #   3. start the stack: the one-shot services run the migrations and the initialisation
 #   4. the smoke test of the host, which lands and builds one live hour with the tracer DAG
-#   5. only after a passed smoke test: write DEPLOYED, which the start at boot reads
+#   5. only after a passed smoke test: write DEPLOYED, which the start at boot reads, and
+#      PREVIOUS, which names the release before for a way back
 #
 # A deployment which fails leaves DEPLOYED as it was: the next start at boot brings the
 # release before back. The runbook docs/runbooks/deploy-and-roll-back.md has the steps to
@@ -27,9 +28,9 @@ commit="${1:-}"
 require_commit "$commit"
 release="$(release_dir "$commit")"
 # The release which runs until now stays on the disk for a way back.
-previous=""
+running=""
 if [ -s "$GBMI_HOME/DEPLOYED" ]; then
-  previous="$(tr -d '[:space:]' < "$GBMI_HOME/DEPLOYED")"
+  running="$(tr -d '[:space:]' < "$GBMI_HOME/DEPLOYED")"
 fi
 [ "$here" = "$release/compose/host" ] || die "deploy.sh has to run from the release folder of its commit"
 
@@ -46,11 +47,21 @@ say "4/5 smoke test"
 (cd "$release" && GBMI_SMOKE_MODE=host GBMI_RELEASE="$commit" bash compose/smoke.sh)
 
 say "5/5 record the deployed release"
+# PREVIOUS changes only when another release ran until now: a second deployment of the commit
+# which already runs keeps the way back to the release before it.
+if [ -n "$running" ] && [ "$running" != "$commit" ]; then
+  printf '%s\n' "$running" > "$GBMI_HOME/PREVIOUS.new"
+  mv "$GBMI_HOME/PREVIOUS.new" "$GBMI_HOME/PREVIOUS"
+fi
 printf '%s\n' "$commit" > "$GBMI_HOME/DEPLOYED.new"
 mv "$GBMI_HOME/DEPLOYED.new" "$GBMI_HOME/DEPLOYED"
 
 # Two releases stay on the disk: the new one and the one before. Older folders and the
 # images which no container uses are removed.
+previous=""
+if [ -s "$GBMI_HOME/PREVIOUS" ]; then
+  previous="$(tr -d '[:space:]' < "$GBMI_HOME/PREVIOUS")"
+fi
 for folder in "$GBMI_HOME"/releases/*/; do
   name="$(basename "$folder")"
   if [ "$name" != "$commit" ] && [ "$name" != "$previous" ]; then

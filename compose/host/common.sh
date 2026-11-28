@@ -7,6 +7,8 @@
 #                                   PostgreSQL and ClickHouse
 #   $GBMI_HOME/DEPLOYED             the commit which the host runs: written only after a passed
 #                                   smoke test, and read by the unit which starts the stack at boot
+#   $GBMI_HOME/PREVIOUS             the commit which the host ran before the deployed one: its
+#                                   release folder stays on the disk for a way back
 #   $GBMI_ENV_FILE                  the environment file of Compose, from Parameter Store
 #
 # No script of the host prints a value of the environment file, and none runs with command

@@ -4,12 +4,13 @@
 |---|---|
 | **Applies to** | The AWS host of phase P2: one EC2 instance which runs the Compose stack (blueprint §9.2 and §9.7; week 3 plan §3.3) |
 | **Written** | 2026-11-28, phase P2, work package WP-12, **before the first deployment** |
-| **Proved by** | So far: `tests/unit/test_host_scripts.py` (the host scripts with stand-in commands for `aws` and `docker`), `tests/unit/test_compose_prod.py` and `tests/unit/test_host_secrets.py`. The first deployment (WP-12) repeats every step on the host; the runbook is corrected then |
+| **Proved by** | So far: `tests/unit/test_host_scripts.py` (the host scripts with stand-in commands for `aws` and `docker`), `tests/unit/test_compose_prod.py`, `tests/unit/test_host_secrets.py` and `make host-rehearsal` (the user data, three deployments, each refusal and the start at boot in a container of Amazon Linux 2023). The first deployment (WP-12) repeats every step on the host; the runbook is corrected then |
 
 The words of the runbook:
 
 - A **release** is the content of one commit of `main` on the host: the folder `/opt/gbmi/releases/<commit>/` and the image `ghcr.io/<owner>/gbmi-airflow:<commit>`.
 - **`/opt/gbmi/DEPLOYED`** is one file with the commit which the host runs. The host starts the release of the file at every boot. A deployment writes the file only after its smoke test has passed.
+- **`/opt/gbmi/PREVIOUS`** is one file with the commit which the host ran before the deployed one. The release folder of that commit stays on the disk. A second deployment of the commit which already runs leaves the file as it is. The first deployment of a host writes no such file.
 - The **environment file** `/etc/gbmi/env` holds the secrets and the values of the host for Compose. The host writes the file from Parameter Store at every start and at every deployment. Only root can read the file.
 - The **smoke test** is `compose/smoke.sh` in the mode `host`: twenty checks, the last of which lands and builds one live hour of GDELT with the tracer DAG.
 
@@ -61,7 +62,7 @@ The workflow sends the command document `gbmi-prod-deploy` with one parameter, t
 3. Compose pulls the images of the release.
 4. Compose starts the stack. The one-shot services apply the migrations of the operational database, create the roles and users, and prepare Airflow.
 5. The smoke test runs.
-6. Only after a passed smoke test: `DEPLOYED` is written. The release before stays on the disk; older releases and unused images are removed.
+6. Only after a passed smoke test: `DEPLOYED` is written, and `PREVIOUS` names the release which ran until then. The release before stays on the disk; older releases and unused images are removed.
 
 ## Check after a deployment
 
@@ -73,7 +74,7 @@ make host-status
 make host-forward
 ```
 
-The line `deployed:` of `make host-status` shows the commit. Every service of the list is "Up" and "healthy".
+The line `deployed:` of `make host-status` shows the commit, and the line `previous:` shows the commit of the release before. Every service of the list is "Up" and "healthy".
 
 ## A deployment failed
 
@@ -96,7 +97,7 @@ A failed deployment may leave the new release running without a passed smoke tes
 
 ## Go back to the release before
 
-**The normal way** is a deployment of the earlier commit, with the approval of Jay:
+**The normal way** is a deployment of the earlier commit, with the approval of Jay. The line `previous:` of `make host-status` shows the commit of the release before:
 
 ```bash
 gh workflow run deploy.yml --ref main -f commit=<the 40 characters of the earlier commit>

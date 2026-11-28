@@ -285,9 +285,17 @@ def test_compose_reads_the_rendered_file_and_receives_each_value(
     assert services["airflow-scheduler"]["image"].endswith(f":{COMMIT}")
 
 
+def marker(host: Host, name: str) -> str | None:
+    path = host.home / name
+    return path.read_text(encoding="utf-8").strip() if path.exists() else None
+
+
 def deployed(host: Host) -> str | None:
-    marker = host.home / "DEPLOYED"
-    return marker.read_text(encoding="utf-8").strip() if marker.exists() else None
+    return marker(host, "DEPLOYED")
+
+
+def releases(host: Host) -> list[str]:
+    return sorted(path.name for path in (host.home / "releases").iterdir())
 
 
 def test_a_deployment_records_the_release_only_after_a_passed_smoke_test(host: Host) -> None:
@@ -318,10 +326,42 @@ def test_a_deployment_records_the_release_only_after_a_passed_smoke_test(host: H
         f"smoke mode=host release={COMMIT} cwd={release}",
         "docker image prune --all --force",
     ]
-    # The release before stays for a way back; an older one is removed.
-    assert sorted(path.name for path in (host.home / "releases").iterdir()) == sorted(
-        [COMMIT, PREVIOUS]
-    )
+    # The release before stays for a way back, and PREVIOUS names it; an older one is removed.
+    assert marker(host, "PREVIOUS") == PREVIOUS
+    assert releases(host) == sorted([COMMIT, PREVIOUS])
+
+
+def test_a_second_deployment_of_the_running_commit_keeps_the_way_back(host: Host) -> None:
+    # Found by the rehearsal of week 3: the clean-up kept the new release and the release
+    # which ran until now. For the commit which already runs, both are the same folder, and
+    # the release before was removed.
+    host.release(PREVIOUS)
+    (host.home / "DEPLOYED").write_text(PREVIOUS + "\n", encoding="utf-8")
+    assert host.run(host.script("deploy.sh"), COMMIT).returncode == 0
+
+    again = host.run(host.script("deploy.sh"), COMMIT)
+
+    assert again.returncode == 0, again.stdout + again.stderr
+    assert deployed(host) == COMMIT
+    assert marker(host, "PREVIOUS") == PREVIOUS
+    assert releases(host) == sorted([COMMIT, PREVIOUS])
+
+    # Going back is a deployment like any other: the two files change places.
+    back = host.run(host.script("deploy.sh", PREVIOUS), PREVIOUS)
+
+    assert back.returncode == 0, back.stdout + back.stderr
+    assert deployed(host) == PREVIOUS
+    assert marker(host, "PREVIOUS") == COMMIT
+    assert releases(host) == sorted([COMMIT, PREVIOUS])
+
+
+def test_the_first_deployment_of_a_host_names_no_release_before(host: Host) -> None:
+    result = host.run(host.script("deploy.sh"), COMMIT)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert deployed(host) == COMMIT
+    assert marker(host, "PREVIOUS") is None
+    assert releases(host) == [COMMIT]
 
 
 @pytest.mark.parametrize("failing", [{"STUB_SMOKE_EXIT": "1"}, {"STUB_UP_EXIT": "1"}])
@@ -336,11 +376,10 @@ def test_a_failed_deployment_leaves_the_release_before_as_the_deployed_one(
     assert result.returncode != 0
     no_value_in(result)
     assert deployed(host) == PREVIOUS
+    assert marker(host, "PREVIOUS") is None
     assert "DEPLOYED" not in result.stdout
     # Nothing was cleaned up: both release folders are still there.
-    assert sorted(path.name for path in (host.home / "releases").iterdir()) == sorted(
-        [COMMIT, PREVIOUS]
-    )
+    assert releases(host) == sorted([COMMIT, PREVIOUS])
 
 
 def test_deploy_runs_only_from_the_release_folder_of_its_commit(host: Host) -> None:
