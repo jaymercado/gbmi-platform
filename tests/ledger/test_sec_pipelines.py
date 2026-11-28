@@ -292,7 +292,7 @@ def test_the_rows_of_the_five_tables(sec_stack: str) -> None:
         (THOMSON_REUTERS, "THOMSON CORP /CAN/"),
         (META, "Facebook Inc"),
     ]
-    # The name change of exit-gate row 2, as days in New York.
+    # The name change of exit-gate row 2, with the dates of the SEC.
     facebook = former[META, "Facebook Inc"]
     assert (facebook["valid_from"], facebook["valid_to"]) == (date(2005, 5, 6), date(2021, 10, 27))
 

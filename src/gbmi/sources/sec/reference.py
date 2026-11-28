@@ -270,7 +270,7 @@ def run_reference(run: SecRun, *, watchlist: Sequence[int], bulk: bool = False) 
                     "names": former.names,
                     "duplicate_rows": former.duplicate_rows,
                     "without_start": former.without_start,
-                    "not_midnight": former.not_midnight,
+                    "odd_times": former.odd_times,
                 },
             )
         )
@@ -278,7 +278,7 @@ def run_reference(run: SecRun, *, watchlist: Sequence[int], bulk: bool = False) 
             "companies": len(refreshed),
             "names": former.names,
             "without_start": former.without_start,
-            "not_midnight": former.not_midnight,
+            "odd_times": former.odd_times,
             **table_summary(former_data, former_result, former_unit),
         }
 

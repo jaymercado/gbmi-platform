@@ -12,10 +12,9 @@ import decimal
 import hashlib
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date, datetime, time
+from datetime import UTC, date, datetime, time
 from decimal import Decimal
 from typing import Any
-from zoneinfo import ZoneInfo
 
 import pyarrow as pa
 
@@ -31,8 +30,12 @@ from gbmi.quality.quarantine import QUARANTINE_SCHEMA
 from gbmi.sources.sec.index import ParsedIndex
 from gbmi.sources.sec.models import CompanyFacts, Submissions, TickerFile
 
-#: The times of a former name are midnight in New York (week 3 plan, finding F3).
-NEW_YORK = ZoneInfo("America/New_York")
+#: The SEC writes the two times of a former name as midnight UTC or as midnight in New York,
+#: which is 04:00 or 05:00 UTC. Each of the three times lies on the day which the SEC means,
+#: so the day of a name is the UTC date of its time. The live load of 2026-11-28 found 7,938
+#: times at 00:00, 3,051 at 04:00 and 1,993 at 05:00 UTC, and no other time; the week 3 plan
+#: (finding F3) knew the last two only.
+NAME_TIMES = frozenset({time(0, 0), time(4, 0), time(5, 0)})
 #: A company whose submissions document is older counts as stale (week 3 plan 3.3).
 STALE_AFTER_DAYS = 8
 #: The value of a fact has six decimal places and at most 32 digits before the point.
@@ -41,7 +44,6 @@ _WHOLE_DIGITS = 32
 _VALUE_LIMIT = Decimal(10) ** _WHOLE_DIGITS
 _WIDE = decimal.Context(prec=80, rounding=decimal.ROUND_HALF_EVEN)
 _NULL, _SEPARATOR = "\x00", "\x1f"
-_MIDNIGHT = time(0, 0)
 
 
 class RowsError(ValueError):
@@ -383,9 +385,9 @@ class FormerNamesBuild:
     duplicate_rows: int
     #: Names without a first day: the key of the table needs the day.
     without_start: int
-    #: Times of the SEC which are not midnight in New York: the day of such a time is the
-    #: day in New York at the time, which can be the day before the day the SEC meant.
-    not_midnight: int = 0
+    #: Times of the SEC which are neither midnight UTC nor midnight in New York. The day of
+    #: such a time is its UTC date, which is then a guess.
+    odd_times: int = 0
 
 
 class FormerNames:
@@ -400,20 +402,20 @@ class FormerNames:
         self._sources: list[SourceFile] = []
         self.names = 0
         self.without_start = 0
-        self.not_midnight = 0
+        self.odd_times = 0
 
     def add(self, document: Submissions, source: SourceFile) -> None:
-        """The former names of one document, with the two times of the SEC as days in New York."""
+        """The former names of one document, with the UTC dates of the two times of the SEC."""
         seen: set[tuple[str, date]] = set()
         for former in document.former_names:
             self.names += 1
             if former.since is None:
                 self.without_start += 1
                 continue
-            since = former.since.astimezone(NEW_YORK)
-            until = former.until.astimezone(NEW_YORK) if former.until else None
-            self.not_midnight += since.time() != _MIDNIGHT
-            self.not_midnight += until is not None and until.time() != _MIDNIGHT
+            since = former.since.astimezone(UTC)
+            until = former.until.astimezone(UTC) if former.until else None
+            self.odd_times += since.time() not in NAME_TIMES
+            self.odd_times += until is not None and until.time() not in NAME_TIMES
             start, end = since.date(), until.date() if until else None
             if (former.name, start) in seen:
                 continue
@@ -438,7 +440,7 @@ class FormerNames:
             names=self.names,
             duplicate_rows=self.names - self.without_start - len(rows),
             without_start=self.without_start,
-            not_midnight=self.not_midnight,
+            odd_times=self.odd_times,
         )
 
 
