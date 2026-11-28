@@ -633,16 +633,18 @@ def sec_objects_requeue(
     last: ToDay,
     note: Note,
     dataset: Annotated[
-        str | None,
-        typer.Option(help="reference, submissions, index, companyfacts or bulk (default: all)."),
-    ] = None,
+        str,
+        typer.Option(help="One of reference, submissions, index, companyfacts and bulk."),
+    ],
     decided_by: DecidedBy = "operator",
     as_of: AsOf = None,
 ) -> None:
-    """Send the quarantined objects of the range back to the pipelines.
+    """Send the quarantined objects of one dataset and a range of days back to the pipelines.
 
-    The bytes of a requeued object stay in bronze: the next run reads the bytes again and
-    sends no request for the object.
+    An object which gate G2 or G3 refused has its bytes in bronze: the next run reads the
+    bytes again and sends no request. An object which gate G1 refused has no bytes in bronze:
+    the next run asks the SEC again, up to three times. The result lists such objects under
+    asked_again. For the dataset bulk, one object is one request for the archive of 1.6 GB.
     """
     from gbmi.core.clock import parse_day, resolve_as_of
     from gbmi.ledger.db import LedgerConfigurationError
@@ -655,7 +657,7 @@ def sec_objects_requeue(
         with open_object_ledger() as ledger:
             quarantined = ledger.select(
                 states={ObjectState.QUARANTINED},
-                dataset=Dataset(dataset) if dataset else None,
+                dataset=Dataset(dataset),
                 first=parse_day(first),
                 last=parse_day(last),
             )
@@ -667,7 +669,13 @@ def sec_objects_requeue(
             )
     except (LedgerConfigurationError, ValueError) as error:
         raise _fail("sec objects requeue", error) from error
-    _print({"requeued": sorted(key.label for key in moved)})
+    without_bytes = [item.key for item in quarantined if item.bronze_uri is None]
+    _print(
+        {
+            "requeued": sorted(key.label for key in moved),
+            "asked_again": sorted(key.label for key in without_bytes if key in moved),
+        }
+    )
 
 
 @sec_requests_app.command("max-burst")

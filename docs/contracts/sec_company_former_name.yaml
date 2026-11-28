@@ -21,11 +21,11 @@ columns:
   - name: valid_from
     type: date
     required: true
-    meaning: "First day of the name: the field \"from\" of the SEC, as a date in the time zone America/New_York."
+    meaning: "First day of the name: the UTC date of the field \"from\" of the SEC. The SEC writes the time as midnight UTC or as midnight in New York (04:00 or 05:00 UTC); both lie on the same UTC date."
   - name: valid_to
     type: date
     required: false
-    meaning: "Last day of the name: the field \"to\" of the SEC, as a date in the time zone America/New_York. NULL when the SEC gives none."
+    meaning: "Last day of the name: the UTC date of the field \"to\" of the SEC, read as valid_from is read. NULL when the SEC gives none."
   - name: _source_file
     type: string
     required: false

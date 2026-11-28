@@ -1,0 +1,242 @@
+{
+  "snapshot_date": "2026-11-28",
+  "universe": 7988,
+  "rows_with_a_cik": 26,
+  "in_universe": 26,
+  "rows": [
+    {
+      "org_string": "Instagram",
+      "label": "company_in_universe",
+      "cik": 1326801,
+      "in_universe": true,
+      "sec_name": "Meta Platforms, Inc.",
+      "primary_ticker": "META",
+      "primary_exchange": "Nasdaq"
+    },
+    {
+      "org_string": "Reuters",
+      "label": "company_in_universe",
+      "cik": 1075124,
+      "in_universe": true,
+      "sec_name": "THOMSON REUTERS CORP /CAN/",
+      "primary_ticker": "TRI",
+      "primary_exchange": "Nasdaq"
+    },
+    {
+      "org_string": "Nvidia",
+      "label": "company_in_universe",
+      "cik": 1045810,
+      "in_universe": true,
+      "sec_name": "NVIDIA CORP",
+      "primary_ticker": "NVDA",
+      "primary_exchange": "Nasdaq"
+    },
+    {
+      "org_string": "Google",
+      "label": "company_in_universe",
+      "cik": 1652044,
+      "in_universe": true,
+      "sec_name": "Alphabet Inc.",
+      "primary_ticker": "GOOGL",
+      "primary_exchange": "Nasdaq"
+    },
+    {
+      "org_string": "Facebook",
+      "label": "company_in_universe",
+      "cik": 1326801,
+      "in_universe": true,
+      "sec_name": "Meta Platforms, Inc.",
+      "primary_ticker": "META",
+      "primary_exchange": "Nasdaq"
+    },
+    {
+      "org_string": "Youtube",
+      "label": "company_in_universe",
+      "cik": 1652044,
+      "in_universe": true,
+      "sec_name": "Alphabet Inc.",
+      "primary_ticker": "GOOGL",
+      "primary_exchange": "Nasdaq"
+    },
+    {
+      "org_string": "Espn",
+      "label": "company_in_universe",
+      "cik": 1744489,
+      "in_universe": true,
+      "sec_name": "Walt Disney Co",
+      "primary_ticker": "DIS",
+      "primary_exchange": "NYSE"
+    },
+    {
+      "org_string": "Amazon Autos International",
+      "label": "company_in_universe",
+      "cik": 1018724,
+      "in_universe": true,
+      "sec_name": "AMAZON COM INC",
+      "primary_ticker": "AMZN",
+      "primary_exchange": "Nasdaq"
+    },
+    {
+      "org_string": "Easyjet",
+      "label": "company_in_universe",
+      "cik": 1470419,
+      "in_universe": true,
+      "sec_name": "easyJet plc",
+      "primary_ticker": "ESYJY",
+      "primary_exchange": "OTC"
+    },
+    {
+      "org_string": "Nasdaq",
+      "label": "company_in_universe",
+      "cik": 1120193,
+      "in_universe": true,
+      "sec_name": "NASDAQ, INC.",
+      "primary_ticker": "NDAQ",
+      "primary_exchange": "Nasdaq"
+    },
+    {
+      "org_string": "Disney",
+      "label": "company_in_universe",
+      "cik": 1744489,
+      "in_universe": true,
+      "sec_name": "Walt Disney Co",
+      "primary_ticker": "DIS",
+      "primary_exchange": "NYSE"
+    },
+    {
+      "org_string": "Mattel",
+      "label": "company_in_universe",
+      "cik": 63276,
+      "in_universe": true,
+      "sec_name": "MATTEL INC /DE/",
+      "primary_ticker": "MAT",
+      "primary_exchange": "Nasdaq"
+    },
+    {
+      "org_string": "Netflix",
+      "label": "company_in_universe",
+      "cik": 1065280,
+      "in_universe": true,
+      "sec_name": "NETFLIX INC",
+      "primary_ticker": "NFLX",
+      "primary_exchange": "Nasdaq"
+    },
+    {
+      "org_string": "New York Times",
+      "label": "company_in_universe",
+      "cik": 71691,
+      "in_universe": true,
+      "sec_name": "NEW YORK TIMES CO",
+      "primary_ticker": "NYT",
+      "primary_exchange": "NYSE"
+    },
+    {
+      "org_string": "Linkedin",
+      "label": "company_in_universe",
+      "cik": 789019,
+      "in_universe": true,
+      "sec_name": "MICROSOFT CORP",
+      "primary_ticker": "MSFT",
+      "primary_exchange": "Nasdaq"
+    },
+    {
+      "org_string": "Walmart",
+      "label": "company_in_universe",
+      "cik": 104169,
+      "in_universe": true,
+      "sec_name": "Walmart Inc.",
+      "primary_ticker": "WMT",
+      "primary_exchange": "Nasdaq"
+    },
+    {
+      "org_string": "Microsoft",
+      "label": "company_in_universe",
+      "cik": 789019,
+      "in_universe": true,
+      "sec_name": "MICROSOFT CORP",
+      "primary_ticker": "MSFT",
+      "primary_exchange": "Nasdaq"
+    },
+    {
+      "org_string": "Chevron",
+      "label": "company_in_universe",
+      "cik": 93410,
+      "in_universe": true,
+      "sec_name": "CHEVRON CORP",
+      "primary_ticker": "CVX",
+      "primary_exchange": "NYSE"
+    },
+    {
+      "org_string": "Cessna",
+      "label": "company_in_universe",
+      "cik": 217346,
+      "in_universe": true,
+      "sec_name": "TEXTRON INC",
+      "primary_ticker": "TXT",
+      "primary_exchange": "NYSE"
+    },
+    {
+      "org_string": "Twitter",
+      "label": "company_in_universe",
+      "cik": 1181412,
+      "in_universe": true,
+      "sec_name": "SPACE EXPLORATION TECHNOLOGIES CORP",
+      "primary_ticker": "SPCX",
+      "primary_exchange": "Nasdaq"
+    },
+    {
+      "org_string": "Cnn",
+      "label": "company_in_universe",
+      "cik": 2041610,
+      "in_universe": true,
+      "sec_name": "Skydance Corp",
+      "primary_ticker": "SKYD",
+      "primary_exchange": "NYSE"
+    },
+    {
+      "org_string": "Hasbro",
+      "label": "company_in_universe",
+      "cik": 46080,
+      "in_universe": true,
+      "sec_name": "HASBRO, INC.",
+      "primary_ticker": "HAS",
+      "primary_exchange": "Nasdaq"
+    },
+    {
+      "org_string": "Eastern Daily",
+      "label": "company_in_universe",
+      "cik": 1579684,
+      "in_universe": true,
+      "sec_name": "USA TODAY Co., Inc.",
+      "primary_ticker": "TDAY",
+      "primary_exchange": "NYSE"
+    },
+    {
+      "org_string": "shell",
+      "label": "ambiguous",
+      "cik": 1306965,
+      "in_universe": true,
+      "sec_name": "Shell plc",
+      "primary_ticker": "SHEL",
+      "primary_exchange": "NYSE"
+    },
+    {
+      "org_string": "Sony",
+      "label": "company_in_universe",
+      "cik": 313838,
+      "in_universe": true,
+      "sec_name": "Sony Group Corp",
+      "primary_ticker": "SONY",
+      "primary_exchange": "NYSE"
+    },
+    {
+      "org_string": "Eurowings",
+      "label": "company_in_universe",
+      "cik": 1049724,
+      "in_universe": true,
+      "sec_name": "DEUTSCHE LUFTHANSA A G /FI",
+      "primary_ticker": "DLAKY",
+      "primary_exchange": "OTC"
+    }
+  ]
+}

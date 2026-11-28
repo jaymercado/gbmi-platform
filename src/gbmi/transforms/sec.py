@@ -12,10 +12,9 @@ import decimal
 import hashlib
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime, time
 from decimal import Decimal
 from typing import Any
-from zoneinfo import ZoneInfo
 
 import pyarrow as pa
 
@@ -31,13 +30,18 @@ from gbmi.quality.quarantine import QUARANTINE_SCHEMA
 from gbmi.sources.sec.index import ParsedIndex
 from gbmi.sources.sec.models import CompanyFacts, Submissions, TickerFile
 
-#: The times of a former name are midnight in New York (week 3 plan, finding F3).
-NEW_YORK = ZoneInfo("America/New_York")
+#: The SEC writes the two times of a former name as midnight UTC or as midnight in New York,
+#: which is 04:00 or 05:00 UTC. Each of the three times lies on the day which the SEC means,
+#: so the day of a name is the UTC date of its time. The live load of 2026-11-28 found 7,938
+#: times at 00:00, 3,051 at 04:00 and 1,993 at 05:00 UTC, and no other time; the week 3 plan
+#: (finding F3) knew the last two only.
+NAME_TIMES = frozenset({time(0, 0), time(4, 0), time(5, 0)})
 #: A company whose submissions document is older counts as stale (week 3 plan 3.3).
 STALE_AFTER_DAYS = 8
 #: The value of a fact has six decimal places and at most 32 digits before the point.
 _SIX_PLACES = Decimal("0.000001")
-_VALUE_LIMIT = Decimal(10) ** 32
+_WHOLE_DIGITS = 32
+_VALUE_LIMIT = Decimal(10) ** _WHOLE_DIGITS
 _WIDE = decimal.Context(prec=80, rounding=decimal.ROUND_HALF_EVEN)
 _NULL, _SEPARATOR = "\x00", "\x1f"
 
@@ -381,6 +385,9 @@ class FormerNamesBuild:
     duplicate_rows: int
     #: Names without a first day: the key of the table needs the day.
     without_start: int
+    #: Times of the SEC which are neither midnight UTC nor midnight in New York. The day of
+    #: such a time is its UTC date, which is then a guess.
+    odd_times: int = 0
 
 
 class FormerNames:
@@ -395,17 +402,21 @@ class FormerNames:
         self._sources: list[SourceFile] = []
         self.names = 0
         self.without_start = 0
+        self.odd_times = 0
 
     def add(self, document: Submissions, source: SourceFile) -> None:
-        """The former names of one document, with the two times of the SEC as days in New York."""
+        """The former names of one document, with the UTC dates of the two times of the SEC."""
         seen: set[tuple[str, date]] = set()
         for former in document.former_names:
             self.names += 1
             if former.since is None:
                 self.without_start += 1
                 continue
-            start = former.since.astimezone(NEW_YORK).date()
-            end = former.until.astimezone(NEW_YORK).date() if former.until else None
+            since = former.since.astimezone(UTC)
+            until = former.until.astimezone(UTC) if former.until else None
+            self.odd_times += since.time() not in NAME_TIMES
+            self.odd_times += until is not None and until.time() not in NAME_TIMES
+            start, end = since.date(), until.date() if until else None
             if (former.name, start) in seen:
                 continue
             seen.add((former.name, start))
@@ -429,6 +440,7 @@ class FormerNames:
             names=self.names,
             duplicate_rows=self.names - self.without_start - len(rows),
             without_start=self.without_start,
+            odd_times=self.odd_times,
         )
 
 
@@ -465,11 +477,25 @@ class FactsBuild:
 
 def fact_value(value: Decimal) -> Decimal:
     """The value with six decimal places. Raises RowsError when the value does not fit."""
-    rounded = _WIDE.quantize(value, _SIX_PLACES)
+    too_large = RowsError("a value has more than 32 digits before the decimal point")
+    if not value.is_finite() or value.adjusted() >= _WHOLE_DIGITS:
+        raise too_large
+    try:
+        rounded = _WIDE.quantize(value, _SIX_PLACES)
+    except decimal.InvalidOperation:
+        raise too_large from None
     # copy_abs does not round; abs() would round to the 28 digits of the default context.
     if rounded.copy_abs() >= _VALUE_LIMIT:
-        raise RowsError("a value has more than 32 digits before the decimal point")
+        raise too_large
     return rounded
+
+
+def plain_text(value: Decimal) -> str:
+    """The number with every digit of the document, without an exponent.
+
+    ``str`` would write 0.0000004 as 4E-7 (review 2, finding R2-7).
+    """
+    return format(value, "f")
 
 
 def facts(document: CompanyFacts, source: SourceFile, run: RunFacts) -> FactsBuild:
@@ -496,7 +522,7 @@ def facts(document: CompanyFacts, source: SourceFile, run: RunFacts) -> FactsBui
             *key,
             fact.start is None,
             value,
-            str(fact.val),
+            plain_text(fact.val),
             fact.fy,
             fact.fp,
             fact.form,

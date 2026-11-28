@@ -6,6 +6,19 @@ submissions object of the day, writes a manifest and deletes the temporary file.
 not stored in the lake (blueprint 7.1) and is never copied to the quarantine area. A run tries
 the download once. A run without the archive goes on: the companies keep the attributes which
 the platform knows (week 3 plan, WP-06, "When the work fails").
+
+The request is expensive, so the job protects the downloaded file (review 2, finding R2-1):
+
+* a member which cannot be stored, for any reason, counts as refused and does not stop the
+  copy of the other members;
+* the download and the use of the archive are recorded in one transaction;
+* after three failed tries of one day the archive of the day is quarantined, and no run of
+  the day asks again;
+* no download from the live source starts between 04:30 and 05:30 UTC, when the SEC builds
+  the archive (week 3 plan, finding F12 and change C19).
+
+A process which is killed during the copy loses the temporary file: the next run of the day
+asks for the archive again.
 """
 
 from __future__ import annotations
@@ -16,9 +29,12 @@ import tempfile
 import zipfile
 import zlib
 from collections.abc import Collection
+from datetime import UTC, datetime, time
 from pathlib import Path
 from typing import Any
 
+from gbmi.config import SecSource
+from gbmi.core.clock import utc_now
 from gbmi.ledger.object_states import ObjectState
 from gbmi.ledger.objects import (
     MAX_ATTEMPTS,
@@ -42,12 +58,28 @@ from gbmi.sources.sec.urls import (
 log = get_logger(__name__)
 
 MANIFEST_NAME = "submissions.manifest.json"
+#: The SEC builds the archive in the night: the build of 2026-11-27 ended at 05:06 UTC.
+BUILD_WINDOW = (time(4, 30), time(5, 30))
 _CHUNK = 1 << 20
 _UNREADABLE = (zipfile.BadZipFile, zlib.error, EOFError, NotImplementedError, RuntimeError)
 
 
 def manifest_key(run: SecRun) -> str:
     return f"raw/sec/{Dataset.BULK.value}/dt={run.day.isoformat()}/{MANIFEST_NAME}"
+
+
+def in_build_window(moment: datetime) -> bool:
+    """True from 04:30 to 05:30 UTC, the end not counted."""
+    clock = moment.astimezone(UTC).time()
+    return BUILD_WINDOW[0] <= clock < BUILD_WINDOW[1]
+
+
+def waits_for_the_build(run: SecRun, moment: datetime) -> bool:
+    """True when a download from the live SEC would start while the SEC builds the archive.
+
+    The recorded files have no build: the demo and CI run at any time of the day.
+    """
+    return run.settings.sec_source is SecSource.LIVE and in_build_window(moment)
 
 
 def load_archive(run: SecRun, ciks: Collection[int]) -> dict[str, Any]:
@@ -60,6 +92,9 @@ def load_archive(run: SecRun, ciks: Collection[int]) -> dict[str, Any]:
     summary: dict[str, Any] = {"wanted": len(ciks), "copied": 0, "requested": False}
     if not ciks:
         return {**summary, "state": "not needed"}
+    if waits_for_the_build(run, utc_now()):
+        # No object is created: a later run of the day asks for the archive.
+        return {**summary, "state": "not now", "reason": "the SEC builds the archive at this time"}
     run.ledger.ensure_expected([Expected(key, SUBMISSIONS_ARCHIVE_URL)])
     item = run.ledger.get(key)
     if item is None or item.state is not ObjectState.EXPECTED:
@@ -80,10 +115,11 @@ def load_archive(run: SecRun, ciks: Collection[int]) -> dict[str, Any]:
             )
             return {**summary, "state": ObjectState.NOT_PUBLISHED.value}
         except (SecTransportError, SecResponseError) as error:
-            # One try in a run. The object stays expected, and the next run asks again.
-            run.ledger.record_failed_attempt(key, error=str(error))
-            log.warning("sec_archive_not_loaded", error=str(error))
-            return {**summary, "state": "failed", "error": str(error)}
+            # One try in a run. The next run of the day asks again, three times at most.
+            attempts = run.ledger.record_failed_attempt(key, error=str(error))
+            _give_up(run, key, attempts, f"the download failed: {error}")
+            log.warning("sec_archive_not_loaded", error=str(error), attempts=attempts)
+            return {**summary, "state": "failed", "error": str(error), "attempts": attempts}
         try:
             members, copied, refused = _copy_members(run, path, ciks)
         except _UNREADABLE as error:
@@ -91,15 +127,9 @@ def load_archive(run: SecRun, ciks: Collection[int]) -> dict[str, Any]:
             attempts = run.ledger.record_failed_attempt(
                 key, error=problem, http_status=response.status
             )
-            if attempts >= MAX_ATTEMPTS:
-                run.ledger.quarantine(
-                    key,
-                    from_state=ObjectState.EXPECTED,
-                    reason=f"gate G1 failed {attempts} times: {problem}",
-                    as_of=run.as_of,
-                )
+            _give_up(run, key, attempts, problem)
             log.error("sec_archive_unreadable", error=problem, attempts=attempts)
-            return {**summary, "state": "failed", "error": problem}
+            return {**summary, "state": "failed", "error": problem, "attempts": attempts}
         size = path.stat().st_size
         digest = _file_md5(path)
     missing = len(ciks) - len(copied) - len(refused)
@@ -117,22 +147,24 @@ def load_archive(run: SecRun, ciks: Collection[int]) -> dict[str, Any]:
     }
     content = json.dumps(manifest, indent=2, sort_keys=True).encode("utf-8")
     run.lander.bronze.write(manifest_key(run), content)
-    run.ledger.record_download(
-        key,
-        Download(
-            bronze_uri=run.lander.bronze.uri(manifest_key(run)),
-            byte_count=size,
-            md5=digest,
-            http_status=response.status,
-            last_modified=response.last_modified,
-        ),
-        as_of=run.as_of,
-    )
-    run.ledger.mark_loaded(
-        [ObjectAccounting(key, len(ciks), len(copied), len(ciks) - len(copied))],
-        as_of=run.as_of,
-        reason="the members of the archive were copied to bronze",
-    )
+    # One transaction: an archive which was used up is never left open for another request.
+    with run.ledger.connection.transaction():
+        run.ledger.record_download(
+            key,
+            Download(
+                bronze_uri=run.lander.bronze.uri(manifest_key(run)),
+                byte_count=size,
+                md5=digest,
+                http_status=response.status,
+                last_modified=response.last_modified,
+            ),
+            as_of=run.as_of,
+        )
+        run.ledger.mark_loaded(
+            [ObjectAccounting(key, len(ciks), len(copied), len(ciks) - len(copied))],
+            as_of=run.as_of,
+            reason="the members of the archive were copied to bronze",
+        )
     run.ledger.supersede_older(key, as_of=run.as_of)
     run.lander.counts.bytes += size
     log.info("sec_archive_loaded", bytes=size, members=members, copied=len(copied))
@@ -169,15 +201,31 @@ def _copy_members(
         for expected in wanted:
             name = expected.key.name
             try:
-                content = archive.read(name)
-            except _UNREADABLE:
+                stored = run.lander.store(
+                    expected,
+                    archive.read(name),
+                    check=json_opens,
+                    detail={"archive": SUBMISSIONS_ARCHIVE_NAME},
+                )
+            except Exception as error:
+                # Whatever stops one member, the other members and the record of the archive
+                # go on: the request for 1.6 GB must not be lost to one document.
+                log.warning("sec_archive_member_not_stored", member=name, error=repr(error))
                 refused.append(name)
                 continue
-            stored = run.lander.store(
-                expected, content, check=json_opens, detail={"archive": SUBMISSIONS_ARCHIVE_NAME}
-            )
             (copied if stored is not None else refused).append(name)
     return members, copied, refused
+
+
+def _give_up(run: SecRun, key: ObjectKey, attempts: int, problem: str) -> None:
+    """After three failed tries of one day the archive of the day is quarantined."""
+    if attempts >= MAX_ATTEMPTS:
+        run.ledger.quarantine(
+            key,
+            from_state=ObjectState.EXPECTED,
+            reason=f"{attempts} tries failed; the last one: {problem}",
+            as_of=run.as_of,
+        )
 
 
 def _file_md5(path: Path) -> str:

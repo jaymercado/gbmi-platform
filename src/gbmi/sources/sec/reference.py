@@ -103,10 +103,20 @@ def run_reference(run: SecRun, *, watchlist: Sequence[int], bulk: bool = False) 
             if cik in with_document or cik in watched:
                 continue
             key = ObjectKey(Dataset.SUBMISSIONS, day, cik_file_name(cik))
+            # Not "listed": the ticker file names the company, not its document. A company
+            # which is new today can be without a document, and three such companies in a
+            # row must not open the circuit (review 2, finding R2-12).
             run.lander.land(
-                Expected(key, submissions_url(cik), cik=cik), check=json_opens, listed=True
+                Expected(key, submissions_url(cik), cik=cik), check=json_opens, listed=False
             )
             asked += 1
+    # An operator can have sent quarantined documents of the day back: their bytes are in
+    # bronze, and no request is needed (review 2, finding R2-2).
+    waiting = run.ledger.select(
+        states={ObjectState.EXPECTED}, dataset=Dataset.SUBMISSIONS, first=day, last=day
+    )
+    for returned in waiting:
+        run.lander.recover(returned.key, check=json_opens)
 
     # The attributes: the snapshot before, then every document which is newer.
     known = {cik: previous[cik] for cik in companies if cik in previous}
@@ -260,6 +270,7 @@ def run_reference(run: SecRun, *, watchlist: Sequence[int], bulk: bool = False) 
                     "names": former.names,
                     "duplicate_rows": former.duplicate_rows,
                     "without_start": former.without_start,
+                    "odd_times": former.odd_times,
                 },
             )
         )
@@ -267,6 +278,7 @@ def run_reference(run: SecRun, *, watchlist: Sequence[int], bulk: bool = False) 
             "companies": len(refreshed),
             "names": former.names,
             "without_start": former.without_start,
+            "odd_times": former.odd_times,
             **table_summary(former_data, former_result, former_unit),
         }
 

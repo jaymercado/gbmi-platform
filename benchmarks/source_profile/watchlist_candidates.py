@@ -96,7 +96,12 @@ LEGAL_FORMS = frozenset(
 )
 #: Names which are also common words: the news strings of such a name mean something else
 #: too often. Each entry was read in the result of a dry run; the value says why.
-COMMON_WORDS: dict[str, str] = {}
+COMMON_WORDS: dict[str, str] = {
+    "shell": "the name is a common word; the gold sheet labels the string 'shell' as ambiguous",
+    "visa": "the name is a common word: a visa is also a travel document",
+    "oracle": "the name is a common word",
+    "intel": "the name is a common short form of the word intelligence",
+}
 #: The SEC ends some names with a place between slashes: "MATTEL INC /DE/".
 _PLACE = re.compile(r"\s*[/\\][A-Za-z]{2,4}[/\\]?\s*$")
 _READABLE = (ObjectState.VERIFIED, ObjectState.LOADED)
@@ -225,7 +230,7 @@ def draw() -> dict[str, Any]:
             ciks = by_alias[text]
             entry = {"alias": text, "documents": count, "ciks": ciks}
             if text in COMMON_WORDS:
-                skipped.append({**entry, "why": f"a common word: {COMMON_WORDS[text]}"})
+                skipped.append({**entry, "why": COMMON_WORDS[text]})
             elif len(ciks) > 1:
                 skipped.append({**entry, "why": "several companies share the name"})
             else:
@@ -266,10 +271,14 @@ def main() -> int:
     print(f"{len(result['rows'])} rows; {len(result['skipped'])} candidates were skipped")
     for item in result["skipped"][:40]:
         print("skipped:", json.dumps(item))
-    if args.write:
-        write(result)
-        print(f"wrote {SEED.relative_to(REPO)} and {RESULT.relative_to(REPO)}")
-    return 0 if len(result["rows"]) == SIZE or not args.write else 1
+    if not args.write:
+        return 0
+    if len(result["rows"]) != SIZE:
+        print(f"the list has {len(result['rows'])} rows, not {SIZE}: nothing was written")
+        return 1
+    write(result)
+    print(f"wrote {SEED.relative_to(REPO)} and {RESULT.relative_to(REPO)}")
+    return 0
 
 
 if __name__ == "__main__":

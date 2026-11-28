@@ -12,7 +12,7 @@ The exit gate of the week 3 plan (§2). A row changes from "Open" to "Holds" wit
 
 | # | Criterion | State | Evidence |
 |---|---|---|---|
-| 1 | No second holds more than 8 requests to the SEC: (a) in the tests, (b) in the request log of the AWS host | Open | |
+| 1 | No second holds more than 8 requests to the SEC: (a) in the tests, (b) in the request log of the AWS host | Open | (a) holds: the real-clock tests of the client (WP-03), the integration test of the three task entry points and drill DR5 show at most 8, and the request log of the working stack after the live load of WP-06 holds 99 requests with at most 4 in any second. (b) is open until WP-13 |
 | 2 | The company dimension reproduces the name change from "Facebook Inc" to "Meta Platforms, Inc." from former-name data | Open | |
 | 3 | The dbt unit tests for validity intervals and for as-of logic pass | Open | |
 | 4 | The host is reachable only through Session Manager | Open | |
@@ -25,7 +25,7 @@ The exit gate of the week 3 plan (§2). A row changes from "Open" to "Holds" wit
 | 11 | The first dbt documentation is published | Open | |
 | 12 | The host is measured: memory, the build of one GKG day, CPU credits, commit latency on S3 | Open | |
 | 13 | The Git commit is the pipeline version on the host | Open | |
-| 14 | `make demo` passes on the laptop and in CI with the recorded SEC files; the four workflows of phase P1 are green on `main`; ADR-010, ADR-011 and ADR-015 exist; five contract files; the gold-sheet comparison; the version pins | Open | The version pins: checked on 2026-11-28 (section "Version pins") |
+| 14 | `make demo` passes on the laptop and in CI with the recorded SEC files; the four workflows of phase P1 are green on `main`; ADR-010, ADR-011 and ADR-015 exist; five contract files; the gold-sheet comparison; the version pins | Open | The version pins: checked on 2026-11-28 (section "Version pins"). The five contract files: `docs/contracts/sec_*.yaml` (WP-05). The gold-sheet comparison: 26 of 26 CIKs are in the universe (section "The live load of WP-06") |
 
 ## Work packages
 
@@ -38,7 +38,7 @@ The order follows change C10 of the week 3 plan (§3.5). Every time is UTC. The 
 | 03 | Fair-access client; review 1 | 2026-11-28 03:32 | 2026-11-28 04:36 | [#19](https://github.com/jaymercado/gbmi-platform/pull/19) | Done. Review 1 ran from 03:49 to 04:05 and reported two blocking defects and eleven smaller ones; the repairs took from 04:06 to 04:25, in the same pull request (change C11). Working time about 15 minutes before the review and about 20 minutes for the repairs; the GitHub checks of the repaired pull request took about 10 minutes |
 | 05 | Lake: general units and five SEC tables | 2026-11-28 03:49 | 2026-11-28 04:51 | [#20](https://github.com/jaymercado/gbmi-platform/pull/20) | Done. Written while review 1 read WP-03 (change C10). Working time about 12 minutes for the code and about 5 minutes for the merge of the repairs and the pull request; the GitHub checks took about 11 minutes |
 | 04 | Recorded files and payload models | 2026-11-28 04:03 | 2026-11-28 05:12 | [#21](https://github.com/jaymercado/gbmi-platform/pull/21) | Done. The recorder and the metric seed were drafted from 04:03 to 04:08, during review 1. The work went on at 04:26, and the 18 requests left at 04:37, one minute after the merge of WP-03. Working time about 35 minutes; the GitHub checks took about 12 minutes |
-| 06 | Pipelines PL-3, PL-4 and PL-5; the watchlist; review 2; one live load | 2026-11-28 04:55 | | | The code of the three pipelines, the commands and the tests were written from 04:55 to 05:24 and from 08:36 to 08:50; the session stood still in between. Review 2 reads the open pull request (change C11). The live load follows the repairs of review 2 |
+| 06 | Pipelines PL-3, PL-4 and PL-5; the watchlist; review 2; one live load | 2026-11-28 04:55 | | [#22](https://github.com/jaymercado/gbmi-platform/pull/22) | The code of the three pipelines, the commands and the tests were written from 04:55 to 05:24 and from 08:36 to 08:42; the session stood still in between. Review 2 ran from 08:42 to 09:18 and found no blocking defect, four defects to repair before the merge and ten notes; the repairs took from 09:19 to 09:27, in the same pull request (change C11). The live load ran from 09:28 to 09:36 on the working stack: 81 requests, no block. Working time about 1 hour 25 minutes |
 | 09 | Drill DR5 and one runbook | | | | |
 | 07 | DAGs, DAG tests and the demo | | | | |
 | 08 | dbt models, unit tests and `marts_build` | | | | |
@@ -140,6 +140,124 @@ On 2026-11-28 from 03:49 to 04:05 UTC, one independent review agent (a further i
 
 Not repaired, by decision: the review noted that `make redact-check` searches the working tree and not the Git history, and searches the addresses and not the name. Both follow the plan (§3.3): the name of the owner is public with the repository, and gitleaks covers the history for secrets.
 
+## Review 2: the pipelines, before the live load
+
+One independent review agent with read-only duty read pull request #22 at commit `1a642c5` on 2026-11-28 from 08:42 to 09:18 UTC: the three pipelines, the landing, the row functions, and the models, the index parser, the object ledger and the commit helper below them. The review found **no defect which had to block the live load**, four defects to repair before the merge, and ten notes. Every repair is in pull request #22.
+
+What the review did beside reading: the tests which need no database (520 passed); the parsers and the row functions on the recorded files and on the 18 raw answers; one made-up archive with 1,000,000 members, which opens in 2.7 seconds with about 600 MiB of memory; and one facts load of 1.16 million rows, which needs about 1.0 GiB at its peak and 0.2 seconds for the commit into 50 partitions.
+
+Two points about the review itself. The agent read the git-ignored folder `data/sec-raw/`, which the brief had not named. The agent ran `gh pr view 22` once: a read request to GitHub, which the brief had forbidden. No request went to the SEC, and the agent changed no file of the repository.
+
+| # | Finding | What was done |
+|---|---|---|
+| R2-1 | The archive of 1.58 GB lived in a temporary folder until the ledger knew. A failure while one member was stored lost the file, and the next run of the day asked again. No count limited the tries of one day | Repaired. A member which cannot be stored, for any reason, counts as refused, and the copy goes on. The download and the use of the archive are recorded in one transaction. After three failed tries of one day the archive of the day is quarantined |
+| R2-2 | A quarantined submissions document of a company outside the watchlist was never read again after a requeue, although the bytes were in bronze | Repaired. The reference pipeline brings each `expected` submissions object of the day to `verified` from the bytes in bronze, without a request (`Lander.recover`) |
+| R2-3 | An index file which the listing names and which answered "no such object" became `not_published`, a final state. A later run opened the file again only inside its own seven days | Repaired. Every run opens each `not_published` index file again which a listing of the run names |
+| R2-4 | Change C19 (no archive download between 04:30 and 05:30 UTC) was not in the code | Repaired. A run on the live source inside the hour builds the snapshot without the archive and creates no object for the archive; a later run of the day asks. The recorded files have no such hour |
+| R2-5 | The listing of a quarter is one object of the UTC day. A run before the SEC publishes the newest index file (about 03:00 UTC) stores a listing without the file, and no later run of the day sees the file | Not repaired in code. The schedule is 08:30 UTC, and the host does not run between 00:00 and 08:00 UTC. The rule for a run by hand: not between 00:00 and 03:30 UTC. The next day loads the file |
+| R2-6 | A value of 1E+74 or more raised an error of the decimal module, which stopped the facts of every company | Repaired: such a value refuses the one document |
+| R2-7 | `value_text` wrote 0.0000004 as `4E-7` | Repaired: plain notation with every digit. The contract of `sec_xbrl_fact` says so |
+| R2-8 | A crash after the commit of the snapshot and before its record is repaired by the next run of the same day only. A run of a later day does not build the day again | Not repaired in code. The recovery is one command, which sends no request because the files of the day are in bronze: `gbmi sec reference --as-of <the day>T12:00:00+00:00` |
+| R2-9 | `gbmi sec objects requeue` without a dataset sent every quarantined object back, also an object without bytes in bronze, which means new requests | Repaired. The dataset is required. The result lists the objects which will be asked again under `asked_again` |
+| R2-10 | After an operator accepted a fall of facts with a note, a later run of the day without the note failed as a whole. The selection counted from the load of a document, not from its download | Repaired. The fall rule applies to a document once, before its first load. The selection counts from the download |
+| R2-11 | The volume rule needed the file of each of the four weeks before; one holiday switched the rule off for a weekday for four weeks | Repaired: the rule takes the four newest earlier files of the same weekday which exist, up to eight weeks back |
+| R2-12 | A company which is new in the ticker file was asked as a listed object: three new companies in a row without a document would open the circuit | Repaired: such a request is not "listed" |
+| R2-13 | A time of a former name which is not midnight in New York moves to another day without a count | The count was added, and the live load showed 7,938 such times: a defect of the rule of the plan. The rule was repaired after command 2 of the live load (section "The live load of WP-06") |
+| R2-14 | A scope built without its builder gave the filter "every row"; the draw of the watchlist wrote a short list; the list of common words is empty before a dry run | Repaired: a scope with missing parts cannot be built; the draw writes 50 rows or nothing. The dry run comes first |
+
+Tests which the review asked for and which now exist: the row counts of the tables after a second run; a requeued document outside the watchlist; a member which cannot be stored; three failed tries of the archive; a listed index file which is missing; a run which stops between the commit and its record; values with an exponent and beyond the limit; a former name with another time than midnight. After the repairs: `make lint` clean, `make test` with 849 tests, the coverage gate at 98%.
+
+The review also gave advice for the live load, which the live load follows: one run identifier for each command; every command on one UTC day; no interruption of the archive download; a look at the refused documents before the draw of the watchlist.
+
+## The live load of WP-06
+
+The three pipelines ran once on the live source, on the working stack of the laptop, on 2026-11-28 from 09:28 to 09:36 UTC, after the repairs of review 2. `benchmarks/p2_sec/live_load_evidence.py` read every number of the section from the request log, the run records, the object ledger and the five tables; the raw result is `benchmarks/p2_sec/results/live-load.json`.
+
+**Before the first request:** the laptop on mains power; the circuit `closed`; no SEC object in the ledger; 826 GB free for the temporary file of the archive; the time outside 04:30 to 05:30 UTC (change C19).
+
+| # | Command | Run | Start | Seconds | Requests | Result |
+|---|---|---|---|---|---|---|
+| 1 | `gbmi sec filings --from 2026-10-26` | `live-load-filings-1` | 09:28:08 | 32.7 | 29 | The listing of the quarter, 23 index files with 127,763 rows, and the documents of the five demo companies with 4,972 filings. The two weekdays without a file, 2026-11-11 and 2026-11-26, became `not_published` without a request |
+| 2 | `gbmi sec reference --bulk` | `live-load-reference-1` | 09:28:54 | 166.5 | 2 | The ticker file and the archive: 1,578,485,771 bytes in 106.4 seconds (14.8 MB in a second), 1,000,152 members. All 7,983 wanted documents were copied, none refused. One snapshot with 7,988 companies; 6,489 former names |
+| 2b | `gbmi sec reference` | `live-load-reference-2` | 09:33:18 | 24.1 | 0 | A rebuild of the day after a repair (see "The times of a former name" below). The snapshot has the content checksum of command 2; the former names have the repaired days |
+| 3 | `watchlist_candidates.py --write` | | 09:34 | 5 | 0 | The seed with 50 rows |
+| 4 | `gbmi sec filings` | `live-load-filings-2` | 09:34:52 | 1.1 | 0 | The documents of the 50 companies were in bronze from the archive: 96,326 filings |
+| 5 | `gbmi sec facts --full` | `live-load-facts-1` | 09:35:03 | 35.2 | 50 | 50 facts documents with 188 MB and 1,255,672 facts; no document refused |
+
+**Requests.** The live load sent 81 requests; the plan estimated about 130. The difference: the 45 documents of command 4 came from the archive of command 2. The request log of the working stack holds 99 rows with the 18 requests of the recording of WP-04: 97 with the outcome `ok` and 2 with the outcome `missing` (the two planned ones of the recording). `gbmi sec requests max-burst` over the whole log: at most 4 requests in any second, by the wall clock and by the clock of each client; the ceiling is 8. The circuit never opened: `ops.source_circuit` has no row.
+
+**"Done when" of WP-06.**
+
+| Criterion | Result |
+|---|---|
+| One snapshot row for each CIK of the ticker file | 7,988 rows for 7,988 CIKs (10,400 rows of the ticker file) |
+| One loaded index file for each published business day since 2026-10-26 | 23 files for 25 weekdays; the two other weekdays are US holidays and `not_published` |
+| Filing detail for 50 companies | 96,326 rows for 50 companies |
+| Facts for each watchlist company with a facts document | 50 of 50 companies have a facts document: 1,255,672 rows |
+| Every object is in a final state | 8,064 objects `loaded` (1 archive, 1 ticker file, 23 index files, 1 listing, 7,988 submissions documents, 50 facts documents) and 2 `not_published`; `gbmi sec objects` lists no open object |
+| No second of the request log holds more than 8 requests | At most 4 |
+
+**The five tables after the load.**
+
+| Table | Rows | Data files | Bytes |
+|---|---|---|---|
+| `sec_company_snapshot` | 7,988 | 1 | 362,049 |
+| `sec_company_former_name` | 6,489 | 1 | 245,687 |
+| `sec_filing_index` | 127,763 | 23 | 3,615,215 |
+| `sec_filing_detail` | 96,326 | 1 | 3,042,070 |
+| `sec_xbrl_fact` | 1,255,672 | 50 | 10,831,818 |
+
+Bronze holds 669 MB of submissions documents, 188 MB of facts documents and 25 MB of index files for the day.
+
+**Numbers which the plan asked for.** The download of the archive took 106.4 seconds. The 23 index files hold 1,739 rows which repeat a pair of accession number and CIK inside one file (finding F11 c). 3 pairs stand in two index files. 1,425 rows carry a date before the date of their file (finding F11 d). No line of the 23 files failed the parser. The volume rule ran for 3 files (2026-11-23, 2026-11-24 and 2026-11-27: passed) and was skipped for the 20 files without four earlier files of the same weekday.
+
+**The times of a former name: one defect found by the live load.** The plan (finding F3) saw times at 04:00 and 05:00 UTC, which are midnight in New York, and turned a time into a date in New York. The 7,988 documents hold 12,982 such times: 7,938 at 00:00 UTC, 3,051 at 04:00 UTC and 1,993 at 05:00 UTC, and no other time. For the 7,938 times at midnight UTC the date in New York is the day before the day which the SEC means. Review 2 had asked for a count of such times (finding R2-13), and the count showed the defect after command 2. The rule is now: the day of a name is the UTC date of its time, which is right for the three forms; a time of another form is counted (`odd_times`, 0 in the live load). Command 2b built the day again from bronze without a request. 46 former names have an end before their start, and 2 are exact repeats; the dimension of WP-08 drops and counts the first kind.
+
+**More which the live data shows beside the plan.**
+
+| Finding of the plan | The live data |
+|---|---|
+| F4: `filings.recent` holds at most 1,000 filings | The lists hold "at least one year": the 50 documents of the watchlist list 96,326 filings, and 45,163 of them have the form `424B2` of the large banks |
+| §3.3: the attributes of a company come from its submissions document | Of 7,988 companies, 6,886 have a SIC code, 7,089 a state of incorporation and 7,562 an end of the fiscal year; 155 have no exchange in the ticker file. No company is stale or inactive on the first day |
+| §3.3: seven metrics | The 50 companies with at least one candidate concept of the metric seed: cash 50, equity 50, net income 50, total assets 50, revenue 49, operating income 43, employees 3. The metric `employees` has almost no data in the facts documents |
+| Blueprint §8.7: `filed_date` ≥ `period_end`, warn otherwise | 166 of 1,255,672 facts were filed before the end of their period; the rows are kept and counted. No value needed rounding to six decimal places, and no document repeated a fact |
+| WP-06 step 9: about 130 requests | 81 requests |
+
+**The watchlist.** Version 0 has the 5 demo companies, 13 companies of the gold sheet and 32 companies by news volume. Three candidates have no periodic report (easyJet, Space Exploration Technologies and Deutsche Lufthansa), and four names are common words (Shell, Visa, Intel and Oracle). `config/watchlist/README.md` has the rules, the list of what was left out and the way to change a row.
+
+**The gold sheet (open item of phase P0).** `benchmarks/source_profile/compare_gold_sheet.py` compared the 26 rows of `config/labelling/gold_sheet_v0.csv` which carry a CIK with the snapshot of 2026-11-28: all 26 CIKs are in the universe. The labels of phase P0 were made with a copy of the ticker list of 2026-10-22 and without a request to the SEC. No label is changed.
+
+| String of the sheet | Label | CIK | Name of the SEC | Primary ticker |
+|---|---|---|---|---|
+| Instagram | `company_in_universe` | 1326801 | Meta Platforms, Inc. | META (Nasdaq) |
+| Reuters | `company_in_universe` | 1075124 | THOMSON REUTERS CORP /CAN/ | TRI (Nasdaq) |
+| Nvidia | `company_in_universe` | 1045810 | NVIDIA CORP | NVDA (Nasdaq) |
+| Google | `company_in_universe` | 1652044 | Alphabet Inc. | GOOGL (Nasdaq) |
+| Facebook | `company_in_universe` | 1326801 | Meta Platforms, Inc. | META (Nasdaq) |
+| Youtube | `company_in_universe` | 1652044 | Alphabet Inc. | GOOGL (Nasdaq) |
+| Espn | `company_in_universe` | 1744489 | Walt Disney Co | DIS (NYSE) |
+| Amazon Autos International | `company_in_universe` | 1018724 | AMAZON COM INC | AMZN (Nasdaq) |
+| Easyjet | `company_in_universe` | 1470419 | easyJet plc | ESYJY (OTC) |
+| Nasdaq | `company_in_universe` | 1120193 | NASDAQ, INC. | NDAQ (Nasdaq) |
+| Disney | `company_in_universe` | 1744489 | Walt Disney Co | DIS (NYSE) |
+| Mattel | `company_in_universe` | 63276 | MATTEL INC /DE/ | MAT (Nasdaq) |
+| Netflix | `company_in_universe` | 1065280 | NETFLIX INC | NFLX (Nasdaq) |
+| New York Times | `company_in_universe` | 71691 | NEW YORK TIMES CO | NYT (NYSE) |
+| Linkedin | `company_in_universe` | 789019 | MICROSOFT CORP | MSFT (Nasdaq) |
+| Walmart | `company_in_universe` | 104169 | Walmart Inc. | WMT (Nasdaq) |
+| Microsoft | `company_in_universe` | 789019 | MICROSOFT CORP | MSFT (Nasdaq) |
+| Chevron | `company_in_universe` | 93410 | CHEVRON CORP | CVX (NYSE) |
+| Cessna | `company_in_universe` | 217346 | TEXTRON INC | TXT (NYSE) |
+| Twitter | `company_in_universe` | 1181412 | SPACE EXPLORATION TECHNOLOGIES CORP | SPCX (Nasdaq) |
+| Cnn | `company_in_universe` | 2041610 | Skydance Corp | SKYD (NYSE) |
+| Hasbro | `company_in_universe` | 46080 | HASBRO, INC. | HAS (Nasdaq) |
+| Eastern Daily | `company_in_universe` | 1579684 | USA TODAY Co., Inc. | TDAY (NYSE) |
+| shell | `ambiguous` | 1306965 | Shell plc | SHEL (NYSE) |
+| Sony | `company_in_universe` | 313838 | Sony Group Corp | SONY (NYSE) |
+| Eurowings | `company_in_universe` | 1049724 | DEUTSCHE LUFTHANSA A G /FI | DLAKY (OTC) |
+
+**Not verified.** No test ran against S3 and Glue: the AWS halves follow in WP-10 and WP-11. The live load ran once, on one day: the behaviour of a second day (a snapshot from the snapshot before, the selection of the facts by new reports, the 5% rule) is proven on the recorded files only. The limits R2-5 and R2-8 of review 2 stay.
+
 ## The unit of the financial facts (change C15)
 
 `benchmarks/p2_lake/refresh_facts.py` builds a made-up facts table of 50 companies with 26,000 facts each (1.3 million rows) in one commit, and then replaces the facts of 3 companies with `overwrite_scope` and a unit of keys. Each step runs in a process of its own, in the toolbox of the demo stack (Linux aarch64 in Docker Desktop, 7.65 GiB), on 2026-11-28 at 03:58 UTC. The raw result is `benchmarks/p2_lake/results/refresh_facts.json`.
@@ -235,3 +353,18 @@ Decisions which the week 3 plan left open, in the order of the work.
 | 30 | 04 | The index parser refuses a row without a company name, a row whose form runs past position 16, and a row whose CIK column differs from the CIK of the file name | The contract of `sec_filing_index` requires the name. Finding F11 (a) and (e): no row of the recorded file breaks one of the three rules, so a row which does is a sign of a changed format |
 | 31 | 04 | The transport of the recorded files reports one fixed time of the last change for every file: 2026-11-26 05:06:36 UTC | The demo runs with a fixed clock, and two runs have to see the same answers. The time lies before the clock of the demo |
 | 32 | 04 | The block `seeds` of `dbt/dbt_project.yml` arrives with the metric seed in WP-04; the plan lists the block under WP-08 | Without the block, `dbt seed` would write the seed into the database `marts` with guessed column types. `dbt seed` ran on the demo stack: 22 rows in `seeds.metric_concept_map` |
+| 33 | 06 | The listing of a quarter is the object `index.<year>QTR<quarter>.json` of the day of the run; an index file is the object `form.YYYYMMDD.idx` of the date of the file | Each index file is an object of its own and is never superseded. A newer listing supersedes an older open listing |
+| 34 | 06 | A listing and the archive become `loaded` with a reason of their own; neither gives a row to silver | Every object has to reach a final state (WP-06, "Done when") |
+| 35 | 06 | Gate G1 is tried up to three times inside one run | An object belongs to one day. The object of the next day is another object, so three tries on three days cannot happen |
+| 36 | 06 | A failed gate G3 quarantines the index file or the ticker file (`verified → quarantined`). The operator sends the object back and runs the command with `--accept-volume` | The transition is one of the ten of the plan. The bytes stay in bronze, so the second build sends no request |
+| 37 | 06 | The partition versions of `sec_filing_detail`, `sec_company_snapshot` and `sec_company_former_name` store the committed rows only | The rows are not the lines of one source file: stored rows are kept, and a snapshot row joins two sources |
+| 38 | 06 | The reference pipeline reads each document which is newer than the attributes of the snapshot before, not only the documents of the day | A document of an earlier day whose run failed is not lost, and the object reaches a final state |
+| 39 | 06 | A daily run asks for the documents of at most 200 new companies | A bound for a day on which the ticker file changes much. The archive of the next Sunday brings the rest |
+| 40 | 06 | The facts selection treats `not_published` as an answer | A company without a facts document is not asked again each day |
+| 41 | 06 | `--accept-volume` of `gbmi sec facts` accepts a fall of the facts | The plan gives each of the three commands the option |
+| 42 | 06 | The module `gbmi.sources.sec.silver` holds what the three pipelines share; the plan lists seven modules | One place for the run, the commit and its record |
+| 43 | 06 | A company joins the watchlist with an annual report among the filings of its document, or with a periodic report in a loaded index file | The document of a company with very many filings can end before its last annual report (finding F4). The index files of 2026-10-26 and later hold the quarterly reports of the autumn |
+| 44 | 06 | The setting `GBMI_WATCHLIST_FILE` names the seed of the watchlist | A task of Airflow does not run in the repository folder |
+| 45 | 06 | The day of a former name is the UTC date of its time, not the date in New York of finding F3 | The live load found three forms of the time: midnight UTC, 04:00 UTC and 05:00 UTC. The UTC date is the day which the SEC means for each of the three |
+| 46 | 06 | The names Shell, Visa, Intel and Oracle are left out of the news part of the watchlist as common words | The plan: "without names which are common words". The four were read in the result of a dry run; Jay can change a row by pull request |
+| 47 | 06 | `benchmarks/p2_sec/live_load_evidence.py` writes the numbers of the live load | The rule of phase P1: a measuring script writes the raw result beside the script |

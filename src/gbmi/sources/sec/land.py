@@ -133,15 +133,9 @@ class Lander:
         """
         key = expected.key
         self.ledger.ensure_expected([expected])
-        record = self._row(key)
+        record = self.recover(key, check=check)
         if record.state is not ObjectState.EXPECTED:
             return record
-        stored = self.bronze.read(bronze_key(key))
-        if stored is not None and _opens(check, stored):
-            # A run before stored the bytes and stopped before the ledger knew.
-            self._verified(key, stored, status=None, modified=None)
-            self.counts.from_bronze += 1
-            return self._row(key)
         while True:
             try:
                 response = self.client.get(expected.url, listed=listed)
@@ -169,6 +163,22 @@ class Lander:
                 key, response.content, status=response.status, modified=response.last_modified
             )
             return self._row(key)
+
+    def recover(self, key: ObjectKey, *, check: Check) -> ObjectRecord:
+        """Bring an expected object to ``verified`` from bytes which bronze holds; no request.
+
+        The case: a run stored the bytes and stopped before the ledger knew, or an operator
+        sent a quarantined object back. An object without usable bytes stays as the object is.
+        """
+        record = self._row(key)
+        if record.state is not ObjectState.EXPECTED:
+            return record
+        stored = self.bronze.read(bronze_key(key))
+        if stored is None or not _opens(check, stored):
+            return record
+        self._verified(key, stored, status=None, modified=None)
+        self.counts.from_bronze += 1
+        return self._row(key)
 
     def store(
         self, expected: Expected, content: bytes, *, check: Check, detail: Mapping[str, Any]

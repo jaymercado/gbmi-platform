@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Any
 
 import pyarrow as pa
 import pytest
@@ -95,3 +96,21 @@ def test_many_foreign_values_are_shown_in_short() -> None:
 
     with pytest.raises(UnitMismatchError, match=r"cik 2, 3, 4, 5, 6 \.\.\.$"):
         scope.check(rows(cik=list(range(1, 12))))
+
+
+@pytest.mark.parametrize(
+    "parts",
+    [
+        {"kind": "day", "column": "index_date"},  # no date: the filter would be "every row"
+        {"kind": "day", "day": date(2026, 11, 25)},
+        {"kind": "keys", "column": "cik"},
+        {"kind": "keys", "keys": frozenset({1})},
+        {"kind": "table", "column": "cik"},
+        {"kind": "table", "keys": frozenset({1})},
+        {"kind": "week"},
+    ],
+)
+def test_a_scope_with_missing_parts_cannot_be_built(parts: dict[str, Any]) -> None:
+    # A scope of one date without the date would replace the whole table (review 2, R2-14).
+    with pytest.raises(ValueError, match=r"Scope\.for_date|day, keys or table"):
+        Scope(**parts)
