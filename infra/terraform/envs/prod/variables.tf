@@ -22,7 +22,7 @@ variable "github_repository" {
 }
 
 variable "host_market" {
-  description = "Fixed when the host is created. spot: a persistent spot request (about a third of the on-demand price). on_demand: the fallback when the first apply finds no spot capacity. A later change does not reach the host: Terraform refuses to replace the instance, and the change from spot to on_demand shows no difference."
+  description = "Fixed when the host is created. spot: a persistent spot request (the blueprint observed about 0.028 US dollars an hour against 0.0672 on demand; the spot price changes). on_demand: the fallback when the first apply finds no spot capacity. A later change does not reach the host: Terraform refuses to replace the instance, and the change from spot to on_demand shows no difference."
   type        = string
   default     = "spot"
 }
