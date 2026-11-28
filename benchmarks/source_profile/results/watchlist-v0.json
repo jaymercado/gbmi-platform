@@ -1,0 +1,517 @@
+{
+  "drawn_at": "2026-11-28T09:34:37+00:00",
+  "snapshot_date": "2026-11-28",
+  "universe": 7988,
+  "window": [
+    "2026-10-26",
+    "2026-11-24"
+  ],
+  "strings_with_documents": 1913,
+  "rows": [
+    {
+      "rank": 1,
+      "cik": 1326801,
+      "name": "Meta Platforms, Inc.",
+      "alias": "meta platforms",
+      "documents": 0,
+      "reason": "demo company: the name change of exit-gate row 2",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 2,
+      "cik": 1045810,
+      "name": "NVIDIA CORP",
+      "alias": "nvidia",
+      "documents": 49300,
+      "reason": "demo company: a fiscal year which ends in January",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 3,
+      "cik": 789019,
+      "name": "MICROSOFT CORP",
+      "alias": "microsoft",
+      "documents": 32206,
+      "reason": "demo company: a fiscal year which ends in June",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 4,
+      "cik": 63276,
+      "name": "MATTEL INC /DE/",
+      "alias": "mattel",
+      "documents": 514,
+      "reason": "demo company: a calendar year",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 5,
+      "cik": 1075124,
+      "name": "THOMSON REUTERS CORP /CAN/",
+      "alias": "thomson reuters",
+      "documents": 232,
+      "reason": "demo company: a foreign company with the forms 40-F and 6-K",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 6,
+      "cik": 1652044,
+      "name": "Alphabet Inc.",
+      "alias": "alphabet",
+      "documents": 0,
+      "reason": "gold sheet: the string 'Google' with 110 documents",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 7,
+      "cik": 1744489,
+      "name": "Walt Disney Co",
+      "alias": "walt disney",
+      "documents": 674,
+      "reason": "gold sheet: the string 'Espn' with 74 documents",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 8,
+      "cik": 1018724,
+      "name": "AMAZON COM INC",
+      "alias": "amazon com",
+      "documents": 0,
+      "reason": "gold sheet: the string 'Amazon Autos International' with 68 documents",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 9,
+      "cik": 1120193,
+      "name": "NASDAQ, INC.",
+      "alias": "nasdaq",
+      "documents": 34433,
+      "reason": "gold sheet: the string 'Nasdaq' with 60 documents",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 10,
+      "cik": 1065280,
+      "name": "NETFLIX INC",
+      "alias": "netflix",
+      "documents": 25454,
+      "reason": "gold sheet: the string 'Netflix' with 41 documents",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 11,
+      "cik": 71691,
+      "name": "NEW YORK TIMES CO",
+      "alias": "new york times",
+      "documents": 34034,
+      "reason": "gold sheet: the string 'New York Times' with 39 documents",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 12,
+      "cik": 104169,
+      "name": "Walmart Inc.",
+      "alias": "walmart",
+      "documents": 10232,
+      "reason": "gold sheet: the string 'Walmart' with 35 documents",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 13,
+      "cik": 93410,
+      "name": "CHEVRON CORP",
+      "alias": "chevron",
+      "documents": 3706,
+      "reason": "gold sheet: the string 'Chevron' with 28 documents",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 14,
+      "cik": 217346,
+      "name": "TEXTRON INC",
+      "alias": "textron",
+      "documents": 80,
+      "reason": "gold sheet: the string 'Cessna' with 27 documents",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 15,
+      "cik": 2041610,
+      "name": "Skydance Corp",
+      "alias": "skydance",
+      "documents": 0,
+      "reason": "gold sheet: the string 'Cnn' with 24 documents",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 16,
+      "cik": 46080,
+      "name": "HASBRO, INC.",
+      "alias": "hasbro",
+      "documents": 548,
+      "reason": "gold sheet: the string 'Hasbro' with 23 documents",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 17,
+      "cik": 1579684,
+      "name": "USA TODAY Co., Inc.",
+      "alias": "usa today",
+      "documents": 0,
+      "reason": "gold sheet: the string 'Eastern Daily' with 21 documents",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 18,
+      "cik": 313838,
+      "name": "Sony Group Corp",
+      "alias": "sony group",
+      "documents": 42,
+      "reason": "gold sheet: the string 'Sony' with 9 documents",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 19,
+      "cik": 895421,
+      "name": "MORGAN STANLEY",
+      "alias": "morgan stanley",
+      "documents": 5172,
+      "reason": "news volume: 'morgan stanley' in 5172 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 20,
+      "cik": 12927,
+      "name": "BOEING CO",
+      "alias": "boeing",
+      "documents": 4668,
+      "reason": "news volume: 'boeing' in 4668 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 21,
+      "cik": 312069,
+      "name": "BARCLAYS PLC",
+      "alias": "barclays",
+      "documents": 4155,
+      "reason": "news volume: 'barclays' in 4155 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 22,
+      "cik": 1730168,
+      "name": "Broadcom Inc.",
+      "alias": "broadcom",
+      "documents": 3855,
+      "reason": "news volume: 'broadcom' in 3855 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 23,
+      "cik": 831001,
+      "name": "CITIGROUP INC",
+      "alias": "citigroup",
+      "documents": 3388,
+      "reason": "news volume: 'citigroup' in 3388 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 24,
+      "cik": 72971,
+      "name": "WELLS FARGO & COMPANY/MN",
+      "alias": "wells fargo",
+      "documents": 3336,
+      "reason": "news volume: 'wells fargo' in 3336 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 25,
+      "cik": 829224,
+      "name": "STARBUCKS CORP",
+      "alias": "starbucks",
+      "documents": 3263,
+      "reason": "news volume: 'starbucks' in 3263 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 26,
+      "cik": 2488,
+      "name": "ADVANCED MICRO DEVICES INC",
+      "alias": "advanced micro devices",
+      "documents": 2902,
+      "reason": "news volume: 'advanced micro devices' in 2902 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 27,
+      "cik": 59478,
+      "name": "ELI LILLY & Co",
+      "alias": "eli lilly",
+      "documents": 2354,
+      "reason": "news volume: 'eli lilly' in 2354 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 28,
+      "cik": 723125,
+      "name": "MICRON TECHNOLOGY INC",
+      "alias": "micron technology",
+      "documents": 2189,
+      "reason": "news volume: 'micron technology' in 2189 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 29,
+      "cik": 1141391,
+      "name": "Mastercard Inc",
+      "alias": "mastercard",
+      "documents": 2167,
+      "reason": "news volume: 'mastercard' in 2167 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 30,
+      "cik": 27904,
+      "name": "DELTA AIR LINES, INC.",
+      "alias": "delta air lines",
+      "documents": 2066,
+      "reason": "news volume: 'delta air lines' in 2066 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 31,
+      "cik": 1048911,
+      "name": "FEDEX CORP",
+      "alias": "fedex",
+      "documents": 1928,
+      "reason": "news volume: 'fedex' in 1928 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 32,
+      "cik": 764478,
+      "name": "BEST BUY CO INC",
+      "alias": "best buy",
+      "documents": 1759,
+      "reason": "news volume: 'best buy' in 1759 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 33,
+      "cik": 936468,
+      "name": "LOCKHEED MARTIN CORP",
+      "alias": "lockheed martin",
+      "documents": 1673,
+      "reason": "news volume: 'lockheed martin' in 1673 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 34,
+      "cik": 2012383,
+      "name": "BlackRock, Inc.",
+      "alias": "blackrock",
+      "documents": 1636,
+      "reason": "news volume: 'blackrock' in 1636 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 35,
+      "cik": 77476,
+      "name": "PEPSICO INC",
+      "alias": "pepsico",
+      "documents": 1566,
+      "reason": "news volume: 'pepsico' in 1566 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 36,
+      "cik": 804328,
+      "name": "QUALCOMM INC/DE",
+      "alias": "qualcomm",
+      "documents": 1504,
+      "reason": "news volume: 'qualcomm' in 1504 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 37,
+      "cik": 4962,
+      "name": "AMERICAN EXPRESS CO",
+      "alias": "american express",
+      "documents": 1477,
+      "reason": "news volume: 'american express' in 1477 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 38,
+      "cik": 1067491,
+      "name": "Infosys Ltd",
+      "alias": "infosys",
+      "documents": 1446,
+      "reason": "news volume: 'infosys' in 1446 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 39,
+      "cik": 749251,
+      "name": "GARTNER INC",
+      "alias": "gartner",
+      "documents": 1417,
+      "reason": "news volume: 'gartner' in 1417 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 40,
+      "cik": 1506293,
+      "name": "PINTEREST, INC.",
+      "alias": "pinterest",
+      "documents": 1357,
+      "reason": "news volume: 'pinterest' in 1357 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 41,
+      "cik": 887596,
+      "name": "CHEESECAKE FACTORY INC",
+      "alias": "cheesecake factory",
+      "documents": 1326,
+      "reason": "news volume: 'cheesecake factory' in 1326 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 42,
+      "cik": 938323,
+      "name": "PEARSON PLC",
+      "alias": "pearson",
+      "documents": 1304,
+      "reason": "news volume: 'pearson' in 1304 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 43,
+      "cik": 92380,
+      "name": "SOUTHWEST AIRLINES CO",
+      "alias": "southwest airlines",
+      "documents": 1225,
+      "reason": "news volume: 'southwest airlines' in 1225 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 44,
+      "cik": 96223,
+      "name": "Jefferies Financial Group Inc.",
+      "alias": "jefferies financial group",
+      "documents": 1184,
+      "reason": "news volume: 'jefferies financial group' in 1184 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 45,
+      "cik": 217410,
+      "name": "UNILEVER PLC",
+      "alias": "unilever",
+      "documents": 1174,
+      "reason": "news volume: 'unilever' in 1174 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 46,
+      "cik": 1467373,
+      "name": "Accenture plc",
+      "alias": "accenture",
+      "documents": 1112,
+      "reason": "news volume: 'accenture' in 1112 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 47,
+      "cik": 886982,
+      "name": "GOLDMAN SACHS GROUP INC",
+      "alias": "goldman sachs group",
+      "documents": 1100,
+      "reason": "news volume: 'goldman sachs group' in 1100 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 48,
+      "cik": 56873,
+      "name": "KROGER CO",
+      "alias": "kroger",
+      "documents": 1096,
+      "reason": "news volume: 'kroger' in 1096 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 49,
+      "cik": 78003,
+      "name": "PFIZER INC",
+      "alias": "pfizer",
+      "documents": 1079,
+      "reason": "news volume: 'pfizer' in 1079 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    },
+    {
+      "rank": 50,
+      "cik": 1067983,
+      "name": "BERKSHIRE HATHAWAY INC",
+      "alias": "berkshire hathaway",
+      "documents": 1058,
+      "reason": "news volume: 'berkshire hathaway' in 1058 GKG documents of 30 days",
+      "report": "an annual report in the submissions document"
+    }
+  ],
+  "skipped": [
+    {
+      "cik": 1470419,
+      "name": "easyJet plc",
+      "alias": "easyjet",
+      "documents": 519,
+      "why": "no periodic report is known"
+    },
+    {
+      "cik": 1181412,
+      "name": "SPACE EXPLORATION TECHNOLOGIES CORP",
+      "alias": "space exploration technologies",
+      "documents": 0,
+      "why": "no periodic report is known"
+    },
+    {
+      "cik": 1049724,
+      "name": "DEUTSCHE LUFTHANSA A G /FI",
+      "alias": "deutsche lufthansa a g",
+      "documents": 0,
+      "why": "no periodic report is known"
+    },
+    {
+      "alias": "shell",
+      "documents": 5988,
+      "ciks": [
+        1306965
+      ],
+      "why": "the name is a common word; the gold sheet labels the string 'shell' as ambiguous"
+    },
+    {
+      "alias": "visa",
+      "documents": 5679,
+      "ciks": [
+        1403161
+      ],
+      "why": "the name is a common word: a visa is also a travel document"
+    },
+    {
+      "alias": "intel",
+      "documents": 4412,
+      "ciks": [
+        50863
+      ],
+      "why": "the name is a common short form of the word intelligence"
+    },
+    {
+      "alias": "oracle",
+      "documents": 3451,
+      "ciks": [
+        1341439
+      ],
+      "why": "the name is a common word"
+    }
+  ]
+}

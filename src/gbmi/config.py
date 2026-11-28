@@ -82,6 +82,9 @@ class Settings(BaseSettings):
     #: Recorded SEC files for the source ``fixture`` (make demo and CI).
     sec_fixtures_dir: str = "/fixtures/sec"
     watchlist_size: int = Field(default=50, ge=1, le=10_000)
+    #: The seed of the watchlist. dbt reads the same file. The default fits a checkout; the
+    #: stacks and the image set an absolute path.
+    watchlist_file: str = "dbt/seeds/watchlist.csv"
     alert_webhook: SecretStr | None = None
     #: Written to the ``_pipeline_version`` provenance column (blueprint 7.12). The image sets
     #: it to the Git commit; outside an image it falls back to the package version.

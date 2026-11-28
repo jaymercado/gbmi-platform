@@ -44,6 +44,14 @@ seeds:
         concept: String
         priority: UInt8
         flow_or_stock: String
+    # The watchlist: the SEC pipelines read the first rows of the same file (WP-06).
+    watchlist:
+      +column_types:
+        rank: UInt16
+        cik: Int64
+        name_at_selection: String
+        reason: String
+        added_on: Date
 
 vars:
   # The feeds of the GDELT source: each has 96 slots in a UTC day (blueprint 8.2).

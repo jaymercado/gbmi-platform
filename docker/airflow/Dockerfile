@@ -86,7 +86,8 @@ FROM base AS runtime
 
 ARG GIT_SHA=unknown
 ENV GBMI_PIPELINE_VERSION=${GIT_SHA} \
-    GBMI_MIGRATIONS_DIR=/opt/gbmi/db/postgres/migrations
+    GBMI_MIGRATIONS_DIR=/opt/gbmi/db/postgres/migrations \
+    GBMI_WATCHLIST_FILE=/opt/gbmi/dbt/seeds/watchlist.csv
 
 COPY --chown=airflow:0 src /opt/build/gbmi/src
 RUN cd /opt/build/gbmi \

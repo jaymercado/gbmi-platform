@@ -257,6 +257,73 @@ def test_a_loaded_object_supersedes_every_older_open_object_of_the_same_name(
     assert objects.supersede_older(newest) == set()
 
 
+def test_the_objects_of_many_companies_are_superseded_in_one_call(objects: ObjectLedger) -> None:
+    names = [f"CIK{cik:010d}.json" for cik in (1, 2, 3)]
+    old = [key(name, days=0) for name in names]
+    new = [key(name, days=1) for name in names]
+    older_index = key("form.20261126.idx", dataset=Dataset.INDEX)
+    objects.ensure_expected([expected(older_index)])
+    verified(objects, *old, *new)
+    # The first company is loaded today, the second is not, and the third was loaded before.
+    objects.mark_loaded([ObjectAccounting(old[2], 1, 1), ObjectAccounting(new[0], 1, 1)])
+    objects.mark_loaded([ObjectAccounting(new[2], 1, 1)])
+
+    moved = objects.supersede_older_many(
+        Dataset.SUBMISSIONS, DAY + timedelta(days=1), names, as_of=AS_OF
+    )
+
+    assert moved == {old[0]}
+    states = {object_key: objects.get(object_key) for object_key in (*old, older_index)}
+    assert [record.state for record in states.values() if record is not None] == [
+        ObjectState.SUPERSEDED,
+        ObjectState.VERIFIED,
+        ObjectState.LOADED,
+        ObjectState.EXPECTED,
+    ]
+    assert objects.supersede_older_many(Dataset.SUBMISSIONS, DAY, []) == set()
+
+
+def test_the_newest_object_of_each_company_in_one_question(objects: ObjectLedger) -> None:
+    meta = [key(days=days) for days in range(3)]
+    nvidia = key("CIK0001045810.json")
+    listing = key("index.2026QTR4.json", dataset=Dataset.INDEX)
+    objects.ensure_expected(
+        [*(expected(item) for item in meta), expected(nvidia, cik=1045810), expected(listing, None)]
+    )
+    for item in (meta[0], meta[1], nvidia):
+        objects.record_download(item, download(item))
+    objects.mark_loaded([ObjectAccounting(meta[0], 4, 4)])
+    objects.mark_not_published(meta[2], reason="HTTP 404", http_status=404)
+    readable = {ObjectState.VERIFIED, ObjectState.LOADED}
+
+    newest = objects.newest_by_cik(Dataset.SUBMISSIONS)
+    read = objects.newest_by_cik(Dataset.SUBMISSIONS, states=readable)
+    early = objects.newest_by_cik(Dataset.SUBMISSIONS, states=readable, not_after=DAY)
+
+    assert {cik: record.key for cik, record in newest.items()} == {
+        1326801: meta[2],
+        1045810: nvidia,
+    }
+    assert newest[1326801].state is ObjectState.NOT_PUBLISHED
+    assert {cik: record.key for cik, record in read.items()} == {1326801: meta[1], 1045810: nvidia}
+    assert early[1326801].key == meta[0] and early[1326801].raw_records == 4
+    # An object without a company, for example a listing, belongs to no company.
+    assert objects.newest_by_cik(Dataset.INDEX) == {}
+
+
+def test_a_pipeline_can_say_how_an_object_was_used_up(objects: ObjectLedger) -> None:
+    listing = key("index.2026QTR4.json", dataset=Dataset.INDEX)
+    verified(objects, listing)
+
+    objects.mark_loaded([ObjectAccounting(listing, 5, 5)], reason="the listing was read")
+
+    row = objects.connection.execute(
+        "SELECT reason FROM ops.object_transition WHERE source = %s AND to_state = 'loaded'",
+        (objects.source,),
+    ).fetchone()
+    assert row == ("the listing was read",)
+
+
 def test_the_questions_of_the_pipelines(objects: ObjectLedger) -> None:
     meta = [key(days=days) for days in range(3)]
     index = key("form.20261125.idx", dataset=Dataset.INDEX)

@@ -21,6 +21,7 @@ _MAKE_STATE = {
     "GBMI_DAG_SCHEDULES",
     "GBMI_TASK_RETRIES",
     "GBMI_SEC_SOURCE",
+    "GBMI_WATCHLIST_SIZE",
     "CONFIRM",
     "MAKEFLAGS",
     "MFLAGS",
@@ -166,3 +167,15 @@ def test_a_reset_deletes_one_stack_and_the_working_stack_asks_first() -> None:
     for result in (working, confirmed, demo):
         assert "rm -rf data\n" not in result.stdout
         assert "rm -rf data " not in result.stdout
+
+
+def test_each_stack_reads_its_number_of_watchlist_companies() -> None:
+    # The recorded SEC files hold the documents of the five demo companies (week 3 plan 3.3).
+    working = dry_run("--print-data-base", "up")
+    demo = dry_run("--print-data-base", "up", "STACK=gbmi-demo")
+
+    assert "GBMI_WATCHLIST_SIZE := 50" in working.stdout
+    assert "GBMI_WATCHLIST_SIZE := 5" in demo.stdout
+    compose = (REPO / "compose" / "compose.yaml").read_text(encoding="utf-8")
+    assert "GBMI_WATCHLIST_SIZE: ${GBMI_WATCHLIST_SIZE:-50}" in compose
+    assert "GBMI_WATCHLIST_FILE: /opt/gbmi/dbt/seeds/watchlist.csv" in compose

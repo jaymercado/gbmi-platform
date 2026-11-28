@@ -49,7 +49,7 @@ columns:
   - name: value_text
     type: string
     required: true
-    meaning: "The number exactly as the facts document writes the number."
+    meaning: "The number with every digit which the facts document gives, in plain notation without an exponent. The column value rounds to six decimal places; value_text does not."
   - name: fiscal_year
     type: int
     required: false

@@ -147,6 +147,23 @@ class Scope:
     day: date | None = None
     keys: frozenset[int] = frozenset()
 
+    def __post_init__(self) -> None:
+        # A scope with missing parts would give the filter "every row": an overwrite with
+        # such a scope would replace the whole table (review 2 of week 3, finding R2-14).
+        parts = (self.column is not None, self.day is not None, bool(self.keys))
+        expected = {
+            KIND_DAY: (True, True, False),
+            KIND_KEYS: (True, False, True),
+            KIND_TABLE: (False, False, False),
+        }
+        if self.kind not in expected:
+            raise ValueError(f"the kind of a scope is day, keys or table, got {self.kind!r}")
+        if parts != expected[self.kind]:
+            raise ValueError(
+                f"a scope of the kind {self.kind} is built with Scope.for_date, "
+                "Scope.for_keys or Scope.for_table"
+            )
+
     @classmethod
     def for_date(cls, column: str, day: date) -> Scope:
         """The rows of one date of a date column, for example one snapshot date."""

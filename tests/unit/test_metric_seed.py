@@ -13,6 +13,8 @@ from pathlib import Path
 
 import yaml
 
+from gbmi.sources.sec.watchlist import COLUMNS as WATCHLIST_COLUMNS
+
 DBT = Path(__file__).resolve().parents[2] / "dbt"
 SEED = DBT / "seeds" / "metric_concept_map.csv"
 COLUMNS = ["metric", "taxonomy", "concept", "priority", "flow_or_stock"]
@@ -68,3 +70,5 @@ def test_the_dbt_project_gives_the_seed_its_schema_and_its_column_types() -> Non
     seeds = project["seeds"]["gbmi"]
     assert seeds["+schema"] == "seeds"
     assert list(seeds["metric_concept_map"]["+column_types"]) == COLUMNS
+    # The second seed is the watchlist, with the columns which the pipelines read.
+    assert tuple(seeds["watchlist"]["+column_types"]) == WATCHLIST_COLUMNS

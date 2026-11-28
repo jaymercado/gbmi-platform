@@ -28,6 +28,8 @@ TASK_RETRIES := 3
 # The working stack asks the live SEC, with the declared user agent of .env, until the first
 # deployment: then the AWS host is the only place with the source "live" (week 3 plan 3.3).
 SEC_SOURCE := live
+# The pipelines read the first 50 rows of the seed of the watchlist (week 3 plan 3.3).
+WATCHLIST_SIZE := 50
 else ifeq ($(STACK),$(DEMO_STACK))
 LAKE_DIR := data/demo/lake
 OTHER_STACK := $(WORKING_STACK)
@@ -38,6 +40,8 @@ DAG_SCHEDULES := off
 TASK_RETRIES := 0
 # The demo stack and CI read the recorded SEC files: no network and no user agent.
 SEC_SOURCE := fixture
+# The recorded files hold the documents of the five demo companies: ranks 1 to 5 of the seed.
+WATCHLIST_SIZE := 5
 else
 $(error STACK is "$(STACK)"; use $(WORKING_STACK) for the working stack or $(DEMO_STACK) for the demo stack)
 endif
@@ -53,6 +57,7 @@ export GBMI_TASK_RETRIES := $(TASK_RETRIES)
 # stack only, so one database remembers a block by the SEC (review 1 of week 3, finding B2).
 override GBMI_SEC_SOURCE := $(SEC_SOURCE)
 export GBMI_SEC_SOURCE
+export GBMI_WATCHLIST_SIZE := $(WATCHLIST_SIZE)
 
 # Compose files live in compose/, so the project directory and the env file are always passed
 # explicitly; otherwise relative paths and .env would resolve from compose/.
