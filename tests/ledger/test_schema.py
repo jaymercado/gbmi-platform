@@ -69,7 +69,7 @@ def slot(connection: Connection, source: str, state: str = "expected", **values:
     insert(connection, "source_slot", **row)
 
 
-def test_the_migrations_create_the_ten_tables(ops: Connection, ops_db: str) -> None:
+def test_the_migrations_create_the_eleven_tables(ops: Connection, ops_db: str) -> None:
     rows = ops.execute(
         "SELECT table_name FROM information_schema.tables WHERE table_schema = 'ops'"
     ).fetchall()
@@ -85,6 +85,7 @@ def test_the_migrations_create_the_ten_tables(ops: Connection, ops_db: str) -> N
         "source_object",
         "object_transition",
         "source_circuit",
+        "circuit_event",
         "source_request",
     }
     report = status(ops_db, MIGRATIONS)

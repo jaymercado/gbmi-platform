@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from email.utils import format_datetime
@@ -82,6 +82,19 @@ def broken(error: BaseException) -> Answer:
     return Answer(error=error)
 
 
+class SlowBody(httpx.SyncByteStream):
+    """A body which arrives in pieces; ``wait`` runs before each piece, for example a clock step."""
+
+    def __init__(self, pieces: list[bytes], wait: Callable[[], None]) -> None:
+        self._pieces = pieces
+        self._wait = wait
+
+    def __iter__(self) -> Iterator[bytes]:
+        for piece in self._pieces:
+            self._wait()
+            yield piece
+
+
 @dataclass(frozen=True)
 class Arrival:
     at: float
@@ -92,8 +105,19 @@ class Arrival:
 
 
 class SecServer:
-    def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
+    def __init__(
+        self,
+        clock: Callable[[], float] = time.monotonic,
+        *,
+        advance: Callable[[float], None] | None = None,
+    ) -> None:
         self._clock = clock
+        #: Moves the clock: ``FakeTime.advance`` or ``time.sleep``.
+        self._advance = advance
+        #: Request number (from 0) -> seconds until the request arrives, for example the
+        #: set-up of a connection; and seconds until the answer has arrived.
+        self.setup: dict[int, float] = {}
+        self.answer_time = 0.0
         self.objects: dict[str, bytes] = {}  # "<host><path>" -> body
         self.always: dict[str, Answer] = {}  # "<host><path>" -> the answer for every request
         self.once: dict[str, list[Answer]] = {}  # "<host><path>" -> answers before the normal one
@@ -119,9 +143,14 @@ class SecServer:
         host, path = request.url.host, request.url.path
         key = f"{host}{path}"
         with self._lock:
+            number = len(self.arrivals)
+            if self._advance is not None and self.setup.get(number):
+                self._advance(self.setup[number])  # the request is on its way
             self.arrivals.append(
                 Arrival(self._clock(), request.method, host, path, dict(request.headers))
             )
+            if self._advance is not None and self.answer_time:
+                self._advance(self.answer_time)
             answer = self.once[key].pop(0) if self.once.get(key) else self.always.get(key)
         if answer is not None:
             if answer.error is not None:
@@ -135,8 +164,6 @@ class SecServer:
             return httpx.Response(404, content=b"<html>Not Found</html>")
         body = self.objects[key]
         headers = {"Last-Modified": format_datetime(MODIFIED, usegmt=True)}
-        if request.method == "HEAD":
-            return httpx.Response(200, headers={**headers, "Content-Length": str(len(body))})
         return httpx.Response(200, content=body, headers=headers)
 
     def transport(self) -> httpx.MockTransport:

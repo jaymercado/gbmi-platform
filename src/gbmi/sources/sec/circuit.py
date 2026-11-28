@@ -9,14 +9,17 @@ arguments:
 * every client reads the row before every request;
 * a run waits for an open circuit once, when the wait is at most 16 minutes; a second block in
   the same run fails the run;
-* the first request after a block is one probe: an answer closes the circuit, a refusal locks
-  the circuit until an operator closes the circuit;
+* the first request after a block is one probe: the object (status 200) closes the circuit, a
+  refusal locks the circuit until an operator closes the circuit, and every other answer
+  decides nothing;
 * three "no such object" answers in a row for objects which a listing of the SEC names open
-  the circuit: a block can look like a missing file.
+  the circuit: a block can look like a missing file. Such an answer to a probe for a listed
+  object counts as a refused probe.
 """
 
 from __future__ import annotations
 
+import math
 import time
 from collections.abc import Callable
 from datetime import datetime, timedelta
@@ -41,6 +44,8 @@ MISSING_IN_A_ROW = 3
 ACCESS_DENIED = b"<Code>AccessDenied</Code>"
 #: The first bytes of a body are enough to recognise the answer.
 BODY_START = 512
+#: No header of the SEC makes a block longer than a week.
+LONGEST_BLOCK = timedelta(days=7)
 
 
 class Verdict(StrEnum):
@@ -54,8 +59,12 @@ class Verdict(StrEnum):
 
 
 def classify(status: int, host: str, path: str, body_start: bytes) -> Verdict:
-    """Read an answer from its status, the host, the path and the first bytes of the body."""
-    if 200 <= status < 300:
+    """Read an answer from its status, the host, the path and the first bytes of the body.
+
+    Only the status 200 is the object: the client asks for whole objects, and no other
+    2xx status is an answer to such a request.
+    """
+    if status == 200:
         return Verdict.OK
     if status == 404 and host == DATA_HOST:
         return Verdict.MISSING
@@ -74,10 +83,13 @@ def classify(status: int, host: str, path: str, body_start: bytes) -> Verdict:
 
 
 def block_length(retry_after: float | None) -> timedelta:
-    """15 minutes, or the seconds of the header Retry-After when the header gives more."""
-    if retry_after is None or retry_after <= BLOCK.total_seconds():
+    """15 minutes, or the seconds of the header Retry-After when the header gives more.
+
+    A value which is no finite number counts as no value; a week is the longest block.
+    """
+    if retry_after is None or not math.isfinite(retry_after) or retry_after <= 0:
         return BLOCK
-    return timedelta(seconds=retry_after)
+    return max(BLOCK, min(timedelta(seconds=retry_after), LONGEST_BLOCK))
 
 
 class Circuit:
@@ -88,11 +100,13 @@ class Circuit:
         connection: Connection,
         *,
         source: str,
+        run_id: str | None = None,
         now: Callable[[], datetime] = utc_now,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         self._connection = connection
         self.source = source
+        self._run_id = run_id
         self._now = now
         self._sleep = sleep
         #: A run waits for an open circuit once.
@@ -143,20 +157,27 @@ class Circuit:
                 )
         return row.recorded
 
-    def refused(self, *, status: int, retry_after: float | None, probe: bool) -> None:
-        """The SEC refused a request. A refused probe locks the circuit and raises."""
+    def refused(
+        self, *, status: int, retry_after: float | None, probe: bool, missing: bool = False
+    ) -> None:
+        """The SEC refused a request. A refused probe locks the circuit and raises.
+
+        ``missing`` says: the answer to a probe for a listed object was "no such object".
+        """
         now = self._now()
         if probe:
+            what = "answered 'no such object' for a listed object" if missing else "refused"
             lock_circuit(
                 self._connection,
                 self.source,
-                reason=f"the probe was refused with HTTP {status}",
+                reason=f"the probe was {what} with HTTP {status}",
                 http_status=status,
                 now=now,
+                run_id=self._run_id,
             )
             log.error("sec_circuit_locked", http_status=status)
             raise SourceBlockedError(
-                f"the SEC refused the probe with HTTP {status}: the circuit of {self.source} "
+                f"the probe was {what} with HTTP {status}: the circuit of {self.source} "
                 "is locked until an operator runs `gbmi sec circuit close --note`"
             )
         until = now + block_length(retry_after)
@@ -167,6 +188,7 @@ class Circuit:
             reason=f"HTTP {status}",
             http_status=status,
             now=now,
+            run_id=self._run_id,
         )
         log.warning(
             "sec_circuit_opened",
@@ -175,17 +197,22 @@ class Circuit:
             open_count=row.open_count,
         )
 
-    def answered(self, *, probe: bool) -> None:
-        """The SEC answered without a refusal. An answered probe closes the circuit."""
+    def found(self, *, probe: bool) -> None:
+        """The object arrived (status 200): a probe closes the circuit.
+
+        The count of missing objects in a row starts again.
+        """
+        self._missing = 0
         if probe:
             close_circuit(
-                self._connection, self.source, closed_by="probe", note=None, now=self._now()
+                self._connection,
+                self.source,
+                closed_by="probe",
+                note=None,
+                now=self._now(),
+                run_id=self._run_id,
             )
             log.info("sec_circuit_closed", closed_by="probe")
-
-    def found(self) -> None:
-        """An object arrived: the count of missing objects in a row starts again."""
-        self._missing = 0
 
     def missing(self, *, status: int, listed: bool) -> None:
         """The SEC has no such object; three in a row for listed objects are a block."""
@@ -203,6 +230,7 @@ class Circuit:
             reason=f"{MISSING_IN_A_ROW} listed objects in a row answered 'no such object'",
             http_status=status,
             now=now,
+            run_id=self._run_id,
         )
         log.error("sec_circuit_opened_by_missing_objects", http_status=status)
         raise SourceBlockedError(

@@ -7,7 +7,7 @@ from datetime import timedelta
 import pytest
 
 from gbmi.ledger.db import Connection
-from gbmi.ops.circuit import close_circuit, open_circuit, read_circuit
+from gbmi.ops.circuit import circuit_events, close_circuit, open_circuit, read_circuit
 from gbmi.sources.sec.circuit import BLOCK, MAX_WAIT, Circuit
 from gbmi.sources.sec.errors import SourceBlockedError
 
@@ -21,7 +21,7 @@ def clock() -> FakeTime:
 
 @pytest.fixture
 def circuit(ops: Connection, source: str, clock: FakeTime) -> Circuit:
-    return Circuit(ops, source=source, now=clock.now, sleep=clock.sleep)
+    return Circuit(ops, source=source, run_id="test-run", now=clock.now, sleep=clock.sleep)
 
 
 def block(ops: Connection, source: str, clock: FakeTime, minutes: float = 15) -> None:
@@ -52,10 +52,13 @@ def test_a_run_waits_once_for_an_open_circuit_and_then_sends_the_probe(
 
     assert clock.sleeps == [pytest.approx(900.0)]
     assert circuit.waited is True
-    assert read_circuit(ops, source).recorded  # only the answer to the probe closes
-    circuit.answered(probe=True)
+    assert read_circuit(ops, source).recorded  # only the object closes the circuit
+    circuit.found(probe=True)
     assert not read_circuit(ops, source).recorded
     assert circuit.before_request() is False
+    events = circuit_events(ops, source)
+    assert [event["event"] for event in events] == ["closed", "opened"]
+    assert (events[0]["decided_by"], events[0]["run_id"]) == ("probe", "test-run")
 
 
 def test_a_second_block_in_the_same_run_fails_the_run(
@@ -63,7 +66,7 @@ def test_a_second_block_in_the_same_run_fails_the_run(
 ) -> None:
     block(ops, source, clock)
     circuit.before_request()
-    circuit.answered(probe=True)
+    circuit.found(probe=True)
     block(ops, source, clock)
 
     with pytest.raises(SourceBlockedError, match="has waited for a block before"):
@@ -128,10 +131,13 @@ def test_a_refused_probe_locks_the_circuit_until_an_operator_closes(
     block(ops, source, clock)
     assert circuit.before_request() is True
 
-    with pytest.raises(SourceBlockedError, match="refused the probe with HTTP 429"):
+    with pytest.raises(SourceBlockedError, match="the probe was refused with HTTP 429"):
         circuit.refused(status=429, retry_after=None, probe=True)
 
     assert read_circuit(ops, source).locked
+    newest = circuit_events(ops, source)[0]
+    assert (newest["event"], newest["http_status"]) == ("locked", 429)
+    assert newest["reason"] == "the probe was refused with HTTP 429"
     clock.advance(86_400)
     fresh = Circuit(ops, source=source, now=clock.now, sleep=clock.sleep)
     with pytest.raises(SourceBlockedError, match="locked"):
@@ -140,14 +146,39 @@ def test_a_refused_probe_locks_the_circuit_until_an_operator_closes(
     assert fresh.before_request() is False
 
 
-def test_an_answer_which_is_no_probe_leaves_the_row_alone(
+def test_an_object_which_is_no_probe_leaves_the_row_alone(
     circuit: Circuit, ops: Connection, source: str, clock: FakeTime
 ) -> None:
     block(ops, source, clock)
 
-    circuit.answered(probe=False)
+    circuit.found(probe=False)
 
     assert read_circuit(ops, source).recorded
+
+
+def test_a_missing_listed_object_as_the_answer_to_a_probe_locks_the_circuit(
+    circuit: Circuit, ops: Connection, source: str, clock: FakeTime
+) -> None:
+    # A block can look like a missing file: such a probe counts as refused (review 1).
+    block(ops, source, clock)
+    clock.advance(BLOCK.total_seconds() + 1)
+    assert circuit.before_request() is True
+
+    with pytest.raises(SourceBlockedError, match="answered 'no such object' for a listed object"):
+        circuit.refused(status=403, retry_after=None, probe=True, missing=True)
+
+    assert read_circuit(ops, source).locked
+
+
+@pytest.mark.parametrize("retry_after", [float("inf"), float("nan"), -1.0, 10.0**12])
+def test_a_wrong_retry_after_cannot_stop_the_block_from_being_recorded(
+    circuit: Circuit, ops: Connection, source: str, clock: FakeTime, retry_after: float
+) -> None:
+    circuit.refused(status=429, retry_after=retry_after, probe=False)
+
+    row = read_circuit(ops, source)
+    assert row.blocked_until is not None
+    assert BLOCK <= row.blocked_until - clock.now() <= timedelta(days=7)
 
 
 def test_three_missing_listed_objects_in_a_row_open_the_circuit(
@@ -158,7 +189,7 @@ def test_three_missing_listed_objects_in_a_row_open_the_circuit(
         circuit.missing(status=404, listed=False)
     circuit.missing(status=403, listed=True)
     circuit.missing(status=403, listed=True)
-    circuit.found()  # an object in between: the count starts again
+    circuit.found(probe=False)  # an object in between: the count starts again
     circuit.missing(status=403, listed=True)
     circuit.missing(status=403, listed=True)
     assert not read_circuit(ops, source).recorded

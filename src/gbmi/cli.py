@@ -30,12 +30,18 @@ ledger_app = typer.Typer(help="The ledger of expected source files.", no_args_is
 lake_app = typer.Typer(help="The lake as the warehouse sees it.", no_args_is_help=True)
 quality_app = typer.Typer(help="Quality gates and reconciliation.", no_args_is_help=True)
 silver_app = typer.Typer(help="Silver: build units from verified files.", no_args_is_help=True)
+sec_app = typer.Typer(help="SEC EDGAR: the fair-access client.", no_args_is_help=True)
+sec_circuit_app = typer.Typer(
+    help="The circuit which remembers a block by the SEC.", no_args_is_help=True
+)
+sec_app.add_typer(sec_circuit_app, name="circuit")
 app.add_typer(config_app, name="config")
 app.add_typer(db_app, name="db")
 app.add_typer(gdelt_app, name="gdelt")
 app.add_typer(lake_app, name="lake")
 app.add_typer(ledger_app, name="ledger")
 app.add_typer(quality_app, name="quality")
+app.add_typer(sec_app, name="sec")
 app.add_typer(silver_app, name="silver")
 
 HourArgument = Annotated[str, typer.Option("--hour", help="UTC slot-hour, YYYY-MM-DDTHH.")]
@@ -57,6 +63,10 @@ Note = Annotated[
 DecidedBy = Annotated[
     str,
     typer.Option("--decided-by", envvar="GBMI_OPERATOR", help="The name of the operator."),
+]
+CircuitNote = Annotated[
+    str,
+    typer.Option("--note", help="What was found about the block; stored with the close."),
 ]
 MigrationsDirectory = Annotated[
     Path | None,
@@ -415,3 +425,76 @@ def quality_assert_counts(
     from gbmi.quality.reconcile import assert_tracer_counts
 
     _print(assert_tracer_counts(hour, committed, snapshot_id))
+
+
+@sec_circuit_app.command("status")
+def sec_circuit_status(as_of: AsOf = None) -> None:
+    """Show the circuit of the SEC: closed, open, waiting for the probe, or locked."""
+    from gbmi.core.clock import resolve_as_of
+    from gbmi.ledger.db import LedgerConfigurationError, connect
+    from gbmi.ops.circuit import circuit_events, read_circuit
+    from gbmi.sources.sec.client import SOURCE
+
+    try:
+        now = resolve_as_of(as_of)
+        with connect(autocommit=True) as connection:
+            row = read_circuit(connection, SOURCE)
+            events = circuit_events(connection, SOURCE)
+    except (LedgerConfigurationError, ValueError) as error:
+        raise _fail("sec circuit status", error) from error
+    if row.locked:
+        state = "locked"
+    elif row.blocks(now):
+        state = "open"
+    else:
+        state = "probe" if row.recorded else "closed"
+    _print(
+        {
+            "source": SOURCE,
+            "state": state,
+            "blocked_until": row.blocked_until,
+            "opened_at": row.opened_at,
+            "reason": row.reason,
+            "http_status": row.http_status,
+            "open_count": row.open_count,
+            "locked": row.locked,
+            "events": events,
+        }
+    )
+
+
+@sec_circuit_app.command("close")
+def sec_circuit_close(
+    note: CircuitNote, decided_by: DecidedBy = "operator", as_of: AsOf = None
+) -> None:
+    """Remove a recorded block and a lock, after a person has found the cause.
+
+    The command is no way around a block: the SEC ends a block when the requests of the
+    address have stayed below the limit (blueprint 4.3). Close the circuit only when the
+    cause is known and the block has ended.
+    """
+    from gbmi.core.clock import resolve_as_of
+    from gbmi.ledger.db import LedgerConfigurationError, connect
+    from gbmi.ops.circuit import close_circuit, read_circuit
+    from gbmi.sources.sec.client import SOURCE
+
+    try:
+        if not note.strip():
+            raise ValueError("the note is empty: say what was found about the block")
+        now = resolve_as_of(as_of)
+        with connect(autocommit=True) as connection:
+            before = read_circuit(connection, SOURCE)
+            closed = close_circuit(
+                connection, SOURCE, closed_by=decided_by, note=note.strip(), now=now
+            )
+    except (LedgerConfigurationError, ValueError) as error:
+        raise _fail("sec circuit close", error) from error
+    _print(
+        {
+            "source": SOURCE,
+            "closed": closed,
+            "was_locked": before.locked,
+            "was_blocked_until": before.blocked_until,
+            "closed_by": decided_by if closed else None,
+        }
+    )

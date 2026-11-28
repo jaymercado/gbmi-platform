@@ -36,7 +36,10 @@ FACTS = "/api/xbrl/companyfacts/CIK0001740332.json"
     [
         (200, DATA_HOST, FACTS, b"{}", Verdict.OK),
         (200, WWW_HOST, INDEX, b"Description", Verdict.OK),
-        (206, WWW_HOST, INDEX, b"", Verdict.OK),
+        # Only the status 200 is the object: the client asks for whole objects.
+        (206, WWW_HOST, INDEX, b"", Verdict.ERROR),
+        (204, DATA_HOST, FACTS, b"", Verdict.ERROR),
+        (201, DATA_HOST, FACTS, b"{}", Verdict.ERROR),
         # Finding F8: the SEC has no facts document for the company.
         (404, DATA_HOST, FACTS, b"<Error><Code>NoSuchKey</Code></Error>", Verdict.MISSING),
         (404, DATA_HOST, FACTS, b"", Verdict.MISSING),
@@ -70,7 +73,19 @@ def test_the_verdicts_are_the_outcomes_of_the_request_log() -> None:
 
 @pytest.mark.parametrize(
     ("retry_after", "minutes"),
-    [(None, 15), (0, 15), (30, 15), (900, 15), (901, 15.016667), (3600, 60)],
+    [
+        (None, 15),
+        (0, 15),
+        (-5, 15),
+        (30, 15),
+        (900, 15),
+        (901, 15.016667),
+        (3600, 60),
+        # A header cannot make the block endless or break the arithmetic.
+        (9_999_999, 7 * 24 * 60),
+        (float("inf"), 15),
+        (float("nan"), 15),
+    ],
 )
 def test_a_block_lasts_15_minutes_or_the_longer_time_of_the_header(
     retry_after: float | None, minutes: float

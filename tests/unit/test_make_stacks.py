@@ -98,7 +98,7 @@ def test_the_working_stack_retries_a_failed_task_and_the_demo_stack_does_not() -
     assert "GBMI_TASK_RETRIES := 0" in demo.stdout
 
 
-def test_the_stack_decides_where_the_sec_client_reads() -> None:
+def test_the_stack_alone_decides_where_the_sec_client_reads() -> None:
     # The value reaches the containers through compose/compose.yaml; gbmi.config reads the value.
     working = dry_run("--print-data-base", "up")
     demo = dry_run("--print-data-base", "up", "STACK=gbmi-demo")
@@ -108,11 +108,15 @@ def test_the_stack_decides_where_the_sec_client_reads() -> None:
     # The working stack asks the SEC; the demo stack reads the recorded files.
     assert "GBMI_SEC_SOURCE := live" in working.stdout
     assert "GBMI_SEC_SOURCE := fixture" in demo.stdout
-    # A value from the shell does not make the demo stack ask the SEC.
-    assert "GBMI_SEC_SOURCE := fixture" in inherited.stdout
-    # A value on the command line of make does, for the one command (week 3 plan, change C12).
-    assert "GBMI_SEC_SOURCE = live" in one_command.stdout
-    assert "GBMI_SEC_SOURCE := fixture" not in one_command.stdout
+    # Neither a value of the shell nor a value on the command line of make turns the demo
+    # stack into a stack which asks the SEC: live requests leave from one stack only, so one
+    # database remembers a block (review 1 of week 3, finding B2).
+    for result in (inherited, one_command):
+        assert result.returncode == 0, result.stderr
+        assert "GBMI_SEC_SOURCE := fixture" in result.stdout
+        assert "GBMI_SEC_SOURCE := live" not in result.stdout
+    off = dry_run("--print-data-base", "up", "GBMI_SEC_SOURCE=off")
+    assert "GBMI_SEC_SOURCE := live" in off.stdout
     compose = (REPO / "compose" / "compose.yaml").read_text(encoding="utf-8")
     assert "GBMI_SEC_SOURCE: ${GBMI_SEC_SOURCE:-off}" in compose
 
@@ -122,9 +126,22 @@ def test_the_demo_never_asks_the_sec(target: str) -> None:
     result = dry_run("--print-data-base", target, "GBMI_SEC_SOURCE=live")
 
     assert result.returncode == 0, result.stderr
-    # make demo starts make again for the demo stack, with the source of the recorded files.
-    assert f"STACK=gbmi-demo GBMI_SEC_SOURCE=fixture _{target}" in result.stdout
-    assert "GBMI_SEC_SOURCE = fixture" in result.stdout
+    # make demo starts make again for the demo stack, whose source is the recorded files.
+    assert f"STACK=gbmi-demo _{target}" in result.stdout
+    assert "GBMI_SEC_SOURCE := fixture" in result.stdout
+
+
+def test_a_reset_of_the_working_stack_asks_the_circuit_first() -> None:
+    confirmed = dry_run("reset", "CONFIRM=yes")
+    demo = dry_run("reset", "STACK=gbmi-demo")
+
+    # A recorded block by the SEC stops the reset before any volume is deleted.
+    guard = confirmed.stdout.index("bash compose/circuit_guard.sh")
+    assert guard < confirmed.stdout.index("down --volumes")
+    # The demo stack never asks the SEC, so the demo stack has no block to forget.
+    assert "circuit_guard" not in demo.stdout
+    script = (REPO / "compose" / "circuit_guard.sh").read_text(encoding="utf-8")
+    assert "blocked_until IS NOT NULL" in script and "exit 1" in script
 
 
 def test_an_unknown_stack_is_refused() -> None:

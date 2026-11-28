@@ -16,7 +16,7 @@ ALTER TABLE ops.silver_partition ADD CONSTRAINT silver_partition_unit CHECK (
         AND slot_hour BETWEEN 0 AND 23)
     OR (unit_kind = 'day' AND slot_date IS NOT NULL AND slot_hour IS NULL)
     OR (unit_kind IN ('keys', 'table') AND slot_date IS NULL AND slot_hour IS NULL
-        AND unit_label IS NOT NULL));
+        AND unit_label IS NOT NULL AND unit_label <> ''));
 
 -- The current version of a unit which has a label.
 CREATE INDEX silver_partition_by_label
