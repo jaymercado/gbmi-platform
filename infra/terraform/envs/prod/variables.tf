@@ -22,7 +22,7 @@ variable "github_repository" {
 }
 
 variable "host_market" {
-  description = "spot: a persistent spot request (about a third of the on-demand price). on_demand: the fallback when no spot capacity exists."
+  description = "Fixed when the host is created. spot: a persistent spot request (about a third of the on-demand price). on_demand: the fallback when the first apply finds no spot capacity. A later change does not reach the host: Terraform refuses to replace the instance, and the change from spot to on_demand shows no difference."
   type        = string
   default     = "spot"
 }
@@ -34,13 +34,13 @@ variable "host_schedule_enabled" {
 }
 
 variable "host_instance_type" {
-  description = "Instance type of the host (blueprint 9.2)."
+  description = "Instance type of the host (blueprint 9.2). Fixed for a spot host: AWS does not change the type of a spot instance."
   type        = string
   default     = "t4g.large"
 }
 
 variable "host_zone" {
-  description = "Availability zone of the subnet and of the host. The status report records why the zone was chosen."
+  description = "Availability zone of the subnet and of the host. Fixed when the network is created: a change would replace the subnet and the instance. The status report records why the zone was chosen."
   type        = string
   default     = "us-east-1a"
 }

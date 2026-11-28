@@ -77,6 +77,9 @@ resource "aws_vpc_endpoint" "s3" {
   }
 }
 
+# The name and the description of a security group cannot be changed: a new text would make
+# Terraform replace the group, and the replacement fails after a long wait, because the host
+# still uses the old group. Leave both texts as they are.
 resource "aws_security_group" "host" {
   name        = "${var.name_prefix}-host"
   description = "The host: no inbound rule; outbound HTTPS only."

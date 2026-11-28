@@ -17,3 +17,8 @@ output "deploy_document_arn" {
   description = "ARN of the command document."
   value       = aws_ssm_document.deploy.arn
 }
+
+output "schedule_group_name" {
+  description = "Group of the two schedules which start and stop the host; an alarm watches its failed calls."
+  value       = aws_scheduler_schedule_group.host.name
+}

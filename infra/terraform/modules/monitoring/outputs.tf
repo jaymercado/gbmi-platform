@@ -19,6 +19,6 @@ output "alerts_topic_arn" {
 }
 
 output "alarm_names" {
-  description = "Names of the five alarms of the host."
+  description = "Names of the six alarms of the host."
   value       = [for alarm in aws_cloudwatch_metric_alarm.host : alarm.alarm_name]
 }

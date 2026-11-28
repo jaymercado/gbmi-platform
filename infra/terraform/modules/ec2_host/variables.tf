@@ -9,13 +9,13 @@ variable "host_name" {
 }
 
 variable "instance_type" {
-  description = "Instance type of the host: an arm64 type with 8 GB (blueprint 9.2)."
+  description = "Instance type of the host: an arm64 type with 8 GB (blueprint 9.2). Fixed for a spot instance: AWS does not change the type of a spot instance."
   type        = string
   default     = "t4g.large"
 }
 
 variable "market" {
-  description = "spot: a persistent spot request which stops the instance on an interruption. on_demand: the fallback when no spot capacity exists."
+  description = "Fixed when the instance is created. spot: a persistent spot request which stops the instance on an interruption. on_demand: the fallback when the first apply finds no spot capacity. A later change does not reach an existing instance."
   type        = string
   default     = "spot"
 

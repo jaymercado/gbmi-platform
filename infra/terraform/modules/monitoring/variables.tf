@@ -14,6 +14,11 @@ variable "instance_id" {
   type        = string
 }
 
+variable "schedule_group_name" {
+  description = "Group of the two schedules which start and stop the host; one alarm watches its failed calls."
+  type        = string
+}
+
 variable "log_group_prefix" {
   description = "Path of the two log groups of the host."
   type        = string

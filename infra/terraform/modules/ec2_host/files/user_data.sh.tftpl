@@ -15,12 +15,23 @@ echo "gbmi user data: start $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 #    (util-linux-core) and the AWS CLI: the image of an instance brings the three, and the
 #    names stand here so that the script does not depend on the image. The Systems Manager
 #    agent is part of the image.
-dnf install --assumeyes --quiet docker git tar util-linux-core awscli-2 python3.12 \
-  amazon-cloudwatch-agent
+#    A failed download is tried again: the first boot runs once, and a half-finished first
+#    boot costs a new instance.
+installed=""
+for attempt in 1 2 3; do
+  if dnf install --assumeyes --quiet docker git tar util-linux-core awscli-2 python3.12 \
+    amazon-cloudwatch-agent; then
+    installed="yes"
+    break
+  fi
+  echo "dnf install failed: attempt $attempt of 3"
+  sleep 20
+done
+[ -n "$installed" ]
 
 # 2. The Compose plugin is no package of Amazon Linux 2023: a release file with a checksum.
 install -d -m 755 /usr/local/lib/docker/cli-plugins
-curl --fail --silent --show-error --location \
+curl --fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 5 \
   --output /usr/local/lib/docker/cli-plugins/docker-compose \
   "https://github.com/docker/compose/releases/download/${compose_version}/docker-compose-linux-aarch64"
 echo "${compose_sha256}  /usr/local/lib/docker/cli-plugins/docker-compose" | sha256sum --check -

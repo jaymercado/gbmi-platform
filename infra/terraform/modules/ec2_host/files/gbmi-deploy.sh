@@ -41,15 +41,21 @@ esac
 . "$GBMI_HOST_CONF"
 : "${GBMI_REPOSITORY:?}" "${GBMI_IMAGE:?}"
 
+# One lock for the deployments and for the start at boot (compose/host/stack-up of a release):
+# both write the environment file and call Compose.
 exec 9> "$GBMI_DEPLOY_LOCK"
-flock --nonblock 9 || die "another deployment is running"
+flock --nonblock 9 || die "another deployment or the start at boot is running"
 
 exec > >(tee -a "$GBMI_DEPLOY_LOG") 2>&1
 printf '=== deployment of %s, started %s\n' "$commit" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
+# The first clone is written beside its final name: a clone which is cut halfway leaves no
+# broken folder under the name which every later deployment uses.
 mirror="$GBMI_HOME/repo.git"
 if [ ! -d "$mirror" ]; then
-  git clone --quiet --bare "https://github.com/$GBMI_REPOSITORY.git" "$mirror"
+  rm -rf "$mirror.new"
+  git clone --quiet --bare "https://github.com/$GBMI_REPOSITORY.git" "$mirror.new"
+  mv "$mirror.new" "$mirror"
 fi
 git -C "$mirror" fetch --quiet origin "+refs/heads/main:refs/heads/main"
 if ! git -C "$mirror" cat-file -e "$commit^{commit}" 2> /dev/null \
@@ -57,8 +63,12 @@ if ! git -C "$mirror" cat-file -e "$commit^{commit}" 2> /dev/null \
   die "the commit is not part of the branch main"
 fi
 
-docker manifest inspect "$GBMI_IMAGE:$commit" > /dev/null 2>&1 \
-  || die "the registry holds no image of the commit"
+# The answer of Docker is shown after a failure: a missing image and a registry which does
+# not answer need different repairs.
+if ! answer="$(docker manifest inspect "$GBMI_IMAGE:$commit" 2>&1 > /dev/null)"; then
+  printf '%s\n' "$answer" >&2
+  die "the registry holds no image of the commit, or the registry did not answer"
+fi
 
 release="$GBMI_HOME/releases/$commit"
 if [ ! -d "$release" ]; then

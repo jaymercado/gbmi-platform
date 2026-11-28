@@ -5,7 +5,10 @@
 echo "docker $*" >> /var/log/rehearsal-docker.log
 case "${1:-}" in
   manifest)
-    [ ! -e /run/rehearsal/no-image ] || exit 1
+    if [ -e /run/rehearsal/no-image ]; then
+      echo "stand-in docker: no such manifest" >&2
+      exit 1
+    fi
     ;;
   compose)
     previous=""

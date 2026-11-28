@@ -17,6 +17,9 @@
 GBMI_HOME="${GBMI_HOME:-/opt/gbmi}"
 GBMI_ENV_FILE="${GBMI_ENV_FILE:-/etc/gbmi/env}"
 GBMI_PARAMETER_PREFIX="${GBMI_PARAMETER_PREFIX:-/gbmi/prod/}"
+# The lock of the fixed deployment script of the host. The start at boot takes the same lock:
+# a deployment and a start both write the environment file and call Compose.
+GBMI_DEPLOY_LOCK="${GBMI_DEPLOY_LOCK:-/run/gbmi-deploy.lock}"
 export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
 
 say() {

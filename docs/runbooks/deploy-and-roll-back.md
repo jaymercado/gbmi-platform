@@ -23,6 +23,8 @@ Every command of the runbook runs on the laptop, in the repository folder, unles
 3. **Database changes go forward only** (blueprint §9.7). A release never removes a migration. Going back to an older release keeps the newer tables and columns in the database.
 4. **No deployment during a live period which is being measured** (exit-gate row 5 of week 3).
 5. **The SEC source of the host is a separate switch.** A deployment never turns requests to the SEC on. See "The SEC source of the host".
+6. **Never cancel the spot request of the host, and never terminate the instance, in the AWS console.** AWS terminates a stopped spot instance when its request is cancelled. The operational database lives on the disk of the instance and has no backup before phase P4.
+7. **One deployment or one start at a time.** A deployment and the start at boot use one lock. A deployment which arrives while the host still starts its stack is refused with "another deployment or the start at boot is running": wait a few minutes and start the workflow again.
 
 ## Deploy a commit
 
@@ -47,7 +49,7 @@ Every command of the runbook runs on the laptop, in the repository folder, unles
    For another commit of `main`: `gh workflow run deploy.yml --ref main -f commit=<40 characters>`.
 
 4. Jay opens the run in GitHub (Actions, workflow `deploy`) and approves the deployment to the environment `prod`.
-5. Follow the run. The job asks the host for the status every 15 seconds, for one hour at most, and ends with a summary: the commit and the status. The summary never shows output of the host.
+5. Follow the run. The job asks the host for the status every 15 seconds, for 55 minutes at most, and ends with a summary: the commit and the status. The summary never shows output of the host.
 
    ```bash
    gh run watch "$(gh run list --workflow deploy.yml --limit 1 --json databaseId --jq '.[0].databaseId')"
@@ -83,9 +85,9 @@ The run of the workflow ends with a status other than `Success`. `DEPLOYED` stil
 | What the summary says | What to read | Likely cause |
 |---|---|---|
 | "Expected one running instance" | `make host-status` | The host is stopped (the schedule stops the host at 24:00 UTC), or the spot instance was interrupted |
-| Status `Failed`, after less than a minute | `make host-deploy-log` | The commit is not part of `main`, the image of the commit is missing (the workflow `images` has not ended, or the image is private), or a parameter is missing |
+| Status `Failed`, after less than a minute | `make host-deploy-log` | The commit is not part of `main`; the image of the commit is missing (the workflow `images` has not ended, or the image is private) or the registry did not answer: the log shows the answer of Docker; a parameter is missing; or the host still starts its stack after a boot (rule 7) |
 | Status `Failed`, after several minutes | `make host-deploy-log`; the line with `FAIL` names the check | A service did not become healthy, or a check of the smoke test failed |
-| Status `TimedOut` or `InProgress` after one hour | `make host-status` | The host is under memory pressure, or the tracer DAG of the smoke test did not end |
+| Status `TimedOut`, or `InProgress` after 55 minutes | `make host-status`, then `make host-deploy-log` | The host is under memory pressure, or the tracer DAG of the smoke test did not end. The workflow stops asking after 55 minutes; the deployment can still end on the host |
 
 Read the output of the newest deployment. Systems Manager keeps the first 24,000 characters; the host scripts print the steps of a deployment and no value of a secret.
 
@@ -115,6 +117,18 @@ sudo /opt/gbmi/releases/"$(cat /opt/gbmi/DEPLOYED)"/compose/host/stack-up
 The same happens at the next start of the host at 08:00 UTC.
 
 Going back does not undo a migration (rule 3). When the failed release applied a migration, the older code runs on the newer schema. A migration only adds tables, columns and checks, so the older code keeps working in the cases which the tests of the migration cover; read the migration file before a decision.
+
+## The host did not start in the morning
+
+The schedule starts the host at 08:00 UTC. A start fails when AWS has no free spot capacity for the instance type in the zone of the host.
+
+- **Signs:** an email of the alarm `gbmi-prod-host-schedule-failed`; `make host-status` shows the state `stopped`.
+- **What happens by itself:** the schedule tries the start again for 12 hours, until 20:00 UTC. The alarm sends a second email when a call of the schedule works again.
+- **Start by hand:** `make host-start` sends one start call and waits. The call fails with the same error while no capacity is free.
+- **After the start:** the unit `gbmi-stack.service` starts the deployed release. The DAGs then build the hours which the host missed, from the ledger.
+- **No capacity for more than a day:** the market of an existing host cannot be changed (see `infra/terraform/README.md`). A host on the on-demand market is a new instance, and the operational database has to move with its disk. No command of the repository does that: decide the steps with Jay first.
+
+`make host-stop` stops the host by hand. The schedule starts the host again at 08:00 UTC.
 
 ## Secrets of the host
 

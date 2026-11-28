@@ -48,11 +48,15 @@ resource "aws_instance" "host" {
     instance_metadata_tags      = "disabled"
   }
 
+  # The disk holds the operational database, which has no backup before phase P4. The disk
+  # outlives the instance: after a termination by mistake (a cancelled spot request, a click
+  # in the console) a new instance can take the disk over. A host which is removed on purpose
+  # leaves the disk behind; a person deletes the disk when its data is no longer needed.
   root_block_device {
     volume_type           = "gp3"
     volume_size           = var.root_volume_gb
     encrypted             = true
-    delete_on_termination = true
+    delete_on_termination = false
 
     tags = {
       Name = "${var.host_name}-root"
@@ -66,7 +70,9 @@ resource "aws_instance" "host" {
   }
 
   # A persistent spot request: on an interruption AWS stops the instance and keeps its disk,
-  # and starts the instance again when capacity returns.
+  # and starts the instance again when capacity returns. The market is fixed when the
+  # instance is created (variable market): the block forces a new resource when it is added,
+  # and Terraform sees no difference when it is removed.
   dynamic "instance_market_options" {
     for_each = var.market == "spot" ? [1] : []
 
@@ -85,6 +91,10 @@ resource "aws_instance" "host" {
   }
 
   lifecycle {
+    # Nothing destroys or replaces the host by accident: Terraform refuses every plan which
+    # would. To replace or remove the host on purpose, remove the line first.
+    prevent_destroy = true
+
     # A new image or a changed user data script must not replace a running host.
     #
     # The public address: a stopped instance has none, and the AWS provider then reads
@@ -102,10 +112,26 @@ resource "aws_scheduler_schedule_group" "host" {
   name = "${var.name_prefix}-host"
 }
 
+# A start fails when no spot capacity is free, and AWS does not start a spot instance which
+# the schedule stopped: only a new start call does. The schedule therefore tries a failed
+# start again for 12 hours, until 20:00 UTC. A failed stop is tried again for one hour. An
+# alarm of the module monitoring reports each failed call.
 locals {
   schedules = {
-    start = { expression = "cron(0 8 * * ? *)", action = "startInstances", what = "Starts" }
-    stop  = { expression = "cron(0 0 * * ? *)", action = "stopInstances", what = "Stops" }
+    start = {
+      expression      = "cron(0 8 * * ? *)"
+      action          = "startInstances"
+      what            = "Starts"
+      attempts        = 185
+      max_age_seconds = 43200
+    }
+    stop = {
+      expression      = "cron(0 0 * * ? *)"
+      action          = "stopInstances"
+      what            = "Stops"
+      attempts        = 3
+      max_age_seconds = 3600
+    }
   }
 }
 
@@ -130,8 +156,8 @@ resource "aws_scheduler_schedule" "host" {
     input    = jsonencode({ InstanceIds = [aws_instance.host.id] })
 
     retry_policy {
-      maximum_retry_attempts       = 3
-      maximum_event_age_in_seconds = 3600
+      maximum_retry_attempts       = each.value.attempts
+      maximum_event_age_in_seconds = each.value.max_age_seconds
     }
   }
 }

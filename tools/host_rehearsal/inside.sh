@@ -231,8 +231,11 @@ nothing_happened() {
 check "after the six refusals: no clone, no docker call, no log line, no injected command" \
   nothing_happened
 
+# A first clone which was cut halfway left a folder behind.
+mkdir -p /opt/gbmi/repo.git.new/leftover
 deploy "$first"
 passed "the first deployment ends with the exit code 0" $?
+check "the leftover of a clone which was cut halfway is gone" test ! -e /opt/gbmi/repo.git.new
 check "the release folder holds the files of the commit" \
   test -x "/opt/gbmi/releases/$first/compose/host/deploy.sh"
 check "the clone names the address of GitHub as its origin" \
@@ -299,6 +302,7 @@ touch /run/rehearsal/no-image
 deploy "$second"
 refused "a commit without an image in the registry is refused" $? \
   "the registry holds no image of the commit"
+check "the refusal shows the answer of docker" has /root/deploy.out "stand-in docker: no such manifest"
 rm /run/rehearsal/no-image
 check "no release folder exists for the commit without an image" \
   test ! -e "/opt/gbmi/releases/$second"
@@ -321,7 +325,8 @@ check "after the failed smoke test DEPLOYED still names the first commit" \
 ) 8> /run/gbmi-deploy.lock &
 sleep 1
 deploy "$second"
-refused "a second deployment at the same time is refused" $? "another deployment is running"
+refused "a second deployment at the same time is refused" $? \
+  "another deployment or the start at boot is running"
 wait
 
 deploy "$second"
@@ -369,8 +374,28 @@ check "the environment file still belongs to root with the mode 600" mode /etc/g
 check "docker was called once: up for the deployed release, without a pull of its own" \
   test "$(cat /var/log/rehearsal-docker.log)" = "docker $(compose_of "$third") up --detach --wait --remove-orphans --quiet-pull"
 
-mv /opt/gbmi/DEPLOYED /opt/gbmi/DEPLOYED.away
+# A deployment holds the lock while the unit starts the stack: the start does nothing.
 rm /var/log/rehearsal-docker.log
+inode="$(stat --format %i /etc/gbmi/env)"
+(
+  flock 8
+  sleep 3
+) 8> /run/gbmi-deploy.lock &
+sleep 1
+env -i PATH="$deploy_path" /usr/local/sbin/gbmi-stack-up > /root/deploy.out 2>&1
+code=$?
+wait
+start_gave_way() {
+  [ "$code" -eq 75 ] && [ ! -e /var/log/rehearsal-docker.log ] \
+    && [ "$(stat --format %i /etc/gbmi/env)" = "$inode" ] \
+    && has /root/deploy.out "a deployment is running"
+}
+check "while a deployment holds the lock, the start ends with the exit code 75 and changes nothing" \
+  start_gave_way
+check "the unit counts the exit code 75 as a success" \
+  has /etc/systemd/system/gbmi-stack.service "SuccessExitStatus=75"
+
+mv /opt/gbmi/DEPLOYED /opt/gbmi/DEPLOYED.away
 env -i PATH="$deploy_path" /usr/local/sbin/gbmi-stack-up > /root/deploy.out 2>&1
 code=$?
 no_start() {

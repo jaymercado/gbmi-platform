@@ -1,7 +1,8 @@
 # Monitoring of the host (blueprint 5.10 and 9.2; week 3 plan 3.3): two log groups, one topic
-# for alerts and five alarms. The host stops each night, so missing data counts as healthy. A
-# host which does not start in the morning therefore raises no alarm before the heartbeat of
-# phase P4; make host-status is the check of each working day.
+# for alerts and six alarms. The host stops each night, so missing data counts as healthy:
+# no alarm of the instance can report a host which does not start in the morning. The sixth
+# alarm watches the schedule itself and reports a start or a stop which failed. The heartbeat
+# of phase P4 closes the rest of the gap; make host-status is the check of each working day.
 
 data "aws_caller_identity" "current" {}
 
@@ -97,15 +98,32 @@ locals {
       periods     = 1
       dimensions  = { InstanceId = var.instance_id, path = "/" }
     }
-    surplus-credits-charged = {
-      description = "AWS charged for surplus CPU credits of the host."
+    # AWS charges spent surplus credits when an instance stops, and the host stops every
+    # night: a stopped instance sends no data point for the charge itself. The alarm
+    # therefore watches the balance which the next stop would charge. 150 credits are 2.5
+    # vCPU hours; the start of the stack in the morning stays far below.
+    surplus-credits = {
+      description = "The host has spent more than 150 surplus CPU credits. AWS charges the balance when the host stops."
       namespace   = "AWS/EC2"
-      metric      = "CPUSurplusCreditsCharged"
+      metric      = "CPUSurplusCreditBalance"
       statistic   = "Maximum"
       comparison  = "GreaterThanThreshold"
-      threshold   = 0
+      threshold   = 150
       periods     = 1
       dimensions  = { InstanceId = var.instance_id }
+    }
+    # EventBridge Scheduler counts each call of a target which ends with an error. A start
+    # which fails for lack of spot capacity is tried again for 12 hours; the alarm tells a
+    # person at the first failure.
+    schedule-failed = {
+      description = "A start or a stop of the host by the schedule failed."
+      namespace   = "AWS/Scheduler"
+      metric      = "TargetErrorCount"
+      statistic   = "Sum"
+      comparison  = "GreaterThanOrEqualToThreshold"
+      threshold   = 1
+      periods     = 1
+      dimensions  = { ScheduleGroup = var.schedule_group_name }
     }
   }
 }

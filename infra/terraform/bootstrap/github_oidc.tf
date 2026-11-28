@@ -124,6 +124,9 @@ data "aws_iam_policy_document" "plan_read_only" {
       "s3:GetLifecycleConfiguration",
       "s3:GetReplicationConfiguration",
       "s3:ListBucket",
+      # The provider asks for the tags of a bucket with this action first and falls back to
+      # s3:GetBucketTagging only after a refusal with one exact error text.
+      "s3:ListTagsForResource",
     ]
     resources = ["arn:aws:s3:::gbmi-*"]
   }

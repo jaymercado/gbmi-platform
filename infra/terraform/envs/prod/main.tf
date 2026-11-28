@@ -43,9 +43,10 @@ module "network" {
 module "monitoring" {
   source = "../../modules/monitoring"
 
-  name_prefix = local.name_prefix
-  alert_email = var.alert_email
-  instance_id = module.ec2_host.instance_id
+  name_prefix         = local.name_prefix
+  alert_email         = var.alert_email
+  instance_id         = module.ec2_host.instance_id
+  schedule_group_name = module.ec2_host.schedule_group_name
 }
 
 module "iam" {
