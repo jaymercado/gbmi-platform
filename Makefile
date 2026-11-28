@@ -217,9 +217,10 @@ psql: ## Run one SQL statement on the operational database of the stack: make ps
 # Each drill works in a throwaway database and in a lake directory of its own under _test/.
 DRILL_2 := dr2_crash_silver
 DRILL_4 := dr4_corrupt_file
+DRILL_5 := dr5_sec_throttling
 DRILL_8 := dr8_rerun_silver
-drill: _other-stack-stopped _lake-dir ## Run a failure drill on the recorded files: make drill DR=2 (2, 4 or 8); needs make up
-	@if [ -z "$(DRILL_$(DR))" ]; then echo "make drill DR=<n>: n is 2 (crash), 4 (corrupt file) or 8 (rerun)"; exit 1; fi
+drill: _other-stack-stopped _lake-dir ## Run a failure drill on the recorded files: make drill DR=2 (2, 4, 5 or 8); needs make up
+	@if [ -z "$(DRILL_$(DR))" ]; then echo "make drill DR=<n>: n is 2 (crash), 4 (corrupt file), 5 (SEC throttling) or 8 (rerun)"; exit 1; fi
 	$(TOOLBOX) python -m drills.$(DRILL_$(DR)) $(ARGS)
 
 # The benchmarks of blueprint 15.6 which phase P1 measures. A benchmark needs the real days of
