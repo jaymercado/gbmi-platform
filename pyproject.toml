@@ -10,6 +10,9 @@ authors = [{ name = "Jay Mercado" }]
 dependencies = [
     "duckdb>=2.0.1,<2.1",
     "pyiceberg[pyarrow,sql-sqlite,glue]==0.12.0",
+    # One PUT request for a raw file on S3 (gbmi.lake.objects). PyIceberg with the extra glue
+    # needs boto3 too; the lock file holds the one version of both.
+    "boto3>=1.44,<2",
     "clickhouse-connect>=1.13,<2",
     "psycopg[binary]>=3.3,<4",
     "httpx>=0.28,<1",
@@ -88,9 +91,9 @@ check_untyped_defs = true
 no_implicit_optional = true
 strict_equality = true
 
-# pyarrow ships no type information; its objects are treated as Any.
+# pyarrow and boto3 ship no type information; their objects are treated as Any.
 [[tool.mypy.overrides]]
-module = ["pyarrow", "pyarrow.*"]
+module = ["pyarrow", "pyarrow.*", "boto3"]
 ignore_missing_imports = true
 
 # BP 10: strict mode for core, ledger, sources and er; standard elsewhere.

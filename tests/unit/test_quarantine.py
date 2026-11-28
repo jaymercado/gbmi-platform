@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pytest
 
 from gbmi.lake.commit import Unit
 from gbmi.quality.quarantine import (
@@ -86,3 +87,46 @@ def test_a_day_build_removes_the_hour_files_of_the_day_and_nothing_else(tmp_path
     assert not any((tmp_path / str(key)).exists() for key in hours)
     assert all((tmp_path / str(key)).exists() for key in kept)
     assert clear_hour_quarantine(lake, "gdelt", "export", day) == 0
+
+
+def test_on_s3_each_quarantine_file_is_one_put_request(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Week 3 plan 3.3: the rows of a unit and a rejected file are each one whole object.
+    import io
+
+    import boto3
+    from botocore.stub import ANY, Stubber
+
+    from gbmi.lake import objects
+
+    client = boto3.client(
+        "s3", region_name="us-east-1", aws_access_key_id="test", aws_secret_access_key="test"
+    )
+    monkeypatch.setattr(objects, "s3_client", lambda: client)
+    sent: list[bytes] = []
+    real = client.put_object
+
+    def recording(**arguments: object) -> object:
+        sent.append(arguments["Body"])  # type: ignore[arg-type]
+        return real(**arguments)
+
+    monkeypatch.setattr(client, "put_object", recording)
+    rows_key = "quarantine/gdelt/export/dt=2026-11-25/hour=08/rows.parquet"
+    file_key = "quarantine/gdelt/export/dt=2026-11-25/20261125084500.export.CSV.zip"
+    with Stubber(client) as stub:
+        stub.add_response("put_object", {}, {"Bucket": "bucket", "Key": rows_key, "Body": ANY})
+        stub.add_response("put_object", {}, {"Bucket": "bucket", "Key": file_key, "Body": b"bad"})
+
+        written = write_quarantine("s3://bucket", "gdelt", "export", UNIT, rejected("bad id"))
+        kept = write_quarantined_file(
+            "s3://bucket",
+            "gdelt",
+            "export",
+            UNIT.slot_date,
+            "20261125084500.export.CSV.zip",
+            b"bad",
+        )
+
+        stub.assert_no_pending_responses()
+    assert (written, kept) == (rows_key, file_key)
+    # The first object is the Parquet file of the rejected rows.
+    assert pq.read_table(io.BytesIO(sent[0]))["reason"].to_pylist() == ["bad id"]

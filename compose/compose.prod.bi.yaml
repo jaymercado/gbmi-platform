@@ -1,0 +1,18 @@
+# Metabase on the AWS host, on demand (week 3 plan, WP-10 step 4). An operator starts Metabase
+# with the four Compose files, in the order compose.yaml, compose.bi.yaml, compose.prod.yaml,
+# compose.prod.bi.yaml. The daily stack runs without Metabase: with Metabase the limits of the
+# services add up to 7,200 MiB of the 8 GB of the host.
+#
+# Metabase listens on 127.0.0.1 of the host (compose.bi.yaml); an operator reaches the port
+# through a port forward of Session Manager.
+services:
+  metabase:
+    mem_limit: 1300m
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_DEFAULT_REGION:-us-east-1}
+        awslogs-group: ${GBMI_LOG_GROUP:?the name of the log group of the containers}
+        tag: "{{.Name}}"
+        mode: non-blocking
+        max-buffer-size: 4m

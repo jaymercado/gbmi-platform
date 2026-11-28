@@ -1,0 +1,181 @@
+# The overlay of the AWS host (blueprint 9.2 and 9.7; week 3 plan 3.3). The host scripts in
+# compose/host/ start the stack with both files:
+#
+#   docker compose --project-name gbmi --project-directory <release folder> \
+#     --env-file <environment file of the host> \
+#     -f compose/compose.yaml -f compose/compose.prod.yaml up --detach --wait
+#
+# compose/compose.yaml holds the service definitions: the laptop and the host run the same
+# services (decision TD-15). The overlay changes what differs on the host:
+#
+#   - the Airflow image comes from the registry, by the commit of the release; nothing is built;
+#   - no service mounts a source folder, the fixtures or a lake folder: the lake is S3 with Glue;
+#   - PostgreSQL and ClickHouse publish no port; the API server listens on 127.0.0.1 of the host;
+#   - the long-running services start again after a failure and after a restart of the host;
+#   - a failed task is tried again three times (blueprint 8.1);
+#   - the containers log to CloudWatch, and the task logs of Airflow go to S3;
+#   - the memory limits fit a host with 8 GB.
+#
+# Compose merges a mapping key by key and appends a list to a list. The tag !override replaces
+# a list, and the tag !reset removes a key. Both tags stand at the key of the service itself:
+# Compose v2.36 ignores !reset inside a block which a YAML merge key ("<<") brings in. Each of
+# the eight services of the Airflow image therefore repeats the lines image, build and volumes.
+#
+# The environment file of the host comes from Parameter Store (compose/host/render_env.sh). It
+# holds the secrets of .env.example and the values of the host: GBMI_RELEASE (the 40
+# characters of the deployed commit), GBMI_LAKE_BUCKET, GBMI_OPS_BUCKET, GBMI_LOG_GROUP,
+# GBMI_CH_LAKE_ROLE_ARN, GBMI_SEC_SOURCE and AWS_DEFAULT_REGION.
+
+x-airflow-image: &airflow-image ghcr.io/jaymercado/gbmi-airflow:${GBMI_RELEASE:?the commit of the release}
+
+x-host-env: &host-env
+  # The package settings of the host (blueprint 9.5): S3 with the Glue Data Catalog. The
+  # credentials come from the role of the host; no key stands in a file.
+  GBMI_ENV: prod
+  GBMI_LAKE_BACKEND: aws
+  GBMI_LAKE_URI: s3://${GBMI_LAKE_BUCKET:?the name of the lake bucket}
+  GBMI_CATALOG_URI: glue://${AWS_DEFAULT_REGION:-us-east-1}
+  AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+  GBMI_TASK_RETRIES: "3"
+  GBMI_DAG_SCHEDULES: "on"
+  DBT_TARGET: prod
+  # ClickHouse reads the lake through a role which can only read the prefix warehouse/
+  # (week 3 plan, difference D42): "role" names the role in the pin statement, "keys" is the
+  # fallback in which the pin task assumes the role and passes short-lived keys.
+  GBMI_CH_LAKE_ACCESS: ${GBMI_CH_LAKE_ACCESS:-role}
+  GBMI_CH_LAKE_ROLE_ARN: ${GBMI_CH_LAKE_ROLE_ARN:?the address of the role gbmi-clickhouse-lake-ro}
+  # One worker of the API server fits the memory limit of the host.
+  AIRFLOW__API__WORKERS: "1"
+  # The log of a task is an object below airflow-logs/ of the ops bucket and opens in the
+  # screen of Airflow (week 3 plan, exit-gate row 9). The connection holds no key: the Amazon
+  # provider then uses the role of the host.
+  AIRFLOW__LOGGING__REMOTE_LOGGING: "true"
+  AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: s3://${GBMI_OPS_BUCKET:?the name of the ops bucket}/airflow-logs
+  AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: aws_default
+  AIRFLOW__LOGGING__DELETE_LOCAL_LOGS: "true"
+  AIRFLOW_CONN_AWS_DEFAULT: aws://
+
+x-host-logging: &host-logging
+  # The log group exists already: Terraform creates the group with a retention of 30 days.
+  # A full buffer drops lines and never blocks a container.
+  driver: awslogs
+  options:
+    awslogs-region: ${AWS_DEFAULT_REGION:-us-east-1}
+    awslogs-group: ${GBMI_LOG_GROUP:?the name of the log group of the containers}
+    tag: "{{.Name}}"
+    mode: non-blocking
+    max-buffer-size: 4m
+
+services:
+  postgres:
+    ports: !reset []
+    mem_limit: 400m
+    restart: unless-stopped
+    logging: *host-logging
+
+  clickhouse:
+    environment:
+      # 1.6 GiB of the 2,000 MiB of the container.
+      CH_MAX_SERVER_MEMORY_USAGE: "1717986918"
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+    # The configuration without the file lake-local.xml, and no lake folder.
+    volumes: !override
+      - clickhouse-data:/var/lib/clickhouse
+      - ./docker/clickhouse/config.d/gbmi.xml:/etc/clickhouse-server/config.d/gbmi.xml:ro
+      - ./docker/clickhouse/users.d/gbmi.xml:/etc/clickhouse-server/users.d/gbmi.xml:ro
+    ports: !reset []
+    mem_limit: 2000m
+    restart: unless-stopped
+    logging: *host-logging
+
+  clickhouse-init:
+    logging: *host-logging
+
+  postgres-roles:
+    logging: *host-logging
+
+  ops-migrate:
+    image: *airflow-image
+    build: !reset null
+    volumes: !override
+      - airflow-logs:/opt/airflow/logs
+    environment:
+      <<: *host-env
+    logging: *host-logging
+
+  airflow-init:
+    image: *airflow-image
+    build: !reset null
+    volumes: !override
+      - airflow-logs:/opt/airflow/logs
+    environment:
+      <<: *host-env
+    logging: *host-logging
+
+  dbt-manifest:
+    image: *airflow-image
+    build: !reset null
+    volumes: !override
+      - airflow-logs:/opt/airflow/logs
+    environment:
+      <<: *host-env
+    logging: *host-logging
+
+  airflow-apiserver:
+    image: *airflow-image
+    build: !reset null
+    volumes: !override
+      - airflow-logs:/opt/airflow/logs
+    environment:
+      <<: *host-env
+    restart: unless-stopped
+    mem_limit: 700m
+    logging: *host-logging
+
+  airflow-scheduler:
+    image: *airflow-image
+    build: !reset null
+    volumes: !override
+      - airflow-logs:/opt/airflow/logs
+    environment:
+      <<: *host-env
+    restart: unless-stopped
+    mem_limit: 2000m
+    logging: *host-logging
+
+  airflow-dag-processor:
+    image: *airflow-image
+    build: !reset null
+    volumes: !override
+      - airflow-logs:/opt/airflow/logs
+    environment:
+      <<: *host-env
+    restart: unless-stopped
+    mem_limit: 400m
+    logging: *host-logging
+
+  airflow-triggerer:
+    image: *airflow-image
+    build: !reset null
+    volumes: !override
+      - airflow-logs:/opt/airflow/logs
+    environment:
+      <<: *host-env
+    restart: unless-stopped
+    mem_limit: 400m
+    logging: *host-logging
+
+  # One-off commands of an operator, for example "gbmi sec circuit status". The image holds
+  # the code; the variables of the tests and the administrator of PostgreSQL stay on the laptop.
+  toolbox:
+    image: *airflow-image
+    build: !reset null
+    volumes: !override []
+    environment:
+      <<: *host-env
+      GBMI_TEST_PG_ADMIN_DSN: !reset null
+      GBMI_TEST_AWS: !reset null
+      GBMI_TEST_AWS_LAKE_BUCKET: !reset null
+      AWS_ACCESS_KEY_ID: !reset null
+      AWS_SECRET_ACCESS_KEY: !reset null
+      AWS_SESSION_TOKEN: !reset null

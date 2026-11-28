@@ -144,10 +144,14 @@ redact-check: ## Search the repository for the AWS account number and the addres
 env: ## Create or complete .env with generated secrets
 	@command -v uv >/dev/null && uv run python compose/make_env.py || python3 compose/make_env.py
 
-images: ## Build both image targets (dev for Compose, runtime for deployment)
+images: ## Build both image targets (dev for Compose, runtime for deployment) and check the runtime image
 	docker build --file docker/airflow/Dockerfile --target dev --tag gbmi-airflow:dev .
+	@# The image carries the 40 characters of the commit as its pipeline version (week 3 plan,
+	@# exit-gate row 13). The workflow "images" builds and pushes the image of a commit of main.
+	commit=$$(git rev-parse HEAD 2>/dev/null || echo unknown); \
 	docker build --file docker/airflow/Dockerfile --target runtime --tag gbmi-airflow:runtime \
-		--build-arg GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo unknown) .
+		--build-arg GIT_SHA=$$commit . \
+	&& docker/airflow/check_runtime.sh gbmi-airflow:runtime $$commit
 
 # A target which starts containers stops here while the other stack runs: both stacks publish
 # the same ports, and fixtures must never reach the ledger and the lake of the working stack.

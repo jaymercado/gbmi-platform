@@ -419,6 +419,36 @@ def lake_pin(
     _print(pin_silver_table_task(table))
 
 
+@lake_app.command("check")
+def lake_check(
+    scratch: Annotated[
+        str | None,
+        typer.Option(
+            help="Where one object is written, read and deleted (default: below the lake).",
+        ),
+    ] = None,
+    release: Annotated[
+        str | None,
+        typer.Option(help="The commit which the pipeline version has to equal."),
+    ] = None,
+    table: Annotated[
+        str, typer.Option(help="The silver table which ClickHouse reads.")
+    ] = "gdelt_event",
+) -> None:
+    """Check the lake backend of the stack: catalog, object store, pinned read, version."""
+    from gbmi.lake.check import run_checks
+
+    checks = run_checks(get_settings(), scratch_uri=scratch, release=release, table=table)
+    _print(
+        {
+            "passed": all(check.passed for check in checks),
+            "checks": {check.name: {"passed": check.passed, **check.detail} for check in checks},
+        }
+    )
+    if not all(check.passed for check in checks):
+        raise typer.Exit(1)
+
+
 @quality_app.command("assert-counts")
 def quality_assert_counts(
     hour: HourArgument,

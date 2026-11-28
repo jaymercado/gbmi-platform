@@ -40,6 +40,13 @@ class SecSource(StrEnum):
     OFF = "off"  # no client can start: the stack sends no request to the SEC
 
 
+class LakeAccess(StrEnum):
+    """How ClickHouse receives the right to read the lake on S3 (week 3 plan 3.3, D42)."""
+
+    ROLE = "role"  # the pin statement names a role, and ClickHouse assumes the role
+    KEYS = "keys"  # the pin task assumes the role and passes short-lived keys
+
+
 _LAKE_SCHEME = {LakeBackend.LOCAL: "file://", LakeBackend.AWS: "s3://"}
 _CATALOG_SCHEME = {LakeBackend.LOCAL: "sqlite:///", LakeBackend.AWS: "glue://"}
 
@@ -63,6 +70,11 @@ class Settings(BaseSettings):
     #: The default fits a checkout; the images set an absolute path.
     migrations_dir: str = "db/postgres/migrations"
     ch_url: SecretStr | None = None
+    #: On the AWS backend ClickHouse reads the lake through a role which can only read the
+    #: prefix ``warehouse/``. The role is needed for both forms of access; the local backend
+    #: needs neither setting.
+    ch_lake_access: LakeAccess = LakeAccess.ROLE
+    ch_lake_role_arn: str | None = None
     #: Recorded GDELT files for the source ``fixture`` (make demo and CI).
     fixtures_dir: str = "/fixtures/gdelt/v2"
     #: One ingest run downloads at most this many files (blueprint 8.1: bounded batches).
@@ -90,9 +102,9 @@ class Settings(BaseSettings):
     #: it to the Git commit; outside an image it falls back to the package version.
     pipeline_version: str = __version__
 
-    @field_validator("sec_user_agent", mode="before")
+    @field_validator("sec_user_agent", "ch_lake_role_arn", mode="before")
     @classmethod
-    def _empty_user_agent_is_none(cls, value: object) -> object:
+    def _empty_text_is_none(cls, value: object) -> object:
         # Compose passes an unset variable as an empty text.
         return None if isinstance(value, str) and not value.strip() else value
 

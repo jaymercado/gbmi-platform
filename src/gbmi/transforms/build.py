@@ -112,6 +112,13 @@ SLOT_TS = "slot_ts"
 BAD_ROWS_RULE = f"at most {FILE_THRESHOLD:.0%} of the rows of a file fail gate G2"
 
 
+def _commit_ms(commit: CommitResult | None) -> int | None:
+    """The duration of a commit in milliseconds; None for a unit which needed no commit."""
+    if commit is None or commit.seconds is None:
+        return None
+    return round(commit.seconds * 1000)
+
+
 class BuildError(Exception):
     """The unit cannot be built. Nothing was committed."""
 
@@ -669,6 +676,9 @@ def build_unit(
                 duration_ms=duration_ms,
                 detail={
                     "operations": list(commit.operations) if commit else [],
+                    # The load of the table and the catalog commit: the commit latency which
+                    # the host measurements read (week 3 plan, exit-gate row 12).
+                    "commit_ms": _commit_ms(commit),
                     "quarantine_file": quarantine_file,
                     "set_aside": [item["slot"] for item in set_aside],
                     **({"notes": staged.notes} if staged.notes and index == 0 else {}),

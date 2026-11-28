@@ -134,6 +134,7 @@ services:
     volumes:
       - clickhouse-data:/var/lib/clickhouse
       - ./docker/clickhouse/config.d/gbmi.xml:/etc/clickhouse-server/config.d/gbmi.xml:ro
+      - ./docker/clickhouse/config.d/lake-local.xml:/etc/clickhouse-server/config.d/lake-local.xml:ro
       - ./docker/clickhouse/users.d/gbmi.xml:/etc/clickhouse-server/users.d/gbmi.xml:ro
       # Read-only: ClickHouse reads Iceberg tables from the lake and never writes to it.
       - ${GBMI_LAKE_DIR:-./data/lake}:/lake:ro

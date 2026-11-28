@@ -24,20 +24,24 @@ from clickhouse_connect.driver.client import Client
 from pyiceberg.catalog import Catalog
 from pyiceberg.table import Table
 
-from gbmi.config import Settings, get_settings
+from gbmi.config import LakeAccess, LakeBackend, Settings, get_settings
 from gbmi.lake.catalog import ensure_silver_namespace, load_lake_catalog
 from gbmi.lake.tables import ALL_SCHEMAS, PARTITIONS, create_table_if_missing
 from gbmi.warehouse.client import connect, quote_identifier, quote_string
 
 LAKE_DATABASE = "lake"
+#: The name of the session in which ClickHouse, or the pin task, uses the lake role: the name
+#: shows in CloudTrail who read the lake.
+ROLE_SESSION_NAME = "gbmi-clickhouse-lake"
 
 
 @dataclass(frozen=True)
 class S3Credentials:
     """Short-lived credentials for an ``IcebergS3`` table.
 
-    On the host ClickHouse uses the instance role and no credentials appear in the statement;
-    these are for a laptop reading S3 with exported SSO credentials.
+    For a laptop which reads S3 with exported credentials, and for the fallback of the host
+    in which the pin task assumes the lake role and passes the keys of the role (they last one
+    hour at most, and every mart build pins first).
     """
 
     access_key_id: str
@@ -62,6 +66,66 @@ class PinnedTable:
         return f"{self.database}.{self.name}"
 
 
+class PinError(Exception):
+    """ClickHouse refused a pin statement which holds keys; the text of the error holds none."""
+
+
+def hide_keys(text: str, credentials: S3Credentials) -> str:
+    """A text without the three values of the credentials."""
+    for value in (
+        credentials.secret_access_key,
+        credentials.session_token,
+        credentials.access_key_id,
+    ):
+        if value:
+            text = text.replace(value, "[hidden]")
+    return text
+
+
+@dataclass(frozen=True)
+class LakeGrant:
+    """What a pin statement of one build carries: a role, keys, or nothing on a file system."""
+
+    credentials: S3Credentials | None = None
+    role_arn: str | None = None
+
+
+def assume_lake_role(role_arn: str, *, client: Any | None = None) -> S3Credentials:
+    """Keys of the lake role which last one hour: the fallback form of access (``keys``)."""
+    if client is None:
+        # Imported here so that the local backend needs no boto3 at import time.
+        import boto3
+
+        client = boto3.client("sts")
+    answer = client.assume_role(
+        RoleArn=role_arn, RoleSessionName=ROLE_SESSION_NAME, DurationSeconds=3600
+    )["Credentials"]
+    return S3Credentials(
+        access_key_id=answer["AccessKeyId"],
+        secret_access_key=answer["SecretAccessKey"],
+        session_token=answer["SessionToken"],
+    )
+
+
+def lake_grant(settings: Settings, *, sts_client: Any | None = None) -> LakeGrant:
+    """How the pin statements of a build give ClickHouse the right to read the lake.
+
+    The local backend needs nothing. On the AWS backend the lake role is required: with the
+    access ``role`` the statement names the role, with the access ``keys`` the task assumes the
+    role and passes its keys (week 3 plan 3.3).
+    """
+    if settings.lake_backend is not LakeBackend.AWS:
+        return LakeGrant()
+    if not settings.ch_lake_role_arn:
+        raise RuntimeError(
+            "GBMI_CH_LAKE_ROLE_ARN is not set: on the AWS backend ClickHouse reads the lake "
+            "through a role"
+        )
+    if settings.ch_lake_access is LakeAccess.ROLE:
+        return LakeGrant(role_arn=settings.ch_lake_role_arn)
+    return LakeGrant(credentials=assume_lake_role(settings.ch_lake_role_arn, client=sts_client))
+
+
 def relative_metadata_file(table_location: str, metadata_location: str) -> str:
     """``metadata/<file>``: the metadata file as ClickHouse wants it, relative to the table."""
     prefix = table_location.rstrip("/") + "/"
@@ -72,12 +136,25 @@ def relative_metadata_file(table_location: str, metadata_location: str) -> str:
     return metadata_location[len(prefix) :]
 
 
-def engine_clause(table_location: str, credentials: S3Credentials | None = None) -> str:
-    """The engine for a table location: ``IcebergLocal`` for file URIs, ``IcebergS3`` for S3."""
+def engine_clause(
+    table_location: str,
+    credentials: S3Credentials | None = None,
+    *,
+    role_arn: str | None = None,
+) -> str:
+    """The engine for a table location: ``IcebergLocal`` for file URIs, ``IcebergS3`` for S3.
+
+    On S3 ClickHouse needs a right of its own: since release 26.7 a query never uses the
+    credentials of the server (week 3 plan, finding F13). ``role_arn`` names a role which
+    ClickHouse assumes for the table; the role has to trust the identity of the server.
+    ``credentials`` passes keys in the statement. One of the two, never both.
+    """
     parts = urlsplit(table_location)
     if parts.scheme == "file":
         return f"IcebergLocal({quote_string(parts.path.rstrip('/') + '/')})"
     if parts.scheme == "s3":
+        if credentials is not None and role_arn is not None:
+            raise ValueError("an S3 table takes keys or a role, not both")
         arguments = [quote_string(table_location.rstrip("/") + "/")]
         if credentials is not None:
             arguments += [
@@ -86,6 +163,12 @@ def engine_clause(table_location: str, credentials: S3Credentials | None = None)
             ]
             if credentials.session_token:
                 arguments.append(quote_string(credentials.session_token))
+        if role_arn is not None:
+            # No NOSIGN before the role: with NOSIGN ClickHouse skips the role.
+            arguments.append(
+                f"extra_credentials(role_arn = {quote_string(role_arn)}, "
+                f"role_session_name = {quote_string(ROLE_SESSION_NAME)})"
+            )
         return f"IcebergS3({', '.join(arguments)})"
     raise ValueError(f"unsupported table location {table_location!r}")
 
@@ -97,12 +180,13 @@ def pin_statement(
     *,
     database: str = LAKE_DATABASE,
     credentials: S3Credentials | None = None,
+    role_arn: str | None = None,
 ) -> str:
     """The statement that re-creates a pinned table. It replaces the old one atomically."""
     metadata_file = relative_metadata_file(table_location, metadata_location)
     return (
         f"CREATE OR REPLACE TABLE {quote_identifier(database)}.{quote_identifier(name)} "
-        f"ENGINE = {engine_clause(table_location, credentials)} "
+        f"ENGINE = {engine_clause(table_location, credentials, role_arn=role_arn)} "
         f"SETTINGS iceberg_metadata_file_path = {quote_string(metadata_file)}"
     )
 
@@ -115,6 +199,7 @@ def pin_table(
     database: str = LAKE_DATABASE,
     metadata_location: str | None = None,
     credentials: S3Credentials | None = None,
+    role_arn: str | None = None,
 ) -> PinnedTable:
     """Pin ``lake.<name>`` to the table's current metadata file, or to the one given.
 
@@ -124,9 +209,22 @@ def pin_table(
     name = name or table.name()[-1]
     location = table.location()
     metadata_location = metadata_location or table.metadata_location
-    client.command(
-        pin_statement(name, location, metadata_location, database=database, credentials=credentials)
+    statement = pin_statement(
+        name,
+        location,
+        metadata_location,
+        database=database,
+        credentials=credentials,
+        role_arn=role_arn,
     )
+    try:
+        client.command(statement)
+    except Exception as error:
+        if credentials is None:
+            raise
+        # The statement holds keys. An error text can quote the statement, and a run record
+        # stores the error text: the error which leaves this function names no key.
+        raise PinError(hide_keys(f"{type(error).__name__}: {error}", credentials)) from None
     snapshot = table.current_snapshot() if metadata_location == table.metadata_location else None
     return PinnedTable(
         database=database,
@@ -145,9 +243,12 @@ def pin_silver_table_task(name: str, settings: Settings | None = None) -> dict[s
     """
     settings = settings or get_settings()
     table = load_lake_catalog(settings).load_table((settings.silver_namespace, name))
+    grant = lake_grant(settings)
     client = connect(settings=settings)
     try:
-        pinned = pin_table(client, table, name=name)
+        pinned = pin_table(
+            client, table, name=name, credentials=grant.credentials, role_arn=grant.role_arn
+        )
         relation = f"{quote_identifier(pinned.database)}.{quote_identifier(pinned.name)}"
         rows = client.query(f"SELECT count() FROM {relation}").result_rows[0][0]  # noqa: S608
     finally:
@@ -167,6 +268,7 @@ def pin_silver_tables(
     names: Sequence[str],
     *,
     pinned_names: Mapping[str, str] | None = None,
+    grant: LakeGrant | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Pin several silver tables for one mart build; give what was pinned, by silver table.
 
@@ -184,7 +286,13 @@ def pin_silver_tables(
         table = create_table_if_missing(
             catalog, namespace, name, ALL_SCHEMAS[name], partition_column=PARTITIONS[name]
         )
-        target = pin_table(client, table, name=(pinned_names or {}).get(name, name))
+        target = pin_table(
+            client,
+            table,
+            name=(pinned_names or {}).get(name, name),
+            credentials=grant.credentials if grant else None,
+            role_arn=grant.role_arn if grant else None,
+        )
         relation = f"{quote_identifier(target.database)}.{quote_identifier(target.name)}"
         rows = client.query(f"SELECT count() FROM {relation}").result_rows[0][0]  # noqa: S608
         pinned[name] = {
@@ -210,9 +318,10 @@ def pin_silver_tables_task(
     settings = settings or get_settings()
     catalog = load_lake_catalog(settings)
     namespace = ensure_silver_namespace(catalog, settings)
+    grant = lake_grant(settings)
     client = connect(settings=settings)
     try:
-        tables = pin_silver_tables(client, catalog, namespace, names)
+        tables = pin_silver_tables(client, catalog, namespace, names, grant=grant)
     finally:
         client.close()
     return {

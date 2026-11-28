@@ -50,10 +50,16 @@ def silver_namespace_location(settings: Settings | None = None) -> str:
 
 
 def ensure_silver_namespace(catalog: Catalog, settings: Settings | None = None) -> str:
-    """Create the silver namespace with its location if it is missing; return its name."""
+    """Create the silver namespace with its location if it is missing; return its name.
+
+    The catalog is asked first. On the AWS host Terraform has created the Glue database, and
+    the role of the host may read the database and may not create one: a create request in
+    every build would be refused (week 3 plan, finding F19 k).
+    """
     settings = settings or get_settings()
     namespace = settings.silver_namespace
-    catalog.create_namespace_if_not_exists(
-        namespace, {"location": silver_namespace_location(settings)}
-    )
+    if not catalog.namespace_exists(namespace):
+        catalog.create_namespace_if_not_exists(
+            namespace, {"location": silver_namespace_location(settings)}
+        )
     return namespace

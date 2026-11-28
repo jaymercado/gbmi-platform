@@ -23,10 +23,11 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import time
 import uuid
 import warnings
 from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from typing import Protocol
 
@@ -241,6 +242,9 @@ class CommitResult:
     previous_snapshot_id: int | None
     metadata_location: str
     rows: int
+    #: How long the commit took, with the load of the table before it; set by
+    #: ``commit_with_retry`` for the attempt which landed.
+    seconds: float | None = None
 
 
 def overwrite_unit(
@@ -432,11 +436,14 @@ def commit_with_retry(
     and a new transaction (blueprint 8.4). Both exceptions say: the commit did not land.
     """
     for attempt in range(retries + 1):
+        started = time.monotonic()
         try:
-            return commit(load())
+            result = commit(load())
         except (CommitFailedException, ValidationException):
             if attempt == retries:
                 raise
+        else:
+            return replace(result, seconds=time.monotonic() - started)
     raise RuntimeError("unreachable: the loop returns or raises")
 
 

@@ -369,3 +369,30 @@ def test_an_unknown_failpoint_is_a_programming_error(monkeypatch: pytest.MonkeyP
     failpoint("bronze.before_move")  # another point is named: nothing happens
     with pytest.raises(ValueError, match="unknown failpoint"):
         failpoint("nowhere")
+
+
+def test_bronze_on_s3_writes_one_object_with_one_put_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Week 3 plan 3.3: no ".part" object, no directory marker, no move, and no file system of
+    # PyArrow for a write. The stub refuses every call but the one PUT request.
+    import boto3
+    from botocore.stub import Stubber
+
+    from gbmi.lake import objects
+
+    client = boto3.client(
+        "s3", region_name="us-east-1", aws_access_key_id="test", aws_secret_access_key="test"
+    )
+    monkeypatch.setattr(objects, "s3_client", lambda: client)
+    key = "raw/gdelt/v2/export/dt=2026-11-25/20261125080000.export.CSV.zip"
+    with Stubber(client) as stub:
+        stub.add_response(
+            "put_object", {}, {"Bucket": "bucket", "Key": f"prod/{key}", "Body": b"zip"}
+        )
+
+        bronze = Bronze("s3://bucket/prod")
+        bronze.write(key, b"zip")
+
+        stub.assert_no_pending_responses()
+    assert bronze.uri(key) == f"s3://bucket/prod/{key}"

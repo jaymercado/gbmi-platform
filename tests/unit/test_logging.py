@@ -5,6 +5,8 @@ from __future__ import annotations
 import io
 import json
 
+import pytest
+
 from gbmi.logging import bind_run, configure_logging, get_logger
 
 
@@ -79,3 +81,45 @@ def test_a_logged_exception_never_renders_local_variables() -> None:
     assert [frame["name"] for frame in error["frames"]][-1] == "send"
     assert not [frame for frame in error["frames"] if frame.get("locals")]
     assert "contact@example.org" not in stream.getvalue()
+
+
+def test_a_log_line_carries_the_pipeline_version_of_the_settings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Week 3 plan, finding F19 i: in an image the version is the Git commit, and a log line
+    # names the same version as the rows and the run records of the run.
+    from gbmi.config import get_settings
+
+    commit = "0123456789abcdef0123456789abcdef01234567"
+    monkeypatch.setenv("GBMI_PIPELINE_VERSION", commit)
+    get_settings.cache_clear()
+    stream = io.StringIO()
+    try:
+        configure_logging(stream=stream)
+        get_logger("gbmi.test").info("built")
+    finally:
+        get_settings.cache_clear()
+
+    (line,) = _lines(stream)
+    assert line["pipeline_version"] == commit
+
+
+def test_settings_which_cannot_be_read_do_not_stop_the_logging(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from gbmi import __version__
+    from gbmi.config import get_settings
+
+    # The backend and the address of the lake do not fit: the settings refuse to load.
+    monkeypatch.setenv("GBMI_LAKE_BACKEND", "aws")
+    monkeypatch.setenv("GBMI_LAKE_URI", "file:///lake")
+    get_settings.cache_clear()
+    stream = io.StringIO()
+    try:
+        configure_logging(stream=stream)
+        get_logger("gbmi.test").info("still logging")
+    finally:
+        get_settings.cache_clear()
+
+    (line,) = _lines(stream)
+    assert (line["event"], line["pipeline_version"]) == ("still logging", __version__)

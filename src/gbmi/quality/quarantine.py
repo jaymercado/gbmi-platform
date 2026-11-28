@@ -8,6 +8,8 @@ and a rerun that rejects nothing removes it:
 A whole file which a gate rejected is kept beside the rows, under its own name:
 
     quarantine/<source>/<feed>/dt=<slot date>/<file name>
+
+Each file is written as one whole object (gbmi.lake.objects): one PUT request on S3.
 """
 
 from __future__ import annotations
@@ -19,6 +21,7 @@ import pyarrow.fs as pafs
 import pyarrow.parquet as pq
 
 from gbmi.lake.commit import Unit
+from gbmi.lake.objects import write_object
 
 QUARANTINE_SCHEMA = pa.schema(
     [
@@ -44,15 +47,17 @@ def write_quarantine(
     lake_uri: str, source: str, feed: str, unit: Unit, rows: pa.Table
 ) -> str | None:
     """Replace the unit's quarantine file; returns its key, or None when no row was rejected."""
-    filesystem, root = pafs.FileSystem.from_uri(lake_uri)
     key = quarantine_key(source, feed, unit)
-    path = f"{root.rstrip('/')}/{key}"
     if rows.num_rows == 0:
+        filesystem, root = pafs.FileSystem.from_uri(lake_uri)
+        path = f"{root.rstrip('/')}/{key}"
         if filesystem.get_file_info(path).type != pafs.FileType.NotFound:
             filesystem.delete_file(path)
         return None
-    filesystem.create_dir(path.rsplit("/", 1)[0], recursive=True)
-    pq.write_table(rows.cast(QUARANTINE_SCHEMA), path, filesystem=filesystem, compression="zstd")
+    # The rejected rows of a unit are few: the file is built in memory and written whole.
+    sink = pa.BufferOutputStream()
+    pq.write_table(rows.cast(QUARANTINE_SCHEMA), sink, compression="zstd")
+    write_object(lake_uri, key, sink.getvalue().to_pybytes())
     return key
 
 
@@ -65,12 +70,8 @@ def write_quarantined_file(
     lake_uri: str, source: str, feed: str, slot_date: date, file_name: str, content: bytes
 ) -> str:
     """Keep the bytes of a rejected file; returns the key. A later rejection replaces the bytes."""
-    filesystem, root = pafs.FileSystem.from_uri(lake_uri)
     key = quarantined_file_key(source, feed, slot_date, file_name)
-    path = f"{root.rstrip('/')}/{key}"
-    filesystem.create_dir(path.rsplit("/", 1)[0], recursive=True)
-    with filesystem.open_output_stream(path) as stream:
-        stream.write(content)
+    write_object(lake_uri, key, content)
     return key
 
 

@@ -497,13 +497,13 @@ class MartsBuildTest(unittest.TestCase):
             if type(task).__name__ == "DbtRunLocalOperator"
         }
         self.assertEqual(on_the_host, {"prod"})
-        # The tracer stays on the laptop and in CI: its target is fixed.
+        # The tracer follows the same setting (week 3 plan, WP-10 step 3).
         tracer = {
             task.profile_config.target_name
             for task in bag.dags[TRACER].tasks
             if type(task).__name__ == "DbtRunLocalOperator"
         }
-        self.assertEqual(tracer, {"local"})
+        self.assertEqual(tracer, {"prod"})
 
 
 class SchedulesOffTest(unittest.TestCase):
