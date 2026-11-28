@@ -256,6 +256,12 @@ lake_backend_answers() {
     --scratch "s3://$(env_value GBMI_OPS_BUCKET)/tmp/smoke" --release "${GBMI_RELEASE:-}"
 }
 
+# What a refused write looks like in the answer of ClickHouse. Without credentials ClickHouse
+# itself refuses (ACCESS_DENIED). With the lake role S3 refuses, and ClickHouse 26.8 shows the
+# message of AWS without its error code: "User: ... is not authorized to perform:
+# s3:PutObject on resource ..." (seen at the first deployment on 2026-11-28).
+REFUSAL='ACCESS_DENIED|AccessDenied|Access Denied|is not authorized to perform: s3:PutObject'
+
 clickhouse_write_is_refused() {
   # $1: the arguments after the address in s3(...). ClickHouse must not be able to write to
   # the lake: without credentials ClickHouse itself refuses (a query never uses the role of
@@ -265,7 +271,7 @@ clickhouse_write_is_refused() {
     echo "ClickHouse wrote an object to the lake"
     return 1
   fi
-  printf '%s' "$output" | grep -qiE "ACCESS_DENIED|AccessDenied|Access Denied" || {
+  printf '%s' "$output" | grep -qiE "$REFUSAL" || {
     echo "the write failed, but not with a refusal:"
     printf '%s\n' "$output" | head -c 400
     return 1
