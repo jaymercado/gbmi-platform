@@ -4,12 +4,14 @@ A task of a DAG and a command of the command line call one function of this modu
 function reads the settings, opens the object ledger and one client of the SEC, does the work
 inside a run record and returns built-in types: the objects by state, the rows, the requests,
 the seconds which the limiter waited and the blocks (the monitoring list of blueprint 8.5).
+``summary_task`` is the last task of each SEC DAG: it reads the record of the run.
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterator
 from contextlib import contextmanager
+from datetime import UTC
 from typing import Any
 
 from gbmi.config import get_settings
@@ -20,7 +22,7 @@ from gbmi.sources.sec.client import SecClient
 from gbmi.sources.sec.facts import run_facts
 from gbmi.sources.sec.filings import run_filings
 from gbmi.sources.sec.reference import run_reference
-from gbmi.sources.sec.silver import SecRun, new_run
+from gbmi.sources.sec.silver import PipelineError, SecRun, new_run
 from gbmi.sources.sec.watchlist import watchlist
 
 
@@ -115,3 +117,43 @@ def facts_task(
     with _pipeline("facts", as_of, run_id, accept_volume) as (run, record, client):
         summary = run_facts(run, watchlist=watchlist(settings), full=full)
         return _finish(summary, run, record, client, summary.get("rows", 0))
+
+
+def summary_task(
+    pipeline: str, as_of: str | None = None, run_id: str | None = None
+) -> dict[str, Any]:
+    """What the run of one pipeline did, read from the record of the run.
+
+    The last task of an SEC DAG. The task runs after a failed pipeline task too, and then
+    fails with the error of the pipeline, so the DAG run shows what went wrong. Raises
+    PipelineError when the run has no record or did not succeed.
+    """
+    moment = resolve_as_of(as_of)
+    day = moment.astimezone(UTC).date()
+    with open_object_ledger(run_id=run_id) as ledger:
+        entry_point = f"{ledger.source}.{pipeline}"
+        row = ledger.connection.execute(
+            "SELECT status, row_count, byte_count, duration_ms, error, detail "
+            "FROM ops.pipeline_run WHERE entry_point = %s AND run_id IS NOT DISTINCT FROM %s "
+            "ORDER BY pipeline_run_id DESC LIMIT 1",
+            (entry_point, run_id),
+        ).fetchone()
+        if row is None:
+            raise PipelineError(f"no run of {entry_point} is recorded for the run {run_id}")
+        status, row_count, byte_count, duration_ms, error, detail = row
+        if status != "success":
+            raise PipelineError(f"the run of {entry_point} ended as {status}: {error}")
+        waiting = ledger.pending(first=day, last=day)
+        return {
+            "pipeline": entry_point,
+            "run_id": run_id,
+            "status": status,
+            "day": day.isoformat(),
+            "rows": row_count,
+            "bytes": byte_count,
+            "duration_ms": duration_ms,
+            "requests": (detail or {}).get("requests"),
+            "objects": ledger.status(first=day, last=day),
+            # The objects of the day which still need work, each with its state.
+            "open": {item.key.label: item.state.value for item in waiting},
+        }

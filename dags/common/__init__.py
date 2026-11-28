@@ -40,6 +40,15 @@ DEFAULT_ARGS: dict[str, Any] = {
 }
 #: The jobs which commit to silver have two retries (blueprint 8.4).
 SILVER_ARGS: dict[str, Any] = {**DEFAULT_ARGS, "retries": min(TASK_RETRIES, 2)}
+#: An SEC task has one retry, 20 minutes after the failure, without a growing delay. A block
+#: by the SEC lasts 15 minutes: the retries of DEFAULT_ARGS would all end before the block
+#: ends (week 3 plan, finding F20 and difference D47).
+SEC_ARGS: dict[str, Any] = {
+    **DEFAULT_ARGS,
+    "retries": min(TASK_RETRIES, 1),
+    "retry_delay": timedelta(minutes=20),
+    "retry_exponential_backoff": False,
+}
 
 #: The clock of a run (week 2 plan 3.3): the parameter as_of of a manual run, or the time from
 #: which the run may start. Every run has run_after; a run which is triggered by hand without a

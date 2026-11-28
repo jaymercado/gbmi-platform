@@ -1222,6 +1222,41 @@ def test_no_download_of_the_archive_starts_while_the_sec_builds_the_archive(
     assert states(database, "bulk") == {"loaded": 1}
 
 
+# --- the summary of a DAG run -------------------------------------------------------------------
+
+
+def test_the_summary_reads_the_record_of_the_run(database: Connection, recorded: Path) -> None:
+    filings = tasks.filings_task(as_of=THURSDAY, run_id="manual__1")
+
+    summary = tasks.summary_task("filings", THURSDAY, "manual__1")
+
+    assert summary["pipeline"] == "sec.filings"
+    assert (summary["run_id"], summary["status"], summary["day"]) == (
+        "manual__1",
+        "success",
+        "2026-11-26",
+    )
+    assert (summary["rows"], summary["requests"]) == (591, filings["requests"])
+    assert summary["open"] == {}
+    assert {(item["dataset"], item["state"]): item["objects"] for item in summary["objects"]} == {
+        ("index", "loaded"): 1,
+        ("submissions", "loaded"): 5,
+    }
+    # A run of which nothing is recorded, and a run which failed, fail the summary.
+    with pytest.raises(PipelineError, match=r"no run of sec\.reference is recorded for the run x"):
+        tasks.summary_task("reference", THURSDAY, "x")
+    edit(recorded, TICKER_FILE_URL, lambda document: document.pop("fields"))
+    with pytest.raises(PipelineError):
+        tasks.reference_task(as_of=THURSDAY, run_id="manual__2")
+    with pytest.raises(
+        PipelineError, match=r"the run of sec\.reference ended as failed: PipelineError"
+    ):
+        tasks.summary_task("reference", THURSDAY, "manual__2")
+    # The refused ticker file is an object of the day which needs an operator.
+    after = tasks.summary_task("filings", THURSDAY, "manual__1")
+    assert after["open"] == {"reference/2026-11-26/company_tickers_exchange.json": "quarantined"}
+
+
 # --- the commands -------------------------------------------------------------------------------
 
 
