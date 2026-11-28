@@ -32,6 +32,7 @@ from gbmi.ledger.calendar import (
     slot_at,
 )
 from gbmi.ledger.db import Connection, connect
+from gbmi.ledger.errors import StaleStateError as StaleStateError
 from gbmi.ledger.states import State, check
 
 SOURCE = "gdelt"
@@ -130,19 +131,6 @@ class PendingUnit:
     slot_date: date
     feed: Feed
     slot_hour: int | None
-
-
-class StaleStateError(Exception):
-    """A guarded update changed no row: the slot was not in the state the caller assumed."""
-
-    def __init__(self, key: SlotKey, from_state: State, to_state: State) -> None:
-        super().__init__(
-            f"slot {key.label} is not in state {from_state.value!r}, "
-            f"so the change to {to_state.value!r} did not happen"
-        )
-        self.key = key
-        self.from_state = from_state
-        self.to_state = to_state
 
 
 def fileset_hash(files: Iterable[tuple[str, str]]) -> str:

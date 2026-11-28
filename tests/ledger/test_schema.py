@@ -69,7 +69,7 @@ def slot(connection: Connection, source: str, state: str = "expected", **values:
     insert(connection, "source_slot", **row)
 
 
-def test_the_migrations_create_the_six_tables(ops: Connection, ops_db: str) -> None:
+def test_the_migrations_create_the_ten_tables(ops: Connection, ops_db: str) -> None:
     rows = ops.execute(
         "SELECT table_name FROM information_schema.tables WHERE table_schema = 'ops'"
     ).fetchall()
@@ -81,9 +81,14 @@ def test_the_migrations_create_the_six_tables(ops: Connection, ops_db: str) -> N
         "silver_partition",
         "pipeline_run",
         "dq_result",
+        # week 3 (phase P2): the objects of the SEC, the circuit and the request log
+        "source_object",
+        "object_transition",
+        "source_circuit",
+        "source_request",
     }
     report = status(ops_db, MIGRATIONS)
-    assert len(report) >= 3
+    assert len(report) >= 5
     assert {entry["state"] for entry in report} == {"applied"}
 
 
