@@ -40,6 +40,15 @@ repos:
         language: system
         pass_filenames: false
         files: ^infra/terraform/.*\.(tf|tfvars)$
+      # The repository is public. The hook searches for the AWS account number and for the two
+      # addresses of the git-ignored local files, and prints file names only. Without the
+      # local files (CI, a fresh clone) the hook has nothing to search for and passes.
+      - id: redact-check
+        name: no account number and no address of a person
+        entry: python3 tools/redact_check.py
+        language: system
+        pass_filenames: false
+        always_run: true
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.1
     hooks:

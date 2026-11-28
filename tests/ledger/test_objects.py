@@ -236,7 +236,12 @@ def test_a_loaded_object_supersedes_every_older_open_object_of_the_same_name(
     objects.ensure_expected([expected(never_fetched), expected(other_company)])
     verified(objects, never_loaded, broken, done, newest)
     objects.quarantine(broken, from_state=ObjectState.VERIFIED, reason="gate G3")
-    objects.mark_loaded([ObjectAccounting(done, 1, 1), ObjectAccounting(newest, 1, 1)])
+    objects.mark_loaded([ObjectAccounting(done, 1, 1)])
+
+    # The newest object is not loaded yet: nothing is closed (superseded is final).
+    assert objects.supersede_older(newest, as_of=AS_OF) == set()
+    assert objects.supersede_older(key(days=9)) == set()  # and for an object which is unknown
+    objects.mark_loaded([ObjectAccounting(newest, 1, 1)])
 
     moved = objects.supersede_older(newest, as_of=AS_OF)
 

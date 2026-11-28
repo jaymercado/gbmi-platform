@@ -46,6 +46,14 @@ x-airflow-common: &airflow-common
     GBMI_CH_URL: http://gbmi:${CH_GBMI_PASSWORD:?run make setup}@clickhouse:8123
     GBMI_PG_DSN: postgresql://gbmi:${GBMI_DB_PASSWORD:?run make setup}@postgres:5432/gbmi
     GBMI_MIGRATIONS_DIR: /opt/gbmi/db/postgres/migrations
+    # The SEC client (week 3 plan 3.3). The Makefile sets the source of each stack: "fixture"
+    # for the demo stack and CI (recorded files, no network), "live" for the working stack.
+    # Without the Makefile the source is "off": no client starts.
+    GBMI_SEC_SOURCE: ${GBMI_SEC_SOURCE:-off}
+    # The declared identity of a live request, from the git-ignored .env. The value is empty
+    # in CI and in a fresh clone. No command prints the value.
+    GBMI_SEC_USER_AGENT: ${GBMI_SEC_USER_AGENT:-}
+    GBMI_SEC_FIXTURES_DIR: /fixtures/sec
     # dbt profile (dbt/profiles/profiles.yml).
     DBT_TARGET: ${DBT_TARGET:-local}
     DBT_CH_HOST: clickhouse

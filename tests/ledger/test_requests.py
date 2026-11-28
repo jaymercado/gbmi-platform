@@ -12,7 +12,14 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from gbmi.ledger.db import Connection, connect
-from gbmi.ops.circuit import CircuitRow, close_circuit, lock_circuit, open_circuit, read_circuit
+from gbmi.ops.circuit import (
+    CircuitRow,
+    circuit_events,
+    close_circuit,
+    lock_circuit,
+    open_circuit,
+    read_circuit,
+)
 from gbmi.ops.requests import (
     RequestLog,
     max_requests_in_session_window,
@@ -63,13 +70,34 @@ def test_a_row_is_written_before_the_request_and_the_outcome_follows(
 ) -> None:
     (request_id,) = place(log, 0)
     row = ops.execute(
-        "SELECT host, method, granted_at, client_session, run_id, outcome, completed_at "
+        "SELECT host, method, granted_at, client_session, run_id, outcome, completed_at, probe "
         "FROM ops.source_request WHERE request_id = %s",
         (request_id,),
     ).fetchone()
-    assert row == ("data.sec.gov", "GET", T0, log.session, "test-run", None, None)
-    assert request_counts(ops, source=log.source) == {"open": 1}
-
+    assert row == ("data.sec.gov", "GET", T0, log.session, "test-run", None, None, False)
+    # The database stamps the row with its own clock: a witness beside the clocks of the client.
+    witness = ops.execute(
+        "SELECT recorded_at > now() - interval '1 minute' AND recorded_at <= clock_timestamp() "
+        "FROM ops.source_request WHERE request_id = %s",
+        (request_id,),
+    ).fetchone()
+    assert witness == (True,)
+    probe = log.started(
+        host="data.sec.gov",
+        path="/probe",
+        method="GET",
+        granted_at=T0,
+        granted_mono_ns=1,
+        waited_ms=0,
+        attempt=1,
+        probe=True,
+    )
+    marked = ops.execute(
+        "SELECT probe FROM ops.source_request WHERE request_id = %s", (probe,)
+    ).fetchone()
+    assert marked == (True,)
+    log.finished(probe, completed_at=T0, outcome="ok", http_status=200, duration_ms=1)
+    assert request_counts(ops, source=log.source) == {"ok": 1, "open": 1}
     log.finished(
         request_id,
         completed_at=T0 + ms(120),
@@ -85,7 +113,7 @@ def test_a_row_is_written_before_the_request_and_the_outcome_follows(
         (request_id,),
     ).fetchone()
     assert row == ("ok", 200, 120, 157_103, None)
-    assert request_counts(ops, source=log.source) == {"ok": 1}
+    assert request_counts(ops, source=log.source) == {"ok": 2}
 
 
 def test_an_empty_log_has_no_request_in_any_window(ops: Connection, source: str) -> None:
@@ -241,6 +269,13 @@ def test_a_refused_probe_locks_the_circuit_until_an_operator_closes(
     ).fetchone()
     assert row == (T0, "jay", "the SEC answered")
     assert close_circuit(ops, source, closed_by="jay", note=None, now=T0) is False
+    # The history: one row for each opening, lock and close, newest first.
+    events = circuit_events(ops, source)
+    assert [event["event"] for event in events] == ["closed", "locked", "opened"]
+    assert (events[0]["decided_by"], events[0]["note"]) == ("jay", "the SEC answered")
+    assert (events[1]["reason"], events[1]["http_status"]) == ("probe refused: HTTP 403", 403)
+    assert (events[2]["blocked_until"], events[2]["at"]) == (until, T0)
+    assert circuit_events(ops, source, limit=1) == events[:1]
 
 
 def test_a_lock_without_a_recorded_block_records_the_block(ops: Connection, source: str) -> None:

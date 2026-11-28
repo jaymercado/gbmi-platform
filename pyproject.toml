@@ -73,6 +73,7 @@ select = [
 "benchmarks/**" = ["T20", "S101", "S607", "S608"]
 "drills/**" = ["T20", "S603"]
 "compose/**" = ["T20"]
+"tools/**" = ["T20", "S603", "S607"]
 "monitoring/**" = ["T20"]
 "dags/**" = ["S101"]
 

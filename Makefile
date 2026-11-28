@@ -25,6 +25,9 @@ DAG_SCHEDULES := on
 # The working stack runs the schedules on live data: a task which fails is tried again, three
 # times, as the blueprint says (8.1). A transient error must not fail a day of a backfill.
 TASK_RETRIES := 3
+# The working stack asks the live SEC, with the declared user agent of .env, until the first
+# deployment: then the AWS host is the only place with the source "live" (week 3 plan 3.3).
+SEC_SOURCE := live
 else ifeq ($(STACK),$(DEMO_STACK))
 LAKE_DIR := data/demo/lake
 OTHER_STACK := $(WORKING_STACK)
@@ -33,6 +36,8 @@ OTHER_STACK := $(WORKING_STACK)
 DAG_SCHEDULES := off
 # On the demo stack and in CI a failing task shows at once.
 TASK_RETRIES := 0
+# The demo stack and CI read the recorded SEC files: no network and no user agent.
+SEC_SOURCE := fixture
 else
 $(error STACK is "$(STACK)"; use $(WORKING_STACK) for the working stack or $(DEMO_STACK) for the demo stack)
 endif
@@ -43,6 +48,11 @@ export COMPOSE_PROJECT_NAME := $(STACK)
 export GBMI_LAKE_DIR := ./$(LAKE_DIR)
 export GBMI_DAG_SCHEDULES := $(DAG_SCHEDULES)
 export GBMI_TASK_RETRIES := $(TASK_RETRIES)
+# The stack alone decides the source of the SEC client: neither a value of the shell nor a
+# value on the command line of make changes the source. Live requests leave from the working
+# stack only, so one database remembers a block by the SEC (review 1 of week 3, finding B2).
+override GBMI_SEC_SOURCE := $(SEC_SOURCE)
+export GBMI_SEC_SOURCE
 
 # Compose files live in compose/, so the project directory and the env file are always passed
 # explicitly; otherwise relative paths and .env would resolve from compose/.
@@ -85,7 +95,7 @@ DEMO_HOUR := 2026-11-25T08
 TOOLBOX := $(COMPOSE_BI) --profile tools run --rm toolbox
 
 .PHONY: help setup fmt lint test test-dags env images up up-bi down reset ps logs smoke toolbox psql integration \
-	integration-aws dbt-build demo e2e drill bench logs-dump tf-check plan _other-stack-stopped _lake-dir _demo _e2e
+	integration-aws dbt-build demo e2e drill bench logs-dump tf-check plan redact-check _other-stack-stopped _lake-dir _demo _e2e
 
 help: ## List the available targets
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-14s %s\n", $$1, $$2}'
@@ -113,15 +123,18 @@ lint: ## ruff, mypy, sqlfluff and lock-file checks
 # The ledger tests work in throwaway databases of the PostgreSQL which listens on 127.0.0.1:5432:
 # the running stack on the laptop, with the administrator password from .env, or the service
 # container of the workflow ci, which sets GBMI_TEST_PG_ADMIN_DSN itself. The coverage gate
-# covers the parsers and the ledger (week 2 plan 3.3).
-COVERAGE_GATE := src/gbmi/ledger/*,src/gbmi/core/*,src/gbmi/transforms/duckdb/*
+# covers the parsers, the ledger and the SEC source (week 2 plan 3.3; week 3 plan 3.3).
+COVERAGE_GATE := src/gbmi/ledger/*,src/gbmi/core/*,src/gbmi/transforms/duckdb/*,src/gbmi/sources/sec/*
 
 test: ## Unit, ledger, transformation and contract tests with the coverage gate; needs a reachable PostgreSQL
 	@export GBMI_TEST_PG_ADMIN_DSN="$${GBMI_TEST_PG_ADMIN_DSN:-postgresql://postgres:$$(sed -n 's/^POSTGRES_PASSWORD=//p' .env 2>/dev/null)@127.0.0.1:5432/postgres}"; \
 	echo "uv run pytest tests/unit tests/ledger tests/transforms tests/contract --cov --cov-report=term-missing"; \
 	uv run pytest tests/unit tests/ledger tests/transforms tests/contract --cov --cov-report=term-missing
-	@echo "== coverage gate: gbmi.ledger, gbmi.core and gbmi.transforms.duckdb together, at least 80%"
+	@echo "== coverage gate: gbmi.ledger, gbmi.core, gbmi.transforms.duckdb and gbmi.sources.sec together, at least 80%"
 	uv run coverage report --include='$(COVERAGE_GATE)' --fail-under=80
+
+redact-check: ## Search the repository for the AWS account number and the addresses of the local files
+	@python3 tools/redact_check.py
 
 env: ## Create or complete .env with generated secrets
 	@command -v uv >/dev/null && uv run python compose/make_env.py || python3 compose/make_env.py
@@ -165,6 +178,7 @@ ifeq ($(STACK),$(WORKING_STACK))
 		echo "To delete the demo stack:     make reset STACK=$(DEMO_STACK)"; \
 		exit 1; \
 	fi
+	@bash compose/circuit_guard.sh
 endif
 	$(COMPOSE_BI) --profile tools down --volumes --remove-orphans
 	rm -rf $(LAKE_DIR)

@@ -32,3 +32,18 @@ def test_config_show_masks_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
     shown = json.loads(result.stdout)
     assert shown["lake_backend"] == "local"
     assert "hunter2" not in result.stdout
+
+
+def test_config_show_masks_the_user_agent_for_the_sec(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GBMI_SEC_USER_AGENT", "Sample Company Name contact@example.org")
+    monkeypatch.setenv("GBMI_SEC_SOURCE", "live")
+    get_settings.cache_clear()
+
+    result = runner.invoke(app, ["config", "show"])
+    get_settings.cache_clear()
+
+    assert result.exit_code == 0
+    shown = json.loads(result.stdout)
+    assert shown["sec_source"] == "live"
+    assert shown["sec_user_agent"] == "**********"
+    assert "contact@example.org" not in result.stdout and "Sample Company" not in result.stdout
