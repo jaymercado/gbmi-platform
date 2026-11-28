@@ -15,15 +15,18 @@ the pinned table returns. dbt models read ``lake.<table>`` and never name a file
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlsplit
 
 from clickhouse_connect.driver.client import Client
+from pyiceberg.catalog import Catalog
 from pyiceberg.table import Table
 
 from gbmi.config import Settings, get_settings
-from gbmi.lake.catalog import load_lake_catalog
+from gbmi.lake.catalog import ensure_silver_namespace, load_lake_catalog
+from gbmi.lake.tables import ALL_SCHEMAS, PARTITIONS, create_table_if_missing
 from gbmi.warehouse.client import connect, quote_identifier, quote_string
 
 LAKE_DATABASE = "lake"
@@ -154,4 +157,66 @@ def pin_silver_table_task(name: str, settings: Settings | None = None) -> dict[s
         "metadata_file": pinned.metadata_file,
         "snapshot_id": pinned.snapshot_id,
         "rows": int(rows),
+    }
+
+
+def pin_silver_tables(
+    client: Client,
+    catalog: Catalog,
+    namespace: str,
+    names: Sequence[str],
+    *,
+    pinned_names: Mapping[str, str] | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Pin several silver tables for one mart build; give what was pinned, by silver table.
+
+    A table which the catalog does not hold yet is created empty first, with the schema and the
+    partition of ``gbmi.lake.tables``: the first mart build of a new lake then finds every
+    table, and a model over the table builds with zero rows. ``pinned_names`` gives a table
+    another name in ClickHouse; the tests use the argument.
+    """
+    unknown = sorted(set(names) - set(ALL_SCHEMAS))
+    if unknown:
+        raise ValueError(f"no silver table is named {', '.join(unknown)}")
+    pinned: dict[str, dict[str, Any]] = {}
+    for name in names:
+        created = not catalog.table_exists((namespace, name))
+        table = create_table_if_missing(
+            catalog, namespace, name, ALL_SCHEMAS[name], partition_column=PARTITIONS[name]
+        )
+        target = pin_table(client, table, name=(pinned_names or {}).get(name, name))
+        relation = f"{quote_identifier(target.database)}.{quote_identifier(target.name)}"
+        rows = client.query(f"SELECT count() FROM {relation}").result_rows[0][0]  # noqa: S608
+        pinned[name] = {
+            "table": target.qualified_name,
+            "metadata_file": target.metadata_file,
+            "snapshot_id": target.snapshot_id,
+            "rows": int(rows),
+            "created": created,
+        }
+    return pinned
+
+
+def pin_silver_tables_task(
+    names: Sequence[str], settings: Settings | None = None
+) -> dict[str, Any]:
+    """Task entry point: pin the silver tables of one mart build (blueprint 8.9, stage 2).
+
+    Returns the pinned tables, the Iceberg snapshot of each table, and the version of the
+    pipeline code. The mart build records the two values in the provenance columns of each
+    mart (blueprint 7.12). The snapshot of a table without a snapshot, an empty table which no
+    pipeline has filled yet, is 0.
+    """
+    settings = settings or get_settings()
+    catalog = load_lake_catalog(settings)
+    namespace = ensure_silver_namespace(catalog, settings)
+    client = connect(settings=settings)
+    try:
+        tables = pin_silver_tables(client, catalog, namespace, names)
+    finally:
+        client.close()
+    return {
+        "tables": tables,
+        "snapshot_ids": {name: entry["snapshot_id"] or 0 for name, entry in tables.items()},
+        "pipeline_version": settings.pipeline_version,
     }
