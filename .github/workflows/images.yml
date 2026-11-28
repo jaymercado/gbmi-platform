@@ -1,0 +1,76 @@
+name: images
+
+# The image of the AWS host (blueprint 9.3 and 9.7; week 3 plan 3.3). A pull request builds the
+# stage "runtime" of the Airflow image and pushes nothing. A push to main builds the stage and
+# pushes ghcr.io/<owner>/gbmi-airflow:<the 40 characters of the commit>: the deployment of a
+# commit pulls the image of the commit. PostgreSQL, ClickHouse and Metabase stay the official
+# images, pinned by digest in the Compose files.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: images-${{ github.ref }}
+  # A run on main is never cancelled: a deployment needs the image of its commit, and a second
+  # merge must not take the image of the first away (week 3 plan, change C17).
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  build:
+    name: build the runtime image
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/runtime-image
+        with:
+          image: gbmi-airflow:runtime
+          commit: ${{ github.event.pull_request.head.sha }}
+          source: https://github.com/${{ github.repository }}
+
+  publish:
+    name: build and push the image of the commit
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    # Only the job which pushes may write to the registry.
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/gbmi-airflow:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/runtime-image
+        with:
+          image: ${{ env.IMAGE }}
+          commit: ${{ github.sha }}
+          source: https://github.com/${{ github.repository }}
+
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push the image of the commit
+        run: |
+          docker push "$IMAGE"
+          {
+            echo "### Image"
+            echo
+            echo "\`$IMAGE\`"
+            echo
+            echo "Digest: \`$(docker image inspect "$IMAGE" --format '{{ index .RepoDigests 0 }}')\`"
+          } >> "$GITHUB_STEP_SUMMARY"

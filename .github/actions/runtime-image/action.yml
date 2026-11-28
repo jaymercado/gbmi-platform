@@ -1,0 +1,60 @@
+name: Build and check the runtime image
+description: >
+  Builds the stage "runtime" of the Airflow image with a layer cache, checks that the image
+  works without any mount, and scans the image. The action pushes nothing.
+
+inputs:
+  image:
+    description: The name of the image with its tag.
+    required: true
+  commit:
+    description: The 40 characters of the commit; the image carries them as its pipeline version.
+    required: true
+  source:
+    description: The address of the repository; the registry links the image by the label.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+    - name: Build the stage runtime with a layer cache
+      uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      with:
+        context: .
+        file: docker/airflow/Dockerfile
+        target: runtime
+        build-args: |
+          GIT_SHA=${{ inputs.commit }}
+          IMAGE_SOURCE=${{ inputs.source }}
+        tags: ${{ inputs.image }}
+        load: true
+        cache-from: type=gha,scope=runtime
+        cache-to: type=gha,mode=max,scope=runtime
+
+    - name: Check the image without any mount
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.image }}
+        COMMIT: ${{ inputs.commit }}
+        SOURCE: ${{ inputs.source }}
+      run: docker/airflow/check_runtime.sh "$IMAGE" "$COMMIT" "$SOURCE"
+
+    # Trivy is a release file with a checksum, as gitleaks in the workflow ci. A finding does
+    # not fail the workflow in phase P2: the security review of phase P4 decides on a gate.
+    - name: Scan the image (Trivy; report only)
+      shell: bash
+      continue-on-error: true
+      env:
+        IMAGE: ${{ inputs.image }}
+        TRIVY_VERSION: "0.76.2"
+        TRIVY_SHA256: ab9d51f86e6a5fb936f605faff6b593ac51bc378fff4d3e8b9d58358b9c367c3
+      run: |
+        curl -fsSLo "$RUNNER_TEMP/trivy.tar.gz" \
+          "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-ARM64.tar.gz"
+        echo "${TRIVY_SHA256}  $RUNNER_TEMP/trivy.tar.gz" | sha256sum --check -
+        tar -xzf "$RUNNER_TEMP/trivy.tar.gz" -C "$RUNNER_TEMP" trivy
+        "$RUNNER_TEMP/trivy" image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
+          --no-progress --format json --output "$RUNNER_TEMP/trivy.json" "$IMAGE"
+        python3 docker/airflow/trivy_summary.py "$RUNNER_TEMP/trivy.json" >> "$GITHUB_STEP_SUMMARY"

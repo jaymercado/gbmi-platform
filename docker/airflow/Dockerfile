@@ -84,10 +84,23 @@ RUN cd /opt/gbmi \
 # ---------------------------------------------------------------------------------------------
 FROM base AS runtime
 
+# The 40 characters of the Git commit: the pipeline version of every row, run record and log
+# line which the image writes (blueprint 7.12; week 3 plan, exit-gate row 13).
 ARG GIT_SHA=unknown
+# The address of the repository. The registry links the image to the repository by the label
+# (week 3 plan, finding F15).
+ARG IMAGE_SOURCE=""
+LABEL org.opencontainers.image.title="gbmi-airflow" \
+      org.opencontainers.image.description="Airflow with the gbmi package and the dbt project of the GBMI platform" \
+      org.opencontainers.image.source="${IMAGE_SOURCE}" \
+      org.opencontainers.image.revision="${GIT_SHA}"
 ENV GBMI_PIPELINE_VERSION=${GIT_SHA} \
     GBMI_MIGRATIONS_DIR=/opt/gbmi/db/postgres/migrations \
     GBMI_WATCHLIST_FILE=/opt/gbmi/dbt/seeds/watchlist.csv
+
+# The task logs of the host go to S3 through the Amazon provider, which the Airflow image
+# brings (week 3 plan, finding F17). A base image without the provider stops the build here.
+RUN pip show apache-airflow-providers-amazon > /dev/null
 
 COPY --chown=airflow:0 src /opt/build/gbmi/src
 RUN cd /opt/build/gbmi \
