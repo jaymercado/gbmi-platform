@@ -45,9 +45,9 @@ The order follows change C10 of the week 3 plan (§3.5). Every time is UTC. The 
 | 10 | Runtime for two backends; image; workflow `images` | 2026-11-28 11:12 | 2026-11-28 12:13 | [#26](https://github.com/jaymercado/gbmi-platform/pull/26) | Done. Started during the GitHub checks of WP-08. One research agent read primary documentation for twelve open facts of WP-10 to WP-12 from 11:12 to 11:33 (section "Facts verified for the AWS work"). The package changes, the overlay, the image, the workflow, the pin step, the host scripts and the host mode of the smoke test were written from 11:13 to 11:52, with `make demo` after the last change (257 seconds). Working time about 45 minutes. The pull request was merged at 12:08; the workflow `images` pushed the image of the merge commit `630a377` at 12:12, and at 12:13 the registry answered without a login with the manifest of the commit. **Action J6 is not needed:** the image is public |
 | 12 | The workflow `deploy`, the host targets of the Makefile, the runbook | 2026-11-28 11:54 | 2026-11-28 12:46 | [#27](https://github.com/jaymercado/gbmi-platform/pull/27) | Done (the code part). Written during the GitHub checks of WP-10, from 11:54 to 12:06. Two repository settings of decision 2 of Jay were set at 11:57 and read back: the Actions secrets `AWS_ACCOUNT_ID` and `TF_VAR_ALERT_EMAIL`, and the branch rule "main only" of the environment `prod`, with Jay still the required reviewer. Working time about 20 minutes. The pull request was opened at 12:16 and merged at 12:46; the workflow `e2e` of the pull request took 12 minutes 35 seconds. The workflows `e2e` and `images` passed for the merge commit `1e1c570`. Nothing is deployed |
 | 11 | Terraform: CI roles, network, roles, host, monitoring; rehearsal; review 3; two applies | 2026-11-28 12:17 | | [#28](https://github.com/jaymercado/gbmi-platform/pull/28) | Applied; the pull request is open until the job `plan` has passed. The four modules, the changes of the two CI roles, the policy checks, the job `plan` and the rehearsal were written from 12:17 to 12:51 and from 13:31 to 13:37; the session stood still in between. The rehearsal ran in a container of Amazon Linux 2023 and found one defect of a host script; a read of the provider source found one defect of the instance resource. Review 3 ran from 13:38 to 14:21 and found no blocking defect, three defects to repair and six notes; the repairs took from 14:22 to 14:32, in the same pull request (change C11). Jay signed in at 14:57. `envs/prod` was applied at 15:06 and `bootstrap` at 15:17, each after the answer "apply" of Jay; Jay confirmed the email of the alert topic before 15:19. Working time about 1 hour 35 minutes; the GitHub checks of the repaired pull request took about 12 minutes |
-| 12 | First deployment | | | | |
+| 12 | First deployment | 2026-11-28 15:39 | | [#29](https://github.com/jaymercado/gbmi-platform/pull/29) | Open. The first attempt ran from 15:58 to 16:04 UTC and passed 19 of the 20 checks of the smoke test; the one failed check was a defect of the check, repaired in pull request #29 (merged at 16:20). The second attempt waits for the approval of Jay since 16:33 (section "The first deployment") |
 | 13 | Run and measure on the host | | | | |
-| 14 | dbt documentation and three decision records | | | | |
+| 14 | dbt documentation and three decision records | 2026-11-28 14:46 | | [#30](https://github.com/jaymercado/gbmi-platform/pull/30) | Open. Written from 14:46 to 14:53, while the sitting waited for the sign-in of Jay, and from 16:44 to 16:58, while the second deployment waited for the approval. Working time about 25 minutes. The three decision records are provisional until their evidence on the host is complete |
 | 15 | Status report and close-out | | | | |
 
 ## Version pins
@@ -438,7 +438,7 @@ The code is merged before the Terraform work of WP-11, so the first deployment f
 - **The smoke test of a deployment** ends with one live hour of the tracer DAG (plan, WP-12 step 5): the files land on S3, the hour is committed through Glue, ClickHouse pins `gdelt_event` through the lake role, dbt builds the mart with the target `prod`, and the last task compares the counts. The two Airflow commands of the check were tried on the demo stack with the recorded hour.
 - **The runbook** `docs/runbooks/deploy-and-roll-back.md` describes a deployment, the checks after it, a failed deployment and the way back. The runbook was written before the first deployment and says so.
 
-**Repository settings** (decision 2 of Jay), set on 2026-11-28 at 11:57 UTC: the two Actions secrets exist (names read back with `gh secret list`; no value was printed), and the environment `prod` accepts the branch `main` only. GitHub Pages follows with WP-14.
+**Repository settings** (decision 2 of Jay), set on 2026-11-28 at 11:57 UTC: the two Actions secrets exist (names read back with `gh secret list`; no value was printed), and the environment `prod` accepts the branch `main` only. GitHub Pages was turned on with WP-14, on 2026-11-28 at 14:48 UTC.
 
 **Tests:** `tests/unit/test_host_secrets.py` (7 tests, with the stub of botocore) and the tests of the host scripts of WP-10. After the last change: `make lint` clean, `make test` with 919 tests, `make redact-check` passed.
 
@@ -561,6 +561,46 @@ One independent agent with read-only duty (a further instance of the AI model) r
 **What the reviewer checked and found correct.** The read policy of the plan role against every resource type and data source of both configurations; the two trust policies of the CI roles; the limits of `gbmi-ci-deploy` (one document, instances with the tag `project=gbmi`, no injection through the commit parameter); the host role against the calls of the code (PyIceberg with Glue and S3, one PUT for a raw file, the log driver, the remote logs of Airflow, the parameters); the network (no inbound path; HTTPS outbound is enough); the template escapes and the checksum of the Compose plugin; the dimensions of the alarms against the configuration of the CloudWatch agent; the names across Terraform, the scripts, the workflows and the runbook; the two public logs. The repairs of the two defects which Claude found before the review are complete.
 
 **What the reviewer could not verify.** A start by the role `gbmi-host-scheduler` of a spot instance with an encrypted disk (the stop and start by command of change C16 c runs as the root user and proves nothing about the role; the first start by the schedule does). The spot quota, the spot capacity and the price of each zone. cloud-init, systemd and the mode `ec2` of the CloudWatch agent on a real instance. The S3 calls of ClickHouse with the lake role. A permanent difference of a later plan for the tags of the root disk or for the content of the command document.
+
+## The first deployment (WP-12)
+
+**The first attempt, 2026-11-28.** After the two applies, pull request #28 was merged at 15:39 UTC (change C26), and the workflows `e2e` and `images` passed for the merge commit `0aae1e9`. Claude started the workflow `deploy` at 15:52 UTC ([run 46162138308](https://github.com/jaymercado/gbmi-platform/actions/runs/46162138308)); Jay approved the deployment in GitHub at 15:58 UTC (action J7).
+
+| Time (UTC) | Step | Result |
+|---|---|---|
+| 15:58 | The job assumes the role `gbmi-ci-deploy` through OIDC and sends the command document `gbmi-prod-deploy` | The first real use of the role, of the OIDC subject of the environment `prod` and of the document |
+| 15:58:34 | The fixed script of the host checks the commit and the image, unpacks the release and starts `compose/host/deploy.sh`. The environment file is written | 22 variables; the source of the SEC client is `off` |
+| 15:58:36 | The images are pulled | 58 seconds |
+| 15:59:34 | The stack starts: the one-shot services apply the migrations, create the roles and prepare Airflow | 106 seconds; every long-running service is healthy |
+| 16:01:20 | The smoke test in the host mode | **19 of 20 checks passed**; one failed |
+| 16:04 | The deployment ends with a failure | `DEPLOYED` is not written, as designed. The workflow ends with a failure |
+
+**The 19 checks which passed**, among them the six which only the host can run: a failed task is tried again three times; the pipeline version is the commit of the release; Glue, S3 and the pinned read of ClickHouse through the lake role answer (`gbmi lake check`); ClickHouse cannot write to the lake without credentials; the tracer DAG lands and builds one live hour of GDELT on S3 and Glue (run `smoke__20261128T160144`, 71 seconds).
+
+**The check which failed:** "ClickHouse cannot write to the lake with the lake role". S3 had refused the write, as wanted: "User: … assumed-role/gbmi-clickhouse-lake-ro/… is not authorized to perform: s3:PutObject". The check knew a refusal only by the words of an error code, and ClickHouse 26.8 shows the message of AWS without the code. The defect was in the check, not in the platform. Repair: pull request [#29](https://github.com/jaymercado/gbmi-platform/pull/29), merged at 16:20 UTC: the pattern of a refusal holds the message of AWS, and eight tests keep the two real answers of the host beside the pattern.
+
+**What the first attempt already showed on the host** (read at 16:05 UTC, with the stack of the first attempt running):
+
+| Point | Result |
+|---|---|
+| Task logs on S3 (exit-gate row 9) | 8 objects below `airflow-logs/dag_id=tracer_gdelt_events/run_id=smoke__20261128T160144/` of the ops bucket: one for each task of the run |
+| Container logs in CloudWatch (exit-gate row 9) | 11 log streams in `/gbmi/prod/containers`, one for each container; both log groups keep a line for 30 days |
+| The lake after one live hour | 12 objects below `raw/`, 20 below `warehouse/`, none below `quarantine/`; no marker object in the bucket; four tables in the Glue database `gbmi_prod_silver` |
+| The role of the host, with real requests | Reads and decrypts the 15 parameters; assumes the lake role; lists the lake bucket; reaches the registry without a login, GitHub, Docker Hub, Quay and GDELT over HTTPS |
+| Memory with the stack up and idle | 2,584 MiB of 7,807 MiB used. Scheduler 902 MiB of 2,000; API server 330 of 700; DAG processor 284 of 400; triggerer 334 of 400; ClickHouse 391 of 2,000; PostgreSQL 79 of 400 |
+| DAGs | Seven DAGs are paused. The tracer DAG is not paused and has no schedule |
+| Session Manager | A port forward to the host opened from the laptop with the plugin (15:40 UTC) |
+
+**The second attempt.** The workflows `e2e` and `images` passed for `66cd70b`, the merge commit of #29. Claude started the workflow `deploy` at 16:33 UTC ([run 46165763476](https://github.com/jaymercado/gbmi-platform/actions/runs/46165763476)). The run waits for the approval of Jay in GitHub since 16:33 UTC; the result is recorded with the next pull request. Until then the stack of the first attempt keeps running on the host with its DAGs paused.
+
+## The dbt documentation and three decision records (WP-14)
+
+- **The site.** `make docs` runs `dbt docs generate --static` on the demo stack after `make demo` and writes one file, `site/index.html`. On a push to `main` the workflow `e2e` builds the site after the demo and uploads it, and the new job `pages` publishes it with GitHub Pages. Only that job may write to GitHub Pages.
+- **No secret in the site.** The site is public. `make docs` ends with `tools/site_check.py`, which searches the site for the value of every generated secret of the stack and for the declared identity for the SEC, and fails on a hit; a hit names the file and the variable, never the value. On the laptop the site file of 3.3 MB holds none of the 15 values. Five tests cover the search.
+- **GitHub Pages** is turned on since 2026-11-28 14:48 UTC with the source "GitHub Actions", the third repository setting of decision 2 of Jay. The address is <https://jaymercado.github.io/gbmi-platform/>. `docs/data-dictionary.md` points to the address and lists the 19 models, 2 seeds and 6 sources by layer.
+- **Three decision records**, each provisional until its evidence on the host is complete: ADR-010 (Airflow packaging), ADR-011 (cloud topology and cost controls; provisional until the cost report of P4) and ADR-015 (fair access to the SEC). The index names the three records.
+
+**Not verified:** the target `make docs` as a whole, and the job `pages`: both run for the first time with the push of the pull request to `main`. Exit-gate row 11 holds when the address answers with the status 200 and shows the models.
 
 ## Facts verified for the AWS work
 

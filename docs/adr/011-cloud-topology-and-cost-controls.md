@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Date** | 2026-11-28 |
-| **Status** | **Provisional** until the cost report of phase P4. On 2026-11-28 the code is reviewed and nothing of the host is applied; the record is updated after the applies of work package WP-11 and after the measurements of WP-13 |
+| **Status** | **Provisional** until the cost report of phase P4. The network, the roles, the host and the monitoring were applied on 2026-11-28; the record is updated after the measurements of work package WP-13 |
 | **Sources** | Blueprint §5.9, §9.2, §9.4, §9.7, §12, technology decisions TD-12, TD-13 and TD-14; week 1 plan, differences D12 and D13; week 3 plan §3.3, differences D40 to D45, changes C16, C26 and C27 |
 | **Related** | Review 3 of the status report of phase P2; the runbook `docs/runbooks/deploy-and-roll-back.md`; `infra/terraform/README.md`; ADR-010 |
 
@@ -37,7 +37,7 @@ Five points need a decision: where the stack runs; how the machine reaches the i
 |---|---|
 | A monthly budget of 30 US dollars | Notifications at 50, 80 and 100 percent |
 | The nightly stop | A third of the instance hours is not bought |
-| The spot market | About 0.028 US dollars an hour against 0.0672 on demand (blueprint §12; the spot price changes, and work package WP-11 records the price of the day) |
+| The spot market | 0.0227 US dollars an hour in the zone of the host on 2026-11-28, against 0.0672 on demand: about a third. The spot price changes |
 | No NAT gateway, no load balancer, no managed database | The three largest fixed costs of a usual design are absent |
 | Lifecycle rules of the buckets and a log retention of 30 days | Old versions, temporary files and logs expire by themselves |
 | An alarm on surplus CPU credits and an alarm on a failed call of the schedule | A host which works above its baseline, and a host which does not stop, are reported |
@@ -76,11 +76,14 @@ Five points need a decision: where the stack runs; how the machine reaches the i
 | The code builds what the record describes | `make tf-check`: format, validation, tflint and 322 policy checks of checkov; each skipped check has a written reason. Review 3 of 2026-11-28 found no blocking defect; its three defects are repaired |
 | The first boot and the deployments work | `make host-rehearsal`: the start script of the instance, three deployments, each refusal and the start at boot in a container of Amazon Linux 2023 for arm64: 80 checks |
 | A pull request can plan and cannot write | The job `plan` of pull request #28 assumed the read-only role through OIDC on 2026-11-28 and planned the configuration `bootstrap` |
-| The roles allow what the code needs and refuse the rest | **Open.** `make host-policy-check` after the applies: 86 requests against the five roles |
+| The applied resources match the code | Both configurations were applied on 2026-11-28 from saved plans, each after the answer "apply" of the developer; a plan of each configuration reports "No changes" afterwards |
+| The host has no way in | Read back from AWS after the apply: the security group has one outbound rule and no inbound rule, the instance has no key pair, and the metadata service accepts version 2 only |
+| The roles allow what the code needs and refuse the rest | `make host-policy-check` after the applies: IAM decided 86 of 86 simulated requests against the five roles as expected. The host role cannot delete a raw file; the plan role cannot read a secret of the host |
+| No secret in the Terraform state | A search of both state files for the values of the 15 parameters of the host found none |
 | The host is reachable only through Session Manager; the stack runs on S3 and Glue | **Open.** Exit-gate rows 4 and 5 of week 3 |
 | The stack fits 8 GB; the CPU credits and the memory under load | **Open.** The measurements of work package WP-13 (exit-gate row 12) |
 | The platform costs about 30 US dollars a month | **Open until phase P4.** The numbers of the record are estimates of the blueprint. The cost report of P4 reads the bill |
 
 ## Status
 
-**Provisional.** The network, the roles, the host and the monitoring are reviewed code. The record is updated after the applies and after the measurements of the host, and it becomes *accepted* with the cost report of phase P4.
+**Provisional.** The network, the roles, the host and the monitoring are applied since 2026-11-28. The record is updated after the measurements of the host, and it becomes *accepted* with the cost report of phase P4.
