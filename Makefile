@@ -104,7 +104,7 @@ TOOLBOX := $(COMPOSE_BI) --profile tools run --rm toolbox
 
 .PHONY: help setup fmt lint test test-dags env images up up-bi down reset ps logs smoke toolbox psql integration \
 	integration-aws dbt-build demo e2e drill bench logs-dump tf-check plan redact-check host-secrets host-sec-source \
-	host-rehearsal host-status host-deploy-log host-shell host-forward deploy _other-stack-stopped _lake-dir _demo _e2e
+	host-rehearsal host-policy-check host-status host-deploy-log host-start host-stop host-shell host-forward deploy _other-stack-stopped _lake-dir _demo _e2e
 
 help: ## List the available targets
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-14s %s\n", $$1, $$2}'
@@ -164,11 +164,20 @@ host-sec-source: ## Set the SEC source of the host: make host-sec-source SOURCE=
 host-rehearsal: ## Rehearse the user data and the host scripts in an Amazon Linux 2023 arm64 container (no AWS access)
 	@bash tools/host_rehearsal/run.sh
 
+host-policy-check: ## Ask IAM to evaluate the policies of the five roles against a table of requests (changes nothing)
+	@$(HOST_AWS) uv run python tools/policy_check.py
+
 host-status: ## The AWS host: instance, agent, deployed release, services
 	@AWS_PROFILE=$(AWS_PROFILE) tools/host.sh status
 
 host-deploy-log: ## The status and the output of the newest deployment on the AWS host
 	@AWS_PROFILE=$(AWS_PROFILE) tools/host.sh deploy-log
+
+host-start: ## Start the AWS host by hand and wait until it runs (the schedule starts it at 08:00 UTC)
+	@AWS_PROFILE=$(AWS_PROFILE) tools/host.sh start
+
+host-stop: ## Stop the AWS host by hand and wait until it is stopped (the schedule stops it at 24:00 UTC)
+	@AWS_PROFILE=$(AWS_PROFILE) tools/host.sh stop
 
 host-shell: ## A shell on the AWS host through Session Manager
 	@AWS_PROFILE=$(AWS_PROFILE) tools/host.sh shell
