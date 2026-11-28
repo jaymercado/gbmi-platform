@@ -45,6 +45,12 @@ MARTS = {
 #: The annual report of Mattel for 2025: filed on 23 February 2026, accepted at 22:03:18 UTC.
 ANNUAL_REPORT = "0001628280-26-010716"
 ACCEPTED = datetime(2026, 2, 23, 22, 3, 18, tzinfo=UTC)
+#: The report of Mattel for the third quarter of 2026: accepted on 5 November 2026 at 22:58:21
+#: UTC, which is 17:58 in New York, with the filing date 6 November. EDGAR published the report
+#: on 6 November at 06:00 in New York: 11:00 UTC.
+QUARTER_REPORT = "0001628280-26-071218"
+QUARTER_ACCEPTED = datetime(2026, 11, 5, 22, 58, 21, tzinfo=UTC)
+QUARTER_PUBLIC = datetime(2026, 11, 6, 11, 0, 0, tzinfo=UTC)
 NET_INCOME = ("us-gaap", "NetIncomeLoss", "USD")
 
 
@@ -227,8 +233,8 @@ def test_an_as_of_question_gives_what_was_known_at_the_time(
     assert restated
 
     # The answers of the mart equal the answers of the separate code, for each period. The
-    # acceptance time decides: by the filing date alone, the year 2025 would be known seven
-    # hours later.
+    # annual report was accepted at 17:03 in New York, on its filing date: the acceptance
+    # time decides. By the filing date alone, the year 2025 would be known seven hours later.
     assert known_in_the_mart(clickhouse, ACCEPTED) == expected
     assert known_in_the_mart(clickhouse, just_before) == expected_before
     assert known_in_the_mart(clickhouse, datetime(2100, 1, 1, tzinfo=UTC)) == everything
@@ -239,6 +245,34 @@ def test_an_as_of_question_gives_what_was_known_at_the_time(
         f"AND period_end = '{year[1]}' AND accession_number = '{ANNUAL_REPORT}'",
     )
     assert source == [("acceptance_time", "2026-02-23 22:03:18")]
+
+
+def test_a_report_which_arrives_after_1730_is_known_from_the_next_morning(
+    clickhouse: Client, build: DagRun
+) -> None:
+    # Week 3, change C23: EDGAR accepted the report of the third quarter of 2026 at 17:58 in
+    # New York and published the report on the next business day at 06:00 in New York.
+    quarter = ("2026-07-01", "2026-09-30")
+    assert recorded.acceptance_times(MATTEL)[QUARTER_REPORT] == QUARTER_ACCEPTED
+
+    knowledge = rows(
+        clickhouse,
+        "SELECT DISTINCT known_at_source, toString(known_at), toString(filed_date) "
+        f"FROM marts.fct_financial_fact WHERE cik = {MATTEL} "
+        f"AND accession_number = '{QUARTER_REPORT}'",
+    )
+    at_acceptance = known_in_the_mart(clickhouse, QUARTER_ACCEPTED)
+    just_before = known_in_the_mart(clickhouse, QUARTER_PUBLIC - timedelta(seconds=1))
+    when_public = known_in_the_mart(clickhouse, QUARTER_PUBLIC)
+
+    assert knowledge == [("dissemination_time", "2026-11-06 11:00:00", "2026-11-06")]
+    # In the night between the two moments nobody outside the SEC knew the quarter.
+    assert quarter not in at_acceptance and quarter not in just_before
+    assert quarter in when_public
+    assert when_public == recorded.known_values(MATTEL, *NET_INCOME, moment=QUARTER_PUBLIC)
+    assert just_before == recorded.known_values(
+        MATTEL, *NET_INCOME, moment=QUARTER_PUBLIC - timedelta(seconds=1)
+    )
 
 
 def test_the_metric_mart_keeps_the_first_and_the_latest_value(

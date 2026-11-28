@@ -16,6 +16,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 FIXTURES = Path(os.environ.get("GBMI_SEC_FIXTURES_DIR", "/fixtures/sec"))
 SEED = Path(os.environ.get("GBMI_WATCHLIST_FILE", "/opt/gbmi/dbt/seeds/watchlist.csv"))
@@ -26,6 +27,8 @@ ARCHIVES = FIXTURES / "www.sec.gov" / "Archives" / "edgar" / "daily-index"
 INDEX_FILE = ARCHIVES / "2026" / "QTR4" / "form.20261125.idx"
 ARCHIVE = ARCHIVES / "bulkdata" / "submissions.zip"
 TICKER_FILE = FIXTURES / "www.sec.gov" / "files" / "company_tickers_exchange.json"
+#: EDGAR works on the clock of New York: a day of EDGAR starts at 06:00.
+NEW_YORK = ZoneInfo("America/New_York")
 
 
 def watchlist() -> list[int]:
@@ -168,22 +171,29 @@ def acceptance_times(cik: int) -> dict[str, datetime]:
     }
 
 
-def reports(cik: int, taxonomy: str, concept: str, unit: str) -> list[dict[str, Any]]:
-    """Each report of a concept of a company: the period, the value, and when it became known.
+def public_moment(accepted: datetime | None, filed: date) -> datetime:
+    """The moment at which EDGAR made a filing public (week 3 plan, D48 and change C23).
 
-    The knowledge time is the acceptance time of the filing when the submissions document
-    lists the filing, and otherwise 05:00 UTC of the day after the filing date (week 3 plan,
-    difference D48).
+    EDGAR publishes a filing when it accepts the filing, with one exception: a filing which
+    arrives after 17:30 in New York receives the filing date of the next business day and is
+    published at 06:00 in New York on that date. So the moment is the later of the acceptance
+    time and 06:00 in New York on the filing date. Without an acceptance time the moment is
+    05:00 UTC of the day after the filing date.
     """
+    if accepted is None:
+        return datetime.combine(filed + timedelta(days=1), time(5), tzinfo=UTC)
+    return max(accepted, datetime.combine(filed, time(6), tzinfo=NEW_YORK))
+
+
+def reports(cik: int, taxonomy: str, concept: str, unit: str) -> list[dict[str, Any]]:
+    """Each report of a concept of a company: the period, the value, and when it became known."""
     document = json.loads(
         (DATA / "api" / "xbrl" / "companyfacts" / document_name(cik)).read_bytes()
     )
     accepted = acceptance_times(cik)
     found = {}
     for value in document["facts"][taxonomy][concept]["units"][unit]:
-        known_at = accepted.get(value["accn"]) or datetime.combine(
-            date.fromisoformat(value["filed"]) + timedelta(days=1), time(5), tzinfo=UTC
-        )
+        known_at = public_moment(accepted.get(value["accn"]), date.fromisoformat(value["filed"]))
         period = (value.get("start", value["end"]), value["end"])
         found[(period, value["accn"])] = {
             "period": period,

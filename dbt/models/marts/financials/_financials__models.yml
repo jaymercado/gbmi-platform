@@ -98,21 +98,25 @@ models:
       - name: known_at
         data_type: "DateTime('UTC')"
         description: >
-          Moment at which the fact became public: the acceptance time of the filing, or 05:00 UTC of
-          the day after the filing date.
+          Moment at which EDGAR made the fact public (UTC): the later of the acceptance time of
+          the filing and 06:00 New York time on the filing date; without an acceptance time,
+          05:00 UTC of the day after the filing date.
         data_tests:
           - not_null
       - name: known_at_source
         data_type: String
         description: >
-          acceptance_time when known_at is the acceptance time of the filing; filing_date when
-          known_at is derived from the filing date.
+          The rule behind known_at. acceptance_time: the acceptance time of the filing.
+          dissemination_time: 06:00 New York time on the filing date, for a filing which EDGAR
+          accepted after 17:30 New York time and published on the next business day.
+          filing_date: no acceptance time is known.
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values:
                   - acceptance_time
+                  - dissemination_time
                   - filing_date
       - name: _silver_snapshot_id
         data_type: Int64
@@ -306,14 +310,18 @@ models:
           The dbt run which built the model.
 
 unit_tests:
-  - name: financial_fact_known_at_is_the_acceptance_time_or_the_day_after_the_filing
+  - name: financial_fact_known_at_is_the_moment_at_which_the_filing_was_public
     description: >
-      Week 3 plan, difference D48. The first fact comes from a filing whose acceptance time the
-      submissions document holds: known_at is the acceptance time. The second fact comes from
-      a filing which the submissions document holds without an acceptance time, and the third
-      from a filing which no submissions document holds: both receive the later knowledge
-      time, 05:00 UTC of the day after the filing date. The third filing date is the last day
-      of a year.
+      Week 3 plan, difference D48 and change C23. The first fact comes from a filing which
+      EDGAR accepted on its filing date: known_at is the acceptance time. The second fact
+      comes from a filing which the submissions document holds without an acceptance time,
+      and the third from a filing which no submissions document holds: both receive the later
+      knowledge time, 05:00 UTC of the day after the filing date; the third filing date is the
+      last day of a year. The fourth and the fifth filing were accepted after 17:30 New York
+      time and carry the filing date of the next business day: EDGAR published them at 06:00
+      New York time on that date, which is 11:00 UTC in winter and 10:00 UTC in summer. The
+      fifth was accepted on a Friday and published on the Monday. The sixth was accepted at
+      06:00 New York time on its filing date, in the first second of the day of EDGAR.
     model: fct_financial_fact
     given:
       - input: ref('stg_sec__xbrl_fact')
@@ -321,16 +329,25 @@ unit_tests:
           - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2025-01-01", period_end: "2025-12-31", accession_number: "0000000001-26-000001", is_instant: false, value: "100.000000", form: "10-K", filed_date: "2026-02-03"}
           - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2024-01-01", period_end: "2024-12-31", accession_number: "0000000001-25-000001", is_instant: false, value: "90.000000", form: "10-K", filed_date: "2025-02-04"}
           - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2023-01-01", period_end: "2023-12-31", accession_number: "0000000001-24-000001", is_instant: false, value: "80.000000", form: "10-K", filed_date: "2024-12-31"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2026-07-01", period_end: "2026-09-30", accession_number: "0000000001-26-000009", is_instant: false, value: "30.000000", form: "10-Q", filed_date: "2026-11-06"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2026-04-01", period_end: "2026-06-30", accession_number: "0000000001-26-000006", is_instant: false, value: "28.000000", form: "10-Q", filed_date: "2026-07-27"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2026-01-01", period_end: "2026-03-31", accession_number: "0000000001-26-000003", is_instant: false, value: "26.000000", form: "10-Q", filed_date: "2026-05-01"}
       - input: ref('stg_sec__filing_detail')
         rows:
           - {cik: 1, accession_number: "0000000001-26-000001", form: "10-K", filing_date: "2026-02-03", accepted_at: "2026-02-03 21:54:12"}
           - {cik: 1, accession_number: "0000000001-25-000001", form: "10-K", filing_date: "2025-02-04", accepted_at: null}
           - {cik: 2, accession_number: "0000000001-24-000001", form: "10-K", filing_date: "2024-12-31", accepted_at: "2024-12-31 22:00:00"}
+          - {cik: 1, accession_number: "0000000001-26-000009", form: "10-Q", filing_date: "2026-11-06", accepted_at: "2026-11-05 22:58:21"}
+          - {cik: 1, accession_number: "0000000001-26-000006", form: "10-Q", filing_date: "2026-07-27", accepted_at: "2026-07-24 21:45:00"}
+          - {cik: 1, accession_number: "0000000001-26-000003", form: "10-Q", filing_date: "2026-05-01", accepted_at: "2026-05-01 10:00:00"}
     expect:
       rows:
         - {cik: 1, accession_number: "0000000001-26-000001", value: "100.000000", known_at: "2026-02-03 21:54:12", known_at_source: "acceptance_time"}
         - {cik: 1, accession_number: "0000000001-25-000001", value: "90.000000", known_at: "2025-02-05 05:00:00", known_at_source: "filing_date"}
         - {cik: 1, accession_number: "0000000001-24-000001", value: "80.000000", known_at: "2025-01-01 05:00:00", known_at_source: "filing_date"}
+        - {cik: 1, accession_number: "0000000001-26-000009", value: "30.000000", known_at: "2026-11-06 11:00:00", known_at_source: "dissemination_time"}
+        - {cik: 1, accession_number: "0000000001-26-000006", value: "28.000000", known_at: "2026-07-27 10:00:00", known_at_source: "dissemination_time"}
+        - {cik: 1, accession_number: "0000000001-26-000003", value: "26.000000", known_at: "2026-05-01 10:00:00", known_at_source: "acceptance_time"}
 
   - name: financial_metric_compares_with_the_same_period_one_year_before
     description: >
