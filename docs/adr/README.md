@@ -1,6 +1,6 @@
 # Architecture decision records
 
-One record per decision that shapes the platform. The blueprint (§10) lists the fourteen that are planned.
+One record per decision that shapes the platform. The blueprint (§10) lists the fourteen that are planned; the week 3 plan adds ADR-015 (difference D46).
 
 ## Template
 
@@ -23,3 +23,6 @@ A decision without evidence is marked provisional.
 | [004](004-iceberg-glue-local-backend.md) | Iceberg with Glue; a local filesystem backend instead of an S3 emulator | Accepted |
 | [006](006-incremental-contract-partition-replacement.md) | Incremental contract: partition replacement | Provisional (draft) |
 | [007](007-ledger-state-machine-and-completeness.md) | Ledger state machine and the meaning of completeness | Accepted |
+| [010](010-airflow-packaging.md) | Airflow packaging: one image, three isolated environments, dbt through Cosmos | Provisional (the evidence on the host follows) |
+| [011](011-cloud-topology-and-cost-controls.md) | Cloud topology and cost controls: one spot host which stops at night | Provisional (until the cost report of P4) |
+| [015](015-sec-fair-access.md) | Fair access to the SEC: one client, a sliding window, a circuit and a request log | Provisional (the request log of the host follows) |

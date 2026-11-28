@@ -3,7 +3,10 @@ name: e2e
 # The acceptance criterion of phase P0 (blueprint 11.2): `make demo` passes in CI. The whole
 # stack runs on the runner: the DAG tests with the interpreter of Airflow, the integration tests
 # (spikes SK1 to SK3, ingestion, silver build), then the tracer and the three GDELT DAGs on the
-# committed fixtures with one chart and the end-to-end assertions, and last the three drills.
+# committed fixtures with one chart and the end-to-end assertions, and last the drills.
+#
+# On a push to main the job also builds the dbt documentation from the warehouse of the demo
+# stack, and the job pages publishes the site with GitHub Pages (week 3 plan, WP-14).
 on:
   pull_request:
   push:
@@ -62,6 +65,18 @@ jobs:
       - name: make demo
         run: make demo
 
+      # The documentation of the models which the demo has just built: one file, searched
+      # for every secret of the stack before it leaves the runner.
+      - name: Build the dbt documentation site
+        if: github.event_name == 'push'
+        run: make docs
+
+      - name: Upload the site
+        if: github.event_name == 'push'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+
       - name: Drills DR2, DR4 and DR8 on the recorded files
         run: |
           make drill DR=2
@@ -79,3 +94,21 @@ jobs:
       - name: Stop the stack
         if: always()
         run: make down
+
+  # Publishes the site which the job demo uploaded. Only this job may write to GitHub Pages,
+  # and only for a push to main.
+  pages:
+    name: publish the dbt documentation
+    if: github.event_name == 'push'
+    needs: demo
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

@@ -42,3 +42,6 @@ infra/terraform/local.env
 .DS_Store
 .idea/
 .vscode/
+
+# The dbt documentation site of make docs; the workflow e2e publishes it.
+site/
