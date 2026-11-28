@@ -2,13 +2,26 @@
 # Smoke checks for the running stack (week 1 plan, WP-05 step 6). Run with: make smoke
 #
 # Every check prints PASS or FAIL; the script exits non-zero if any check failed.
+#
+# Two modes. The default checks a stack of the laptop or of CI. GBMI_SMOKE_MODE=host checks
+# the stack of the AWS host after a deployment (compose/host/deploy.sh; week 3 plan, WP-10
+# step 5): both Compose files, the environment file of the host, and in place of the check of
+# the lake folder the checks of S3, Glue and the lake role, with one ingest run at the end.
 set -uo pipefail
 
-# The Makefile exports STACK, the Compose project of the stack to check (week 2 plan 3.3).
-# Run by hand, the script checks the working stack.
-STACK="${STACK:-gbmi}"
-COMPOSE=(docker compose --project-name "$STACK" --project-directory . --env-file .env -f compose/compose.yaml)
-echo "smoke: stack $STACK"
+MODE="${GBMI_SMOKE_MODE:-laptop}"
+if [ "$MODE" = "host" ]; then
+  STACK="gbmi"
+  ENV_FILE="${GBMI_ENV_FILE:-/etc/gbmi/env}"
+  COMPOSE=(docker compose --project-name "$STACK" --project-directory . --env-file "$ENV_FILE" -f compose/compose.yaml -f compose/compose.prod.yaml)
+else
+  # The Makefile exports STACK, the Compose project of the stack to check (week 2 plan 3.3).
+  # Run by hand, the script checks the working stack.
+  STACK="${STACK:-gbmi}"
+  ENV_FILE=".env"
+  COMPOSE=(docker compose --project-name "$STACK" --project-directory . --env-file "$ENV_FILE" -f compose/compose.yaml)
+fi
+echo "smoke: stack $STACK, mode $MODE"
 failures=0
 
 check() {
@@ -24,10 +37,16 @@ check() {
   fi
 }
 
-# Passwords come from .env, the same file Compose reads. The file is parsed, not sourced:
-# Compose accepts values that a shell would not.
+# Passwords come from the env file, the same file Compose reads. The file is parsed, not
+# sourced: Compose accepts values that a shell would not. The file of the host holds each value
+# in single quotes (compose/host/render_env.py).
 env_value() {
-  grep -E "^$1=" .env | head -1 | cut -d= -f2-
+  local value
+  value="$(grep -E "^$1=" "$ENV_FILE" | head -1 | cut -d= -f2-)"
+  case "$value" in
+    \'*\') value="${value#\'}"; value="${value%\'}" ;;
+  esac
+  printf '%s' "$value"
 }
 CLICKHOUSE_ADMIN_PASSWORD="$(env_value CLICKHOUSE_ADMIN_PASSWORD)"
 CH_DBT_PASSWORD="$(env_value CH_DBT_PASSWORD)"
@@ -213,6 +232,58 @@ environments_are_isolated() {
   '
 }
 
+# --- the checks of the AWS host (week 3 plan, WP-10 step 5) -----------------------------------
+
+task_retries_are_three() {
+  local retries
+  retries="$("${COMPOSE[@]}" exec -T airflow-scheduler printenv GBMI_TASK_RETRIES)" || return 1
+  [ "$retries" = "3" ] || { echo "GBMI_TASK_RETRIES is '$retries', expected 3"; return 1; }
+}
+
+pipeline_version_is_the_release() {
+  # The image carries the commit: rows, run records and log lines name the deployed commit
+  # (week 3 plan, exit-gate row 13).
+  local version
+  version="$("${COMPOSE[@]}" exec -T airflow-scheduler printenv GBMI_PIPELINE_VERSION)" || return 1
+  [ "$version" = "${GBMI_RELEASE:-}" ] || { echo "the scheduler runs '$version', the release is '${GBMI_RELEASE:-}'"; return 1; }
+}
+
+lake_backend_answers() {
+  # Glue answers; one object is written, read and deleted below tmp/smoke/ of the ops bucket;
+  # ClickHouse reads one pinned table through the lake role; the pipeline version is the commit.
+  "${COMPOSE[@]}" --profile tools run --rm -T toolbox gbmi lake check \
+    --scratch "s3://$(env_value GBMI_OPS_BUCKET)/tmp/smoke" --release "${GBMI_RELEASE:-}"
+}
+
+clickhouse_write_is_refused() {
+  # $1: the arguments after the address in s3(...). ClickHouse must not be able to write to
+  # the lake: without credentials ClickHouse itself refuses (a query never uses the role of
+  # the host), and with the lake role S3 refuses (the role can only read).
+  local output
+  if output="$(ch "INSERT INTO FUNCTION s3('s3://$(env_value GBMI_LAKE_BUCKET)/warehouse/_smoke/refused.csv', 'CSV', 'x UInt8'$1) VALUES (1)" 2>&1)"; then
+    echo "ClickHouse wrote an object to the lake"
+    return 1
+  fi
+  printf '%s' "$output" | grep -qiE "ACCESS_DENIED|AccessDenied|Access Denied" || {
+    echo "the write failed, but not with a refusal:"
+    printf '%s\n' "$output" | head -c 400
+    return 1
+  }
+}
+
+clickhouse_cannot_write_without_credentials() {
+  clickhouse_write_is_refused ""
+}
+
+clickhouse_cannot_write_with_the_lake_role() {
+  clickhouse_write_is_refused ", extra_credentials(role_arn = '$(env_value GBMI_CH_LAKE_ROLE_ARN)')"
+}
+
+one_ingest_run() {
+  # Three of the newest GDELT files: the internet, the write to raw/ on S3 and the ledger.
+  "${COMPOSE[@]}" --profile tools run --rm -T toolbox gbmi gdelt ingest --batch-limit 3
+}
+
 check "long-running services are healthy" services_healthy
 check "the one-shot services finished with exit code 0 (init, migrations, roles, manifest)" one_shots_succeeded
 check "no container has restarted" no_restarts
@@ -226,8 +297,17 @@ check "PostgreSQL databases airflow, gbmi and metabase exist" postgres_databases
 check "the newest migration file is applied in the schema ops" migrations_applied
 check "ClickHouse reads PostgreSQL through postgresql()" clickhouse_reads_postgres
 check "the dbt user reads the ledger through the named collection pg_ops" dbt_reads_the_ledger
-check "Airflow writes /lake, ClickHouse reads it read-only" lake_is_shared
 check "Airflow, gbmi and dbt environments are isolated" environments_are_isolated
+if [ "$MODE" = "host" ]; then
+  check "a failed task is tried again three times" task_retries_are_three
+  check "the pipeline version is the commit of the release" pipeline_version_is_the_release
+  check "Glue, S3 and the pinned read through the lake role answer (gbmi lake check)" lake_backend_answers
+  check "ClickHouse cannot write to the lake without credentials" clickhouse_cannot_write_without_credentials
+  check "ClickHouse cannot write to the lake with the lake role" clickhouse_cannot_write_with_the_lake_role
+  check "one ingest run lands the newest GDELT files" one_ingest_run
+else
+  check "Airflow writes /lake, ClickHouse reads it read-only" lake_is_shared
+fi
 
 if [ "$failures" -gt 0 ]; then
   echo "smoke: $failures check(s) failed"

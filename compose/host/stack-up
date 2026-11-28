@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Starts the deployed release: the command of the systemd unit of the host (week 3 plan 3.3).
+#
+#   compose/host/stack-up [<commit>]
+#
+# Without an argument the script starts the release which $GBMI_HOME/DEPLOYED names. The
+# environment file is written again first, so a changed parameter takes effect at a start.
+set -euo pipefail
+
+here="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=compose/host/common.sh
+. "$here/common.sh"
+
+release="${1:-}"
+if [ -z "$release" ]; then
+  [ -s "$GBMI_HOME/DEPLOYED" ] || die "no release is deployed: $GBMI_HOME/DEPLOYED is missing"
+  release="$(tr -d '[:space:]' < "$GBMI_HOME/DEPLOYED")"
+fi
+require_commit "$release"
+[ -d "$(release_dir "$release")" ] || die "the release folder of $release is missing"
+
+say "render the environment file"
+"$(release_dir "$release")/compose/host/render_env.sh" "$release"
+
+say "start the stack of the release $release"
+compose "$release" up --detach --wait --remove-orphans --quiet-pull
+say "the stack is up"

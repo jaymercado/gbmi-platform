@@ -273,3 +273,27 @@ def test_the_overlay_refuses_to_render_without_the_values_of_the_host(tmp_path: 
         values = {name: value for name, value in HOST_VALUES.items() if name != missing}
         with pytest.raises(AssertionError, match=r"required variable|is missing a value"):
             render(tmp_path, "compose.yaml", "compose.prod.yaml", values=values)
+
+
+def test_metabase_starts_on_demand_with_a_limit_of_its_own(tmp_path: Path) -> None:
+    services = render(
+        tmp_path,
+        "compose.yaml",
+        "compose.bi.yaml",
+        "compose.prod.yaml",
+        "compose.prod.bi.yaml",
+        values=HOST_VALUES,
+    )
+    metabase = services["metabase"]
+
+    assert int(metabase["mem_limit"]) == 1300 * 1024 * 1024
+    assert metabase["logging"]["driver"] == "awslogs"
+    assert metabase["logging"]["options"] == services["postgres"]["logging"]["options"]
+    assert [(port["host_ip"], port["published"]) for port in metabase["ports"]] == [
+        ("127.0.0.1", "3000")
+    ]
+    assert "@sha256:" in metabase["image"]
+    # Metabase runs while an operator looks at a dashboard: no restart on its own.
+    assert metabase["restart"] == "no"
+    total = sum(int(service.get("mem_limit", 0)) for service in services.values())
+    assert total == 7200 * 1024 * 1024
