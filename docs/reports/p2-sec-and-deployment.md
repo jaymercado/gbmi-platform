@@ -18,7 +18,7 @@ The exit gate of the week 3 plan (§2). A row changes from "Open" to "Holds" wit
 | 4 | The host is reachable only through Session Manager | Open | |
 | 5 | The platform runs on AWS: the stack on the host uses S3 and Glue, and two GDELT DAGs ran for at least 6 hours in a row, in a period which holds one scheduled daily run | Open | |
 | 6 | The three SEC DAGs each completed one scheduled run on the host; silver on the host holds the data of the criterion; every SEC object is in a final state | Open | |
-| 7 | Drill DR5 passes as a script, and the runbook for a block by the SEC exists | Open | |
+| 7 | Drill DR5 passes as a script, and the runbook for a block by the SEC exists | Holds | `make drill DR=5`: 26 checks, none failed, on the laptop on 2026-11-28; the workflow `e2e` runs the drill on every pull request. The runbook is `docs/runbooks/sec-circuit-open.md` (pull request #23) |
 | 8 | The delivery path works from end to end: image, deployment through the environment `prod`, `terraform plan` in a pull request, smoke test | Open | |
 | 9 | Remote logging works: task logs on S3, container logs in CloudWatch with a retention of 30 days | Open | |
 | 10 | The four new Terraform modules are applied; `make plan` reports no changes; `make tf-check` passes; no secret in the state; no account number and no address in the repository | Open | |
@@ -39,7 +39,7 @@ The order follows change C10 of the week 3 plan (§3.5). Every time is UTC. The 
 | 05 | Lake: general units and five SEC tables | 2026-11-28 03:49 | 2026-11-28 04:51 | [#20](https://github.com/jaymercado/gbmi-platform/pull/20) | Done. Written while review 1 read WP-03 (change C10). Working time about 12 minutes for the code and about 5 minutes for the merge of the repairs and the pull request; the GitHub checks took about 11 minutes |
 | 04 | Recorded files and payload models | 2026-11-28 04:03 | 2026-11-28 05:12 | [#21](https://github.com/jaymercado/gbmi-platform/pull/21) | Done. The recorder and the metric seed were drafted from 04:03 to 04:08, during review 1. The work went on at 04:26, and the 18 requests left at 04:37, one minute after the merge of WP-03. Working time about 35 minutes; the GitHub checks took about 12 minutes |
 | 06 | Pipelines PL-3, PL-4 and PL-5; the watchlist; review 2; one live load | 2026-11-28 04:55 | | [#22](https://github.com/jaymercado/gbmi-platform/pull/22) | The code of the three pipelines, the commands and the tests were written from 04:55 to 05:24 and from 08:36 to 08:42; the session stood still in between. Review 2 ran from 08:42 to 09:18 and found no blocking defect, four defects to repair before the merge and ten notes; the repairs took from 09:19 to 09:27, in the same pull request (change C11). The live load ran from 09:28 to 09:36 on the working stack: 81 requests, no block. Working time about 1 hour 25 minutes |
-| 09 | Drill DR5 and one runbook | | | | |
+| 09 | Drill DR5 and one runbook | 2026-11-28 08:43 | | [#23](https://github.com/jaymercado/gbmi-platform/pull/23) | Written while review 2 read WP-06 (change C10). Working time about 10 minutes. The pull request follows the merge of WP-06 |
 | 07 | DAGs, DAG tests and the demo | | | | |
 | 08 | dbt models, unit tests and `marts_build` | | | | |
 | 10 | Runtime for two backends; image; workflow `images` | | | | |
@@ -368,3 +368,5 @@ Decisions which the week 3 plan left open, in the order of the work.
 | 45 | 06 | The day of a former name is the UTC date of its time, not the date in New York of finding F3 | The live load found three forms of the time: midnight UTC, 04:00 UTC and 05:00 UTC. The UTC date is the day which the SEC means for each of the three |
 | 46 | 06 | The names Shell, Visa, Intel and Oracle are left out of the news part of the watchlist as common words | The plan: "without names which are common words". The four were read in the result of a dry run; Jay can change a row by pull request |
 | 47 | 06 | `benchmarks/p2_sec/live_load_evidence.py` writes the numbers of the live load | The rule of phase P1: a measuring script writes the raw result beside the script |
+| 48 | 09 | The drill moves a clock of its own; a wait of 15 minutes takes no real time | The plan: "with a controlled clock". The drill runs in the workflow `e2e` on every pull request |
+| 49 | 09 | The runbook gives the statement of the SEC on the end of a block as the blueprint records the statement, and says that the page was not read again | A request to a page of the SEC outside the fair-access client is not allowed in week 3. One web search on 2026-11-28 found the limit of 10 requests in a second on the developer page of the SEC and found the 10 minutes only in a text of 2015 |
