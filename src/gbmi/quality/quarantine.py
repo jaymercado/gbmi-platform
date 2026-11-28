@@ -9,7 +9,8 @@ A whole file which a gate rejected is kept beside the rows, under its own name:
 
     quarantine/<source>/<feed>/dt=<slot date>/<file name>
 
-Each file is written as one whole object (gbmi.lake.objects): one PUT request on S3.
+Each file is written as one whole object (gbmi.lake.objects): one PUT request on S3. A file is
+removed with one DELETE request, which leaves no marker object behind.
 """
 
 from __future__ import annotations
@@ -17,11 +18,10 @@ from __future__ import annotations
 from datetime import date
 
 import pyarrow as pa
-import pyarrow.fs as pafs
 import pyarrow.parquet as pq
 
 from gbmi.lake.commit import Unit
-from gbmi.lake.objects import write_object
+from gbmi.lake.objects import delete_object, write_object
 
 QUARANTINE_SCHEMA = pa.schema(
     [
@@ -49,10 +49,7 @@ def write_quarantine(
     """Replace the unit's quarantine file; returns its key, or None when no row was rejected."""
     key = quarantine_key(source, feed, unit)
     if rows.num_rows == 0:
-        filesystem, root = pafs.FileSystem.from_uri(lake_uri)
-        path = f"{root.rstrip('/')}/{key}"
-        if filesystem.get_file_info(path).type != pafs.FileType.NotFound:
-            filesystem.delete_file(path)
+        delete_object(lake_uri, key)
         return None
     # The rejected rows of a unit are few: the file is built in memory and written whole.
     sink = pa.BufferOutputStream()
@@ -81,12 +78,8 @@ def clear_hour_quarantine(lake_uri: str, source: str, feed: str, slot_date: date
     A day build writes one quarantine file for the whole day. The files of the hour builds of
     the same day would count the same rows a second time.
     """
-    filesystem, root = pafs.FileSystem.from_uri(lake_uri)
     removed = 0
     for hour in range(24):
-        key = quarantine_key(source, feed, Unit(slot_date, hour))
-        path = f"{root.rstrip('/')}/{key}"
-        if filesystem.get_file_info(path).type != pafs.FileType.NotFound:
-            filesystem.delete_file(path)
+        if delete_object(lake_uri, quarantine_key(source, feed, Unit(slot_date, hour))):
             removed += 1
     return removed

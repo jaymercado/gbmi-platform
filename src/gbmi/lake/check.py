@@ -25,7 +25,7 @@ import pyarrow.fs as pafs
 
 from gbmi.config import Environment, Settings
 from gbmi.lake.catalog import load_lake_catalog
-from gbmi.lake.objects import write_object
+from gbmi.lake.objects import delete_object, write_object
 from gbmi.lake.tables import GDELT_EVENT
 from gbmi.warehouse.client import connect, quote_identifier
 from gbmi.warehouse.pin import LAKE_DATABASE, lake_grant, pin_silver_tables
@@ -67,7 +67,9 @@ def check_object(scratch_uri: str) -> dict[str, Any]:
         with filesystem.open_input_stream(path) as stream:
             read = stream.read()
     finally:
-        filesystem.delete_file(path)
+        # One DELETE request on S3: a delete through PyArrow would leave an empty marker
+        # object for the scratch folder in the lake.
+        delete_object(scratch, key)
     if read != content:
         raise ValueError("the object which was read differs from the object which was written")
     if filesystem.get_file_info(path).type != pafs.FileType.NotFound:
