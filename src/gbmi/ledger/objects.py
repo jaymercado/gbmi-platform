@@ -469,9 +469,10 @@ class ObjectLedger:
     def supersede_older(self, key: ObjectKey, *, as_of: datetime | None = None) -> set[ObjectKey]:
         """Close every open object of the same dataset and name which is older than ``key``.
 
-        The caller has just loaded ``key``. The SEC keeps no old version of a file, so an older
-        object which was never loaded can never be loaded: ``expected | verified |
-        quarantined → superseded``. Returns the objects which moved.
+        The SEC keeps no old version of a file, so once ``key`` is loaded, an older object
+        which was never loaded can never be loaded: ``expected | verified | quarantined →
+        superseded``. The statement moves nothing unless ``key`` is loaded: ``superseded`` is
+        final, so a wrong call must not close an object. Returns the objects which moved.
         """
         reason = f"the object of {key.object_date.isoformat()} was loaded first"
         moved: set[ObjectKey] = set()
@@ -481,7 +482,10 @@ class ObjectLedger:
                     "UPDATE ops.source_object o SET state = %(to_state)s, reason = %(reason)s "
                     "WHERE o.source = %(source)s AND o.dataset = %(dataset)s "
                     "AND o.object_name = %(name)s AND o.object_date < %(object_date)s "
-                    "AND o.state = %(from_state)s"
+                    "AND o.state = %(from_state)s AND EXISTS ("
+                    "SELECT 1 FROM ops.source_object n WHERE n.source = o.source "
+                    "AND n.dataset = o.dataset AND n.object_name = o.object_name "
+                    "AND n.object_date = %(object_date)s AND n.state = 'loaded')"
                 )
                 moved |= self._move(
                     from_state,

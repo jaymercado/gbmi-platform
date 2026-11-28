@@ -126,8 +126,10 @@ def test_any_sequence_of_calls_follows_the_object_table(
         for name, index in sequence:
             key = KEYS[index]
             if name == SUPERSEDE:
-                # Every older object which is still open is closed; no other object changes.
-                older = {other for other in KEYS[:index] if model[other] in OPEN}
+                # When the object is loaded, every older object which is still open is closed;
+                # no other object changes. When the object is not loaded, nothing changes.
+                loaded = model[key] is ObjectState.LOADED
+                older = {other for other in KEYS[:index] if loaded and model[other] in OPEN}
                 assert ledger.supersede_older(key, as_of=AS_OF) == older
                 for other in older:
                     model[other] = ObjectState.SUPERSEDED

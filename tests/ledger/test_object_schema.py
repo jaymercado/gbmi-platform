@@ -60,17 +60,44 @@ def insert(connection: Connection, table: str, **values: Any) -> None:
         )
 
 
-def obj(connection: Connection, source: str, state: str = "expected", **values: Any) -> None:
-    row = {
-        "source": source,
-        "dataset": "submissions",
-        "object_date": DAY,
-        "object_name": NAME,
-        "url": "https://data.sec.gov/submissions/CIK0001326801.json",
-        "state": state,
-        **values,
-    }
-    insert(connection, "source_object", **row)
+#: The transitions which lead from a new object to each state.
+PATHS = {
+    "expected": [],
+    "verified": ["verified"],
+    "loaded": ["verified", "loaded"],
+    "quarantined": ["quarantined"],
+    "not_published": ["not_published"],
+    "superseded": ["superseded"],
+}
+
+
+def move(connection: Connection, source: str, name: str = NAME, **values: Any) -> None:
+    """One UPDATE of the object of the test."""
+    assignments = ", ".join(f"{column} = %s" for column in values)
+    with connection.transaction():
+        connection.execute(
+            f"UPDATE ops.source_object SET {assignments} WHERE source = %s AND object_name = %s",
+            (*values.values(), source, name),
+        )
+
+
+def obj(
+    connection: Connection, source: str, state: str = "expected", name: str = NAME, **values: Any
+) -> None:
+    """An object in a state: a new object is expected, and the table allows only transitions."""
+    with connection.transaction():
+        connection.execute(
+            "INSERT INTO ops.source_object (source, dataset, object_date, object_name, url) "
+            "VALUES (%s, 'submissions', %s, %s, %s) ON CONFLICT DO NOTHING",
+            (source, DAY, name, f"https://data.sec.gov/submissions/{name}"),
+        )
+    steps = PATHS.get(state, [state])
+    for step in steps[:-1]:
+        # The steps on the way carry the facts of a verified object and no more.
+        move(connection, source, name, state=step, **VERIFIED)
+    if steps or values:
+        last = {"state": steps[-1]} if steps else {}
+        move(connection, source, name, **last, **values)
 
 
 def request(source: str, **values: Any) -> dict[str, Any]:
@@ -108,18 +135,67 @@ def test_a_new_object_is_expected_and_belongs_to_a_known_dataset(
     ).fetchone()
     assert row == ("expected", 0, {})
 
+    key = {"source": source, "object_date": DAY, "object_name": NAME}
     with pytest.raises(psycopg.errors.CheckViolation, match="source_object_dataset"):
-        obj(ops, source, dataset="prices")
-    with pytest.raises(psycopg.errors.CheckViolation, match="source_object_counters"):
-        obj(ops, source, attempts=-1)
+        insert(ops, "source_object", **key, dataset="prices", url="https://x")
     with pytest.raises(psycopg.errors.NotNullViolation):
-        obj(ops, source, url=None)
+        insert(ops, "source_object", **key, dataset="submissions")
+    obj(ops, source)
+    for column in ("attempts", "byte_count", "raw_records", "parsed_rows", "quarantined_rows"):
+        with pytest.raises(psycopg.errors.CheckViolation, match="source_object_counters"):
+            move(ops, source, **{column: -1})
+    for bad in ("0" * 31, "0" * 33, "G" * 32, "A" * 32):
+        with pytest.raises(psycopg.errors.CheckViolation, match="source_object_md5"):
+            move(ops, source, md5=bad)
 
 
-def test_an_unknown_object_state_is_refused(ops: Connection, source: str) -> None:
-    # The row carries every fact which another rule could ask for, so only the state is wrong.
-    with pytest.raises(psycopg.errors.CheckViolation, match="source_object_state"):
-        obj(ops, source, "listed", **LOADED, reason="none")
+def test_a_new_object_is_always_expected(ops: Connection, source: str) -> None:
+    key = {
+        "source": source,
+        "dataset": "submissions",
+        "object_date": DAY,
+        "object_name": NAME,
+        "url": "https://data.sec.gov/x",
+    }
+    for state in ("verified", "loaded", "quarantined", "not_published", "superseded", "listed"):
+        # The row carries every fact which another rule could ask for: only the state is wrong.
+        with pytest.raises(psycopg.errors.RaiseException, match="a new object is expected"):
+            insert(ops, "source_object", **key, state=state, **LOADED, reason="none")
+    insert(ops, "source_object", **key, state="expected")
+
+
+def test_the_table_itself_follows_the_ten_transitions(ops: Connection, source: str) -> None:
+    # A statement which is no call of the object ledger cannot move an object another way.
+    stored = set()
+    for number, (from_state, to_state) in enumerate(itertools.product(STATES, STATES)):
+        if from_state == to_state:
+            continue
+        name = f"CIK{number:010d}.json"
+        obj(ops, source, from_state, name, **LOADED, reason="test")
+        try:
+            move(ops, source, name, state=to_state)
+        except psycopg.errors.RaiseException as error:
+            assert f"no transition from {from_state} to {to_state}" in str(error)
+            continue
+        stored.add((from_state, to_state))
+
+    assert stored == TRANSITIONS
+    with pytest.raises(
+        psycopg.errors.RaiseException, match="no transition from expected to listed"
+    ):
+        obj(ops, source, "listed", "CIK9999999999.json")
+
+
+def test_the_key_of_an_object_never_changes_and_no_object_is_deleted(
+    ops: Connection, source: str
+) -> None:
+    obj(ops, source)
+
+    for change in ({"object_name": "other.json"}, {"object_date": NOW.date()}, {"dataset": "bulk"}):
+        with pytest.raises(psycopg.errors.RaiseException, match="the key of an object never"):
+            move(ops, source, **change)
+    with pytest.raises(psycopg.errors.RaiseException, match="append-only"), ops.transaction():
+        ops.execute("DELETE FROM ops.source_object WHERE source = %s", (source,))
 
 
 @pytest.mark.parametrize("state", ["verified", "loaded"])
@@ -142,8 +218,10 @@ def test_a_loaded_object_accounts_for_every_record(ops: Connection, source: str)
     obj(ops, source, "loaded", **LOADED)
 
 
-@pytest.mark.parametrize("state", ["not_published", "superseded"])
-def test_a_final_state_without_a_load_says_why(ops: Connection, source: str, state: str) -> None:
+@pytest.mark.parametrize("state", ["quarantined", "not_published", "superseded"])
+def test_a_quarantine_and_a_final_state_without_a_load_say_why(
+    ops: Connection, source: str, state: str
+) -> None:
     with pytest.raises(psycopg.errors.CheckViolation, match="source_object_reason"):
         obj(ops, source, state)
 
@@ -247,6 +325,28 @@ def test_a_recorded_block_says_when_and_why_and_a_lock_needs_a_block(
         insert(ops, "source_circuit", source=source)
 
 
+@pytest.mark.parametrize(
+    "statement", ["DELETE FROM ops.source_circuit", "TRUNCATE ops.source_circuit"]
+)
+def test_no_circuit_row_can_be_removed(ops: Connection, statement: str) -> None:
+    # A source without a row has a closed circuit: a removed row would forget a block.
+    with pytest.raises(psycopg.errors.RaiseException, match="is not allowed"), ops.transaction():
+        ops.execute(statement.encode())
+
+
+def test_the_history_of_a_circuit_is_append_only(ops: Connection, source: str) -> None:
+    insert(ops, "circuit_event", source=source, event="opened", event_at=NOW, reason="HTTP 429")
+    with pytest.raises(psycopg.errors.CheckViolation, match="circuit_event_kind"):
+        insert(ops, "circuit_event", source=source, event="paused", event_at=NOW)
+    for statement in (
+        "UPDATE ops.circuit_event SET reason = 'rewritten'",
+        "DELETE FROM ops.circuit_event",
+        "TRUNCATE ops.circuit_event",
+    ):
+        with pytest.raises(psycopg.errors.RaiseException, match="append-only"), ops.transaction():
+            ops.execute(statement.encode())
+
+
 # --- ops.source_request -----------------------------------------------------------------------
 
 
@@ -254,9 +354,21 @@ def test_a_request_row_keeps_its_vocabulary(ops: Connection, source: str) -> Non
     insert(ops, "source_request", **request(source))
     with pytest.raises(psycopg.errors.CheckViolation, match="source_request_method"):
         insert(ops, "source_request", **request(source, method="POST"))
-    for bad in ({"waited_ms": -1}, {"attempt": 0}, {"granted_mono_ns": -1}):
+    for bad in (
+        {"waited_ms": -1},
+        {"attempt": 0},
+        {"granted_mono_ns": -1},
+        {"duration_ms": -1, "outcome": "ok", "completed_at": NOW},
+        {"byte_count": -1, "outcome": "ok", "completed_at": NOW},
+    ):
         with pytest.raises(psycopg.errors.CheckViolation, match="source_request_counters"):
             insert(ops, "source_request", **request(source, **bad))
+    row = ops.execute(
+        "SELECT probe, recorded_at > now() - interval '1 minute' FROM ops.source_request "
+        "WHERE source = %s",
+        (source,),
+    ).fetchone()
+    assert row == (False, True)  # no probe unless the client says so; stamped by the database
     with pytest.raises(psycopg.errors.CheckViolation, match="source_request_outcome"):
         insert(ops, "source_request", **request(source, outcome="fine", completed_at=NOW))
     with pytest.raises(psycopg.errors.CheckViolation, match="source_request_completed"):
@@ -280,6 +392,14 @@ def test_the_outcome_of_a_request_is_written_once(ops: Connection, source: str) 
 
     with pytest.raises(psycopg.errors.RaiseException, match="outcome is recorded"):
         ops.execute("UPDATE ops.source_request SET http_status = 500 WHERE source = %s", (source,))
+    # The outcome is one statement: a statement which leaves completed_at empty is refused,
+    # so nobody can write parts of an outcome again and again.
+    insert(ops, "source_request", **request(source, path="/second"))
+    with pytest.raises(psycopg.errors.RaiseException, match="written whole, with completed_at"):
+        ops.execute(
+            "UPDATE ops.source_request SET http_status = 500 WHERE source = %s AND path = %s",
+            (source, "/second"),
+        )
     row = ops.execute(
         "SELECT outcome, http_status FROM ops.source_request WHERE source = %s", (source,)
     ).fetchone()
@@ -292,18 +412,26 @@ def test_the_outcome_of_a_request_is_written_once(ops: Connection, source: str) 
         "granted_at = granted_at + interval '2 seconds'",
         "granted_mono_ns = granted_mono_ns + 1",
         "client_session = gen_random_uuid()",
+        "source = 'other'",
         "host = 'www.sec.gov'",
         "path = '/other'",
+        "method = 'HEAD'",
+        "waited_ms = 5",
         "attempt = 2",
+        "probe = true",
         "run_id = 'other'",
+        "recorded_at = recorded_at - interval '1 hour'",
     ],
 )
 def test_the_facts_of_a_request_never_change(ops: Connection, source: str, assignment: str) -> None:
     insert(ops, "source_request", **request(source))
 
+    # The statement also writes a whole outcome, so only the changed fact is wrong.
     with pytest.raises(psycopg.errors.RaiseException, match="only the outcome can be set"):
         ops.execute(
-            f"UPDATE ops.source_request SET {assignment} WHERE source = %s".encode(), (source,)
+            f"UPDATE ops.source_request SET {assignment}, completed_at = now(), "
+            f"outcome = 'ok' WHERE source = %s".encode(),
+            (source,),
         )
 
 
@@ -348,6 +476,7 @@ def test_a_unit_of_keys_or_of_a_table_is_named_by_its_label(ops: Connection, sou
 
     for values in (
         partition(source=source, unit_label=None),  # no label
+        partition(source=source, unit_label=""),  # an empty label
         partition(source=source, slot_date=DAY),  # a keys unit has no date
         partition(source=source, slot_hour=8),  # and no hour
         partition(source=source, unit_kind="table", unit_label=None),

@@ -52,12 +52,16 @@ class RequestLog:
         granted_mono_ns: int,
         waited_ms: int,
         attempt: int,
+        probe: bool = False,
     ) -> int:
-        """Write the row of an attempt, before the request leaves; returns the row number."""
+        """Write the row of an attempt, before the request leaves; returns the row number.
+
+        ``probe`` marks the one request after a block.
+        """
         row = self.connection.execute(
             "INSERT INTO ops.source_request (source, host, path, method, granted_at, "
-            "client_session, granted_mono_ns, waited_ms, attempt, run_id) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING request_id",
+            "client_session, granted_mono_ns, waited_ms, attempt, run_id, probe) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING request_id",
             (
                 self.source,
                 host,
@@ -69,6 +73,7 @@ class RequestLog:
                 waited_ms,
                 attempt,
                 self.run_id,
+                probe,
             ),
         ).fetchone()
         assert row is not None  # noqa: S101 - an insert returns its row
