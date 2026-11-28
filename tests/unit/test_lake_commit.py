@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import hashlib
-from typing import Any, cast
+from typing import Any
 
 import pytest
 from pyiceberg.exceptions import CommitFailedException, ValidationException
 
-from gbmi.lake.commit import COMMIT_RETRIES, commit_with_retry
+from gbmi.lake.commit import COMMIT_RETRIES, CommitResult, commit_with_retry
 from gbmi.ledger.repository import fileset_hash
 
 
@@ -29,7 +29,17 @@ class Attempts:
         self.committed_on.append(table)
         if len(self.committed_on) <= self.failures:
             raise self.error
-        return "committed"
+        return CommitResult(
+            table="silver.t",
+            unit="2026-11-25T08",
+            commit_id="committed",
+            snapshot_ids=(1,),
+            operations=("overwrite",),
+            snapshot_id=1,
+            previous_snapshot_id=None,
+            metadata_location="metadata/1.json",
+            rows=0,
+        )
 
 
 @pytest.mark.parametrize("error", [CommitFailedException("lost"), ValidationException("same")])
@@ -38,17 +48,29 @@ def test_a_commit_conflict_is_tried_again_on_a_freshly_loaded_table(error: Excep
 
     result = commit_with_retry(attempts.load, attempts.commit)
 
-    assert cast(str, result) == "committed"
+    assert result.commit_id == "committed"
     # Each attempt got a table of its own from the catalog.
     assert attempts.committed_on == attempts.loaded
     assert len(attempts.loaded) == 3
+
+
+def test_the_result_carries_the_duration_of_the_attempt_which_landed() -> None:
+    # The load of the table and the commit: the commit latency of the host measurements.
+    attempts = Attempts(failures=1, error=CommitFailedException("lost"))
+
+    result = commit_with_retry(attempts.load, attempts.commit)
+
+    assert result.seconds is not None
+    assert 0 <= result.seconds < 5
+    # The commit itself knows no duration: the helper which repeats the commit measures it.
+    assert attempts.commit(attempts.load()).seconds is None
 
 
 def test_a_commit_is_tried_again_three_times_and_then_the_conflict_is_raised() -> None:
     lands_at_last = Attempts(failures=COMMIT_RETRIES, error=CommitFailedException("lost"))
     never_lands = Attempts(failures=COMMIT_RETRIES + 1, error=CommitFailedException("lost"))
 
-    assert cast(str, commit_with_retry(lands_at_last.load, lands_at_last.commit)) == "committed"
+    assert commit_with_retry(lands_at_last.load, lands_at_last.commit).commit_id == "committed"
     with pytest.raises(CommitFailedException, match="lost"):
         commit_with_retry(never_lands.load, never_lands.commit)
 

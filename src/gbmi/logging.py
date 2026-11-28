@@ -44,9 +44,26 @@ def configure_logging(
         ),
         cache_logger_on_first_use=False,
     )
-    structlog.contextvars.bind_contextvars(pipeline_version=__version__)
+    structlog.contextvars.bind_contextvars(pipeline_version=_pipeline_version())
     if run_id is not None:
         bind_run(run_id)
+
+
+def _pipeline_version() -> str:
+    """The version which rows and run records carry: the Git commit in an image.
+
+    A log line then names the same version as the rows which the run wrote (week 3 plan,
+    finding F19 i). Settings which cannot be read must not stop the logging: the command which
+    needs the settings reports the error itself.
+    """
+    # Imported here: the settings import nothing of this module, and a module which only
+    # logs needs no settings at import time.
+    from gbmi.config import get_settings
+
+    try:
+        return get_settings().pipeline_version
+    except ValueError:
+        return __version__
 
 
 class _StderrLogger:

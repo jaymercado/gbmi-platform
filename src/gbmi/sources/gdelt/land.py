@@ -18,6 +18,7 @@ import zlib
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
+from functools import cached_property
 from pathlib import Path
 from typing import Protocol
 
@@ -27,6 +28,7 @@ from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponen
 
 from gbmi.core.clock import utc_now
 from gbmi.core.failpoint import BRONZE_BEFORE_MOVE, failpoint
+from gbmi.lake.objects import write_object
 from gbmi.logging import get_logger
 from gbmi.sources.gdelt.index import (
     LAST_UPDATE_URL,
@@ -260,7 +262,20 @@ class Bronze:
 
     def __init__(self, lake_uri: str) -> None:
         self._lake_uri = lake_uri.rstrip("/")
-        self._filesystem, self._root = pafs.FileSystem.from_uri(lake_uri)
+
+    @cached_property
+    def _location(self) -> tuple[pafs.FileSystem, str]:
+        # Opened by the first read: a write on S3 needs no file system of PyArrow.
+        filesystem, root = pafs.FileSystem.from_uri(self._lake_uri)
+        return filesystem, root
+
+    @property
+    def _filesystem(self) -> pafs.FileSystem:
+        return self._location[0]
+
+    @property
+    def _root(self) -> str:
+        return self._location[1]
 
     def _path(self, key: str) -> str:
         return f"{self._root.rstrip('/')}/{key}"
@@ -279,14 +294,14 @@ class Bronze:
         return content
 
     def write(self, key: str, content: bytes) -> None:
-        """Write under a temporary name, then move: a reader never sees half a file."""
-        path = self._path(key)
-        self._filesystem.create_dir(path.rsplit("/", 1)[0], recursive=True)
-        temporary = f"{path}.part"
-        with self._filesystem.open_output_stream(temporary) as stream:
-            stream.write(content)
-        failpoint(BRONZE_BEFORE_MOVE)
-        self._filesystem.move(temporary, path)
+        """Write one file whole: a reader never sees half a file.
+
+        On the local file system the bytes go to a temporary name and the file is moved. On S3
+        the write is one PUT request for the final key (gbmi.lake.objects).
+        """
+        write_object(
+            self._lake_uri, key, content, before_visible=lambda: failpoint(BRONZE_BEFORE_MOVE)
+        )
 
     def sizes(self, prefix: str) -> dict[str, int]:
         """Key and size of every finished object below a prefix; empty when nothing is there."""

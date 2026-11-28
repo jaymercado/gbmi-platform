@@ -233,7 +233,14 @@ def version(
         duplicate_rows=counts.duplicates if counts else None,
         run_id=run.facts.run_id,
         duration_ms=round((time.monotonic() - started) * 1000),
-        detail={"operations": list(result.operations) if result else [], **(detail or {})},
+        detail={
+            "operations": list(result.operations) if result else [],
+            # The load of the table and the catalog commit (week 3 plan, exit-gate row 12).
+            "commit_ms": (
+                round(result.seconds * 1000) if result and result.seconds is not None else None
+            ),
+            **(detail or {}),
+        },
         kind=None if dated else unit.kind,
         unit_label=unit.label,
     )
