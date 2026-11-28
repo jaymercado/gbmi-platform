@@ -108,7 +108,7 @@ services:
     restart: "no"
 
   clickhouse:
-    image: clickhouse/clickhouse-server:26.8@sha256:13f4949b03320e04fe1d2f75ed38734530e78b55469168cc6d5062f198563269
+    image: clickhouse/clickhouse-server:26.8@sha256:0cf7c7f1d66943f0ca17062dd6e6a0f459eb58770e16d6957823837f3fe1bf66
     environment:
       # The image only opens the network to the default user, and only lets it manage roles,
       # when a password and access management are set.
@@ -144,7 +144,7 @@ services:
   # idempotent and the service runs on each start, so a change to a grant takes effect at the
   # next `make up` without recreating the volume.
   clickhouse-init:
-    image: clickhouse/clickhouse-server:26.8@sha256:13f4949b03320e04fe1d2f75ed38734530e78b55469168cc6d5062f198563269
+    image: clickhouse/clickhouse-server:26.8@sha256:0cf7c7f1d66943f0ca17062dd6e6a0f459eb58770e16d6957823837f3fe1bf66
     entrypoint: /bin/bash
     command:
       - -c
