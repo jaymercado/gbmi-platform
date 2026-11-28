@@ -1,0 +1,600 @@
+{
+  "dim_company": {
+    "by_source": [
+      {
+        "companies": 4027,
+        "first_valid_from": "1993-08-13",
+        "history_source": "former_name",
+        "rows": 10162
+      },
+      {
+        "companies": 7988,
+        "first_valid_from": "2026-11-28",
+        "history_source": "snapshot",
+        "rows": 7988
+      }
+    ],
+    "meta": [
+      {
+        "history_source": "former_name",
+        "is_current": false,
+        "is_watchlist": true,
+        "name": "Facebook Inc",
+        "valid_from": "2005-05-06",
+        "valid_to": "2021-10-27"
+      },
+      {
+        "history_source": "former_name",
+        "is_current": false,
+        "is_watchlist": true,
+        "name": "Meta Platforms, Inc.",
+        "valid_from": "2021-10-27",
+        "valid_to": "2026-11-28"
+      },
+      {
+        "history_source": "snapshot",
+        "is_current": true,
+        "is_watchlist": true,
+        "name": "Meta Platforms, Inc.",
+        "valid_from": "2026-11-28",
+        "valid_to": "9999-12-31"
+      }
+    ],
+    "totals": {
+      "companies": 7988,
+      "companies_with_name_history": 4027,
+      "current_rows": 7988,
+      "current_rows_without_sic": 1102,
+      "watchlist_companies": 50
+    }
+  },
+  "fct_filing": {
+    "by_detail_source": [
+      {
+        "detail_source": "index_and_submissions",
+        "filers": 50,
+        "first_filing_date": "2026-10-26",
+        "last_filing_date": "2026-11-27",
+        "rows": 5719
+      },
+      {
+        "detail_source": "index_only",
+        "filers": 36708,
+        "first_filing_date": "2020-09-28",
+        "last_filing_date": "2026-11-27",
+        "rows": 122041
+      },
+      {
+        "detail_source": "submissions_only",
+        "filers": 50,
+        "first_filing_date": "1999-02-11",
+        "last_filing_date": "2026-10-23",
+        "rows": 90607
+      }
+    ],
+    "top_forms": [
+      {
+        "form": "424B2",
+        "rows": 62055
+      },
+      {
+        "form": "4",
+        "rows": 47468
+      },
+      {
+        "form": "8-K",
+        "rows": 11497
+      },
+      {
+        "form": "144",
+        "rows": 10089
+      },
+      {
+        "form": "NPORT-P",
+        "rows": 8667
+      },
+      {
+        "form": "FWP",
+        "rows": 7872
+      },
+      {
+        "form": "SCHEDULE 13G/A",
+        "rows": 7773
+      },
+      {
+        "form": "6-K",
+        "rows": 7080
+      },
+      {
+        "form": "13F-HR",
+        "rows": 6822
+      },
+      {
+        "form": "10-Q",
+        "rows": 5788
+      }
+    ],
+    "totals": {
+      "filers": 36758,
+      "filings": 184268,
+      "forms": 301,
+      "index_dates": 23,
+      "pairs": 218367,
+      "rows": 218367
+    }
+  },
+  "fct_filing_item": {
+    "forms": [
+      {
+        "form": "8-K",
+        "rows": 7912
+      },
+      {
+        "form": "8-K/A",
+        "rows": 108
+      },
+      {
+        "form": "8-K12B",
+        "rows": 22
+      },
+      {
+        "form": "8-K12B/A",
+        "rows": 2
+      }
+    ],
+    "other_forms_with_items": [
+      {
+        "filings": 37,
+        "form": "CT ORDER"
+      },
+      {
+        "filings": 36,
+        "form": "EFFECT"
+      }
+    ],
+    "top_items": [
+      {
+        "item_code": "9.01",
+        "rows": 2937
+      },
+      {
+        "item_code": "2.02",
+        "rows": 1291
+      },
+      {
+        "item_code": "8.01",
+        "rows": 990
+      },
+      {
+        "item_code": "5.02",
+        "rows": 826
+      },
+      {
+        "item_code": "7.01",
+        "rows": 798
+      },
+      {
+        "item_code": "1.01",
+        "rows": 321
+      },
+      {
+        "item_code": "5.07",
+        "rows": 316
+      },
+      {
+        "item_code": "2.03",
+        "rows": 205
+      },
+      {
+        "item_code": "5.03",
+        "rows": 145
+      },
+      {
+        "item_code": "1.02",
+        "rows": 60
+      }
+    ],
+    "totals": {
+      "companies": 44,
+      "filings": 3902,
+      "forms": 4,
+      "item_codes": 24,
+      "rows": 8044
+    }
+  },
+  "fct_financial_fact": {
+    "by_known_at_source": [
+      {
+        "companies": 50,
+        "filings": 10434,
+        "first_known_at": "2011-11-04 21:00:48",
+        "known_at_source": "acceptance_time",
+        "last_known_at": "2026-11-27 22:13:00",
+        "rows": 518274
+      },
+      {
+        "companies": 24,
+        "filings": 202,
+        "first_known_at": "2015-03-02 11:00:00",
+        "known_at_source": "dissemination_time",
+        "last_known_at": "2026-11-23 11:00:00",
+        "rows": 55759
+      },
+      {
+        "companies": 43,
+        "filings": 1546,
+        "first_known_at": "2009-04-30 05:00:00",
+        "known_at_source": "filing_date",
+        "last_known_at": "2025-11-07 05:00:00",
+        "rows": 681639
+      }
+    ],
+    "totals": {
+      "companies": 50,
+      "concepts": 5560,
+      "instant_rows": 496122,
+      "rows": 1255672,
+      "units": 110
+    }
+  },
+  "fct_financial_metric": {
+    "by_kind": [
+      {
+        "companies": 45,
+        "period_kind": "half_year",
+        "rows": 1938
+      },
+      {
+        "companies": 50,
+        "period_kind": "instant",
+        "rows": 8969
+      },
+      {
+        "companies": 43,
+        "period_kind": "nine_months",
+        "rows": 1895
+      },
+      {
+        "companies": 46,
+        "period_kind": "quarter",
+        "rows": 7652
+      },
+      {
+        "companies": 50,
+        "period_kind": "year",
+        "rows": 2262
+      }
+    ],
+    "companies_with_two_units": 1,
+    "coverage": [
+      {
+        "companies": 50,
+        "concepts": 3,
+        "derived_quarters": 0,
+        "metric": "cash",
+        "restated_rows": 66,
+        "rows": 3008,
+        "rows_with_change": 2806,
+        "units": 4
+      },
+      {
+        "companies": 3,
+        "concepts": 1,
+        "derived_quarters": 0,
+        "metric": "employees",
+        "restated_rows": 0,
+        "rows": 31,
+        "rows_with_change": 16,
+        "units": 3
+      },
+      {
+        "companies": 50,
+        "concepts": 4,
+        "derived_quarters": 0,
+        "metric": "equity",
+        "restated_rows": 104,
+        "rows": 3029,
+        "rows_with_change": 2824,
+        "units": 4
+      },
+      {
+        "companies": 50,
+        "concepts": 3,
+        "derived_quarters": 328,
+        "metric": "net_income",
+        "restated_rows": 345,
+        "rows": 5220,
+        "rows_with_change": 4865,
+        "units": 4
+      },
+      {
+        "companies": 43,
+        "concepts": 2,
+        "derived_quarters": 273,
+        "metric": "operating_income",
+        "restated_rows": 350,
+        "rows": 3815,
+        "rows_with_change": 3544,
+        "units": 4
+      },
+      {
+        "companies": 49,
+        "concepts": 6,
+        "derived_quarters": 296,
+        "metric": "revenue",
+        "restated_rows": 513,
+        "rows": 4712,
+        "rows_with_change": 4369,
+        "units": 4
+      },
+      {
+        "companies": 50,
+        "concepts": 2,
+        "derived_quarters": 0,
+        "metric": "total_assets",
+        "restated_rows": 198,
+        "rows": 2901,
+        "rows_with_change": 2701,
+        "units": 4
+      }
+    ],
+    "units": [
+      {
+        "companies": 47,
+        "rows": 22245,
+        "unit": "USD"
+      },
+      {
+        "companies": 2,
+        "rows": 188,
+        "unit": "GBP"
+      },
+      {
+        "companies": 1,
+        "rows": 126,
+        "unit": "EUR"
+      },
+      {
+        "companies": 1,
+        "rows": 126,
+        "unit": "JPY"
+      },
+      {
+        "companies": 2,
+        "rows": 20,
+        "unit": "employee"
+      },
+      {
+        "companies": 3,
+        "rows": 10,
+        "unit": "pure"
+      },
+      {
+        "companies": 1,
+        "rows": 1,
+        "unit": "numberOfEmployees"
+      }
+    ]
+  },
+  "former_name_ranges": [
+    {
+      "companies": 4027,
+      "name_kind": "current",
+      "range_status": "kept",
+      "ranges": 4027
+    },
+    {
+      "companies": 331,
+      "name_kind": "former",
+      "range_status": "empty",
+      "ranges": 338
+    },
+    {
+      "companies": 16,
+      "name_kind": "former",
+      "range_status": "ends_before_start",
+      "ranges": 16
+    },
+    {
+      "companies": 3824,
+      "name_kind": "former",
+      "range_status": "kept",
+      "ranges": 6135
+    }
+  ],
+  "metric_facts_by_kind": [
+    {
+      "companies": 45,
+      "flow_or_stock": "flow",
+      "one_day_rows": 0,
+      "period_kind": "half_year",
+      "rows": 1938
+    },
+    {
+      "companies": 43,
+      "flow_or_stock": "flow",
+      "one_day_rows": 0,
+      "period_kind": "nine_months",
+      "rows": 1895
+    },
+    {
+      "companies": 8,
+      "flow_or_stock": "flow",
+      "one_day_rows": 1,
+      "period_kind": "other",
+      "rows": 260
+    },
+    {
+      "companies": 46,
+      "flow_or_stock": "flow",
+      "one_day_rows": 0,
+      "period_kind": "quarter",
+      "rows": 6755
+    },
+    {
+      "companies": 50,
+      "flow_or_stock": "flow",
+      "one_day_rows": 0,
+      "period_kind": "year",
+      "rows": 2262
+    },
+    {
+      "companies": 50,
+      "flow_or_stock": "stock",
+      "one_day_rows": 8969,
+      "period_kind": "instant",
+      "rows": 8969
+    }
+  ],
+  "pipeline_version": "0.0.1",
+  "rows": {
+    "dim_company": 18150,
+    "fct_filing": 218367,
+    "fct_filing_item": 8044,
+    "fct_financial_fact": 1255672,
+    "fct_financial_metric": 22716
+  },
+  "run": {
+    "paused_after": true,
+    "paused_before": true,
+    "pinned": {
+      "pipeline_version": "0.0.1",
+      "snapshot_ids": {
+        "sec_company_former_name": 5267644155421872100,
+        "sec_company_snapshot": 8092058332337133119,
+        "sec_filing_detail": 6786763573532750622,
+        "sec_filing_index": 8921319627274674516,
+        "sec_xbrl_fact": 2790886148674731617
+      },
+      "tables": {
+        "sec_company_former_name": {
+          "created": false,
+          "metadata_file": "metadata/00002-3788b0b4-4569-4ce3-9726-5560d97ca7e9.metadata.json",
+          "rows": 6489,
+          "snapshot_id": 5267644155421872100,
+          "table": "lake.sec_company_former_name"
+        },
+        "sec_company_snapshot": {
+          "created": false,
+          "metadata_file": "metadata/00002-2ccb2d17-f3c9-40c7-9876-750608aaa8ee.metadata.json",
+          "rows": 7988,
+          "snapshot_id": 8092058332337133119,
+          "table": "lake.sec_company_snapshot"
+        },
+        "sec_filing_detail": {
+          "created": false,
+          "metadata_file": "metadata/00002-a7b1a51d-4f83-4bfe-80cc-1aa1c195e2ce.metadata.json",
+          "rows": 96326,
+          "snapshot_id": 6786763573532750622,
+          "table": "lake.sec_filing_detail"
+        },
+        "sec_filing_index": {
+          "created": false,
+          "metadata_file": "metadata/00023-8c2c8e5e-e65f-4542-b1a7-a0bb10afd4a9.metadata.json",
+          "rows": 127763,
+          "snapshot_id": 8921319627274674516,
+          "table": "lake.sec_filing_index"
+        },
+        "sec_xbrl_fact": {
+          "created": false,
+          "metadata_file": "metadata/00001-b1919227-72e4-430a-af59-3f3b16fa981f.metadata.json",
+          "rows": 1255672,
+          "snapshot_id": 2790886148674731617,
+          "table": "lake.sec_xbrl_fact"
+        }
+      }
+    },
+    "record": {
+      "created": [],
+      "marts": {
+        "dim_company": {
+          "pipeline_versions": [
+            "0.0.1"
+          ],
+          "rows": 18150,
+          "silver_snapshot_ids": [
+            8092058332337133119
+          ]
+        },
+        "fct_filing": {
+          "pipeline_versions": [
+            "0.0.1"
+          ],
+          "rows": 218367,
+          "silver_snapshot_ids": [
+            8921319627274674516
+          ]
+        },
+        "fct_filing_item": {
+          "pipeline_versions": [
+            "0.0.1"
+          ],
+          "rows": 8044,
+          "silver_snapshot_ids": [
+            6786763573532750622
+          ]
+        },
+        "fct_financial_fact": {
+          "pipeline_versions": [
+            "0.0.1"
+          ],
+          "rows": 1255672,
+          "silver_snapshot_ids": [
+            2790886148674731617
+          ]
+        },
+        "fct_financial_metric": {
+          "pipeline_versions": [
+            "0.0.1"
+          ],
+          "rows": 22716,
+          "silver_snapshot_ids": [
+            2790886148674731617
+          ]
+        }
+      },
+      "pipeline_version": "0.0.1",
+      "run_id": "manual__c5e18fa85500",
+      "silver": {
+        "sec_company_former_name": 6489,
+        "sec_company_snapshot": 7988,
+        "sec_filing_detail": 96326,
+        "sec_filing_index": 127763,
+        "sec_xbrl_fact": 1255672
+      },
+      "status": "success"
+    },
+    "run_id": "manual__c5e18fa85500",
+    "seconds": 60.6,
+    "slowest_tasks": [
+      {
+        "seconds": 4.9,
+        "task": "dbt.fct_financial_metric.run"
+      },
+      {
+        "seconds": 4.3,
+        "task": "dbt.stg_sec__xbrl_fact.run"
+      },
+      {
+        "seconds": 4.3,
+        "task": "dbt.stg_sec__filing_detail.run"
+      },
+      {
+        "seconds": 4.3,
+        "task": "dbt.stg_sec__company_snapshot.run"
+      },
+      {
+        "seconds": 4.3,
+        "task": "dbt.metric_concept_map.seed"
+      }
+    ],
+    "state": "success",
+    "task_seconds_total": 122.6,
+    "task_states": [
+      "success"
+    ],
+    "tasks": 43
+  },
+  "watchlist_size": 50,
+  "what": "One run of marts_build on the live SEC data of the working stack of the laptop."
+}
