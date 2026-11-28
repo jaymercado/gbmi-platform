@@ -59,5 +59,7 @@ jobs:
       - name: Parse the main project
         run: uv run --project dbt dbt parse --project-dir dbt --profiles-dir dbt/profiles
 
-      - name: Build-twice test (spike SK3, tests T1 to T6)
+      # The same folder holds the proof that dbt unit tests run on the adapter (week 3 plan,
+      # finding F18): tests/integration/dbt/test_f18_unit_tests.py.
+      - name: Build-twice test (spike SK3, tests T1 to T6) and dbt unit tests (finding F18)
         run: uv run pytest tests/integration/dbt -m integration -p no:cacheprovider

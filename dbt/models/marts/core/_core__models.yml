@@ -1,0 +1,152 @@
+version: 2
+
+models:
+  - name: dim_company
+    description: >
+      The company dimension, type 2: one row for each company of the universe and validity interval.
+      A row with the source snapshot carries the attributes which the platform saw on its own
+      snapshot dates; a row with the source former_name describes a time before the first snapshot
+      and carries only the name. Source: U.S. Securities and Exchange Commission, EDGAR,
+      https://www.sec.gov/.
+    config:
+      contract:
+        enforced: true
+    meta:
+      owner: data-engineering
+      layer: marts
+      grain: "one row per company and validity interval (cik, valid_from)"
+      sensitivity: public
+      build: full rebuild
+    columns:
+      - name: cik
+        data_type: Int64
+        description: >
+          Central Index Key: the number which the SEC gives each filer.
+        data_tests:
+          - not_null
+      - name: valid_from
+        data_type: Date32
+        description: >
+          First day of the interval.
+        data_tests:
+          - not_null
+      - name: valid_to
+        data_type: Date32
+        description: >
+          End of the interval; the day itself is not part of the interval. 9999-12-31 for the
+          current row.
+        data_tests:
+          - not_null
+      - name: is_current
+        data_type: Bool
+        description: >
+          True for the row which describes the company today.
+        data_tests:
+          - not_null
+      - name: history_source
+        data_type: String
+        description: >
+          snapshot for a row from the daily snapshots; former_name for a row from the former names
+          of EDGAR.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - snapshot
+                  - former_name
+      - name: name
+        data_type: String
+        description: >
+          Name of the company in the interval.
+        data_tests:
+          - not_null
+      - name: primary_ticker
+        data_type: Nullable(String)
+        description: >
+          Ticker of the first row of the company in the ticker file of the SEC. NULL for a row from
+          former names.
+      - name: primary_exchange
+        data_type: Nullable(String)
+        description: >
+          Exchange of the first row of the company in the ticker file. NULL for a row from former
+          names.
+      - name: sic
+        data_type: Nullable(String)
+        description: >
+          Standard Industrial Classification code, as text. NULL when the SEC gives none, and for a
+          row from former names.
+      - name: sic_description
+        data_type: Nullable(String)
+        description: >
+          Text of the SIC code.
+      - name: state_of_incorporation
+        data_type: Nullable(String)
+        description: >
+          State or country of incorporation.
+      - name: fiscal_year_end
+        data_type: Nullable(String)
+        description: >
+          End of the fiscal year as month and day (MMDD).
+      - name: category
+        data_type: Nullable(String)
+        description: >
+          Filer category of the SEC, for example "Large accelerated filer".
+      - name: entity_type
+        data_type: Nullable(String)
+        description: >
+          Entity type of the SEC, for example "operating".
+      - name: is_watchlist
+        data_type: Bool
+        description: >
+          True when the company is in the watchlist of the stack.
+        data_tests:
+          - not_null
+      - name: _silver_snapshot_id
+        data_type: Int64
+        description: >
+          Iceberg snapshot of the silver table sec_company_snapshot from which the model was built;
+          0 for a build outside the DAG marts_build.
+      - name: _pipeline_version
+        data_type: String
+        description: >
+          Version of the pipeline code which built the model: the Git commit on the host.
+      - name: _built_at
+        data_type: "DateTime64(3, 'UTC')"
+        description: >
+          When the model was built (UTC).
+      - name: _dbt_invocation_id
+        data_type: String
+        description: >
+          The dbt run which built the model.
+
+unit_tests:
+  - name: dim_company_joins_former_names_and_snapshots_without_an_overlap
+    description: >
+      The intervals from former names end where the snapshot intervals start. Company 1 has a
+      former name, the current name before the first snapshot, and two snapshot versions; the
+      dropped range of the former names is no row of the dimension. A row from former names
+      carries only the name. Only the last interval of a company is current. Company 2 has one
+      snapshot version and is not in the watchlist.
+    model: dim_company
+    given:
+      - input: ref('int_company__snapshot_versions')
+        rows:
+          - {cik: 1, valid_from: "2026-11-01", valid_to: "2026-11-05", name: "New One", primary_ticker: "NEW", sic: "7370"}
+          - {cik: 1, valid_from: "2026-11-05", valid_to: "9999-12-31", name: "Newer One", primary_ticker: "NWR", sic: "7370"}
+          - {cik: 2, valid_from: "2026-11-01", valid_to: "9999-12-31", name: "Other", primary_ticker: "OTH", sic: null}
+      - input: ref('int_company__former_name_versions')
+        rows:
+          - {cik: 1, name: "Old One", name_kind: "former", valid_from: "2005-05-06", valid_to: "2021-10-27", range_status: "kept"}
+          - {cik: 1, name: "New One", name_kind: "current", valid_from: "2021-10-27", valid_to: "2026-11-01", range_status: "kept"}
+          - {cik: 1, name: "Odd", name_kind: "former", valid_from: "2012-05-01", valid_to: "2011-01-01", range_status: "ends_before_start"}
+      - input: ref('int_company__watchlist')
+        rows:
+          - {rank: 1, cik: 1}
+    expect:
+      rows:
+        - {cik: 1, valid_from: "2005-05-06", valid_to: "2021-10-27", is_current: false, history_source: "former_name", name: "Old One", primary_ticker: null, sic: null, is_watchlist: true}
+        - {cik: 1, valid_from: "2021-10-27", valid_to: "2026-11-01", is_current: false, history_source: "former_name", name: "New One", primary_ticker: null, sic: null, is_watchlist: true}
+        - {cik: 1, valid_from: "2026-11-01", valid_to: "2026-11-05", is_current: false, history_source: "snapshot", name: "New One", primary_ticker: "NEW", sic: "7370", is_watchlist: true}
+        - {cik: 1, valid_from: "2026-11-05", valid_to: "9999-12-31", is_current: true, history_source: "snapshot", name: "Newer One", primary_ticker: "NWR", sic: "7370", is_watchlist: true}
+        - {cik: 2, valid_from: "2026-11-01", valid_to: "9999-12-31", is_current: true, history_source: "snapshot", name: "Other", primary_ticker: "OTH", sic: null, is_watchlist: false}

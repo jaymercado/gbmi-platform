@@ -1,6 +1,8 @@
 # Test-only dbt project for spike SK3 (week 1 plan, WP-08). It uses the main project's macros,
 # so the partition_replace materialisation under test is the one the marts use, and it holds
 # the spike models here so that they never enter the tracer's task group or `make dbt-build`.
+# The model f18_snapshot_versions and its two unit tests prove that dbt unit tests run on the
+# adapter (week 3 plan, finding F18).
 name: gbmi_sk3
 version: "0.0.1"
 config-version: 2

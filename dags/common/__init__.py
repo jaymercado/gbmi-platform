@@ -58,6 +58,15 @@ AS_OF = "{{ params.as_of or dag_run.run_after.isoformat() }}"
 LOGICAL_DATE = "{{ dag_run.logical_date.isoformat() if dag_run.logical_date else '' }}"
 
 
+def dbt_target() -> str:
+    """The output of the dbt profile which a DAG builds into.
+
+    The setting DBT_TARGET of the stack decides: local on the laptop and in CI, prod on the
+    host (dbt/profiles/profiles.yml).
+    """
+    return os.environ.get("DBT_TARGET", "local")
+
+
 def as_of_param() -> Param:
     """The optional parameter as_of of a manual run."""
     return Param(

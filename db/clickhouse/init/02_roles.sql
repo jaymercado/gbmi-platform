@@ -42,6 +42,9 @@ GRANT TABLE ENGINE ON IcebergLocal TO pipeline_rw;
 GRANT TABLE ENGINE ON IcebergS3 TO pipeline_rw;
 GRANT SELECT, SHOW ON staging.* TO pipeline_rw;
 GRANT SELECT, SHOW ON intermediate.* TO pipeline_rw;
+-- An intermediate view can read a seed (the watchlist, the metric concepts), and ClickHouse
+-- checks the rights of the reader on every table behind a view.
+GRANT SELECT, SHOW ON seeds.* TO pipeline_rw;
 GRANT SELECT, SHOW ON marts.* TO pipeline_rw;
 GRANT SELECT, SHOW ON ops.* TO pipeline_rw;
 

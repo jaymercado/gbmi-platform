@@ -1,0 +1,372 @@
+version: 2
+
+models:
+  - name: stg_sec__company_snapshot
+    description: >
+      The companies of the universe on each snapshot date, read through the pinned table
+      lake.sec_company_snapshot. The universe of a date is every CIK of the ticker file of the SEC
+      on the date. Source: U.S. Securities and Exchange Commission, EDGAR, https://www.sec.gov/.
+    meta:
+      owner: data-engineering
+      layer: staging
+      grain: "one row per snapshot date and company (snapshot_date, cik)"
+      sensitivity: public
+    columns:
+      - name: snapshot_date
+        description: >
+          UTC date of the run which built the snapshot.
+        data_tests:
+          - not_null
+      - name: cik
+        description: >
+          Central Index Key: the number which the SEC gives each filer.
+        data_tests:
+          - not_null
+      - name: name
+        description: >
+          Name of the company in the ticker file of the SEC on the snapshot date.
+        data_tests:
+          - not_null
+      - name: tickers
+        description: >
+          Every ticker of the company in the ticker file, in file order.
+      - name: exchanges
+        description: >
+          Every exchange of the company in the ticker file, without repeats.
+      - name: primary_ticker
+        description: >
+          Ticker of the first row of the company in the ticker file.
+      - name: primary_exchange
+        description: >
+          Exchange of the first row of the company in the ticker file.
+      - name: sic
+        description: >
+          Standard Industrial Classification code from the submissions document, as text.
+      - name: sic_description
+        description: >
+          Text of the SIC code.
+      - name: state_of_incorporation
+        description: >
+          State or country of incorporation.
+      - name: fiscal_year_end
+        description: >
+          End of the fiscal year as month and day (MMDD).
+      - name: category
+        description: >
+          Filer category of the SEC, for example "Large accelerated filer".
+      - name: entity_type
+        description: >
+          Entity type of the SEC, for example "operating".
+      - name: lei
+        description: >
+          Legal Entity Identifier, when the SEC holds one.
+      - name: attr_hash
+        description: >
+          Hash over name, primary ticker, primary exchange, SIC code, state and fiscal-year end. Two
+          snapshots of a company with equal hashes describe the same attributes.
+        data_tests:
+          - not_null
+      - name: attributes_as_of
+        description: >
+          Date of the submissions document which gave the attributes from the SIC code to the LEI.
+      - name: is_stale
+        description: >
+          True when the submissions document is older than 8 days on the snapshot date, or unknown.
+      - name: is_inactive
+        description: >
+          True when the SEC answers that the company has no submissions document.
+      - name: _source_file
+        description: >
+          Bronze object from which the row came.
+      - name: _source_md5
+        description: >
+          MD5 hash of the bronze object.
+      - name: _ingested_at
+        description: >
+          When the pipeline loaded the row into silver (UTC).
+      - name: _run_id
+        description: >
+          The orchestrator run which loaded the row.
+      - name: _pipeline_version
+        description: >
+          Version of the pipeline code which loaded the row.
+
+  - name: stg_sec__company_former_name
+    description: >
+      The former names of the companies, read through the pinned table lake.sec_company_former_name.
+      Source: U.S. Securities and Exchange Commission, EDGAR, https://www.sec.gov/.
+    meta:
+      owner: data-engineering
+      layer: staging
+      grain: "one row per company, former name and first date (cik, former_name, name_from)"
+      sensitivity: public
+    columns:
+      - name: cik
+        description: >
+          Central Index Key of the company.
+        data_tests:
+          - not_null
+      - name: former_name
+        description: >
+          A name which the company used before.
+        data_tests:
+          - not_null
+      - name: name_from
+        description: >
+          First date which the SEC gives for the name (valid_from in silver).
+        data_tests:
+          - not_null
+      - name: name_to
+        description: >
+          Last date which the SEC gives for the name (valid_to in silver).
+      - name: _source_file
+        description: >
+          Bronze object from which the row came.
+      - name: _source_md5
+        description: >
+          MD5 hash of the bronze object.
+      - name: _ingested_at
+        description: >
+          When the pipeline loaded the row into silver (UTC).
+      - name: _run_id
+        description: >
+          The orchestrator run which loaded the row.
+      - name: _pipeline_version
+        description: >
+          Version of the pipeline code which loaded the row.
+
+  - name: stg_sec__filing_index
+    description: >
+      The rows of the daily index files of EDGAR, read through the pinned table
+      lake.sec_filing_index. One filing has one row for each filer. Source: U.S. Securities and
+      Exchange Commission, EDGAR, https://www.sec.gov/.
+    meta:
+      owner: data-engineering
+      layer: staging
+      grain: "one row per index file, filing and filer (index_date, accession_number, cik)"
+      sensitivity: public
+    columns:
+      - name: index_date
+        description: >
+          Date of the index file which lists the filing.
+        data_tests:
+          - not_null
+      - name: accession_number
+        description: >
+          Number which EDGAR gives a filing, with dashes.
+        data_tests:
+          - not_null
+      - name: cik
+        description: >
+          Central Index Key of the filer of the row.
+        data_tests:
+          - not_null
+      - name: form
+        description: >
+          Form type of the filing, for example 8-K or 10-Q.
+        data_tests:
+          - not_null
+      - name: company_name
+        description: >
+          Name of the filer as the index file writes the name.
+      - name: filing_date
+        description: >
+          Filing date of the row; the date can lie before the date of the index file.
+        data_tests:
+          - not_null
+      - name: file_name
+        description: >
+          Path of the complete submission under https://www.sec.gov/Archives/.
+      - name: line_number
+        description: >
+          Line of the row in the index file.
+      - name: _source_file
+        description: >
+          Bronze object from which the row came.
+      - name: _source_md5
+        description: >
+          MD5 hash of the bronze object.
+      - name: _ingested_at
+        description: >
+          When the pipeline loaded the row into silver (UTC).
+      - name: _run_id
+        description: >
+          The orchestrator run which loaded the row.
+      - name: _pipeline_version
+        description: >
+          Version of the pipeline code which loaded the row.
+
+  - name: stg_sec__filing_detail
+    description: >
+      The filings of the watchlist companies from the submissions documents, read through the pinned
+      table lake.sec_filing_detail. Source: U.S. Securities and Exchange Commission, EDGAR,
+      https://www.sec.gov/.
+    meta:
+      owner: data-engineering
+      layer: staging
+      grain: "one row per company and filing (cik, accession_number)"
+      sensitivity: public
+    columns:
+      - name: cik
+        description: >
+          Central Index Key of the company.
+        data_tests:
+          - not_null
+      - name: accession_number
+        description: >
+          Number which EDGAR gives a filing, with dashes.
+        data_tests:
+          - not_null
+      - name: form
+        description: >
+          Form type of the filing.
+        data_tests:
+          - not_null
+      - name: filing_date
+        description: >
+          Filing date.
+        data_tests:
+          - not_null
+      - name: report_date
+        description: >
+          Date of the period or event which the filing reports; empty for many forms.
+      - name: accepted_at
+        description: >
+          Time at which EDGAR accepted the filing, UTC (acceptance_ts in silver).
+      - name: act
+        description: >
+          Securities act under which the filing was made.
+      - name: file_number
+        description: >
+          File number of the SEC.
+      - name: film_number
+        description: >
+          Film number of the SEC.
+      - name: items
+        description: >
+          Item numbers of a form 8-K, for example 2.02; an empty list for other forms.
+      - name: core_type
+        description: >
+          Form type without the mark of an amendment.
+      - name: size_bytes
+        description: >
+          Size of the filing in bytes.
+      - name: is_xbrl
+        description: >
+          True when the filing holds XBRL data.
+      - name: is_inline_xbrl
+        description: >
+          True when the filing holds inline XBRL data.
+      - name: is_xbrl_numeric
+        description: >
+          True when the XBRL data holds numbers; the SEC leaves the field empty for many filings.
+      - name: primary_document
+        description: >
+          File name of the main document of the filing.
+      - name: primary_doc_description
+        description: >
+          Description of the main document.
+      - name: _source_file
+        description: >
+          Bronze object from which the row came.
+      - name: _source_md5
+        description: >
+          MD5 hash of the bronze object.
+      - name: _ingested_at
+        description: >
+          When the pipeline loaded the row into silver (UTC).
+      - name: _run_id
+        description: >
+          The orchestrator run which loaded the row.
+      - name: _pipeline_version
+        description: >
+          Version of the pipeline code which loaded the row.
+
+  - name: stg_sec__xbrl_fact
+    description: >
+      The financial facts of the watchlist companies from the company-facts documents, read through
+      the pinned table lake.sec_xbrl_fact. Source: U.S. Securities and Exchange Commission, EDGAR,
+      https://www.sec.gov/.
+    meta:
+      owner: data-engineering
+      layer: staging
+      grain: "one row per company, concept, unit, period and filing (cik, taxonomy, concept, unit, period_start, period_end, accession_number)"
+      sensitivity: public
+    columns:
+      - name: cik
+        description: >
+          Central Index Key of the company.
+        data_tests:
+          - not_null
+      - name: taxonomy
+        description: >
+          Vocabulary of the concept: us-gaap, ifrs-full, dei or another.
+        data_tests:
+          - not_null
+      - name: concept
+        description: >
+          Name of the reported item in the taxonomy, for example Revenues.
+        data_tests:
+          - not_null
+      - name: unit
+        description: >
+          Unit of the value, for example USD or shares.
+        data_tests:
+          - not_null
+      - name: period_start
+        description: >
+          First day of the period; the balance date for an instant fact.
+        data_tests:
+          - not_null
+      - name: period_end
+        description: >
+          Last day of the period.
+        data_tests:
+          - not_null
+      - name: accession_number
+        description: >
+          The filing which reported the value.
+        data_tests:
+          - not_null
+      - name: is_instant
+        description: >
+          True for a balance at one moment; false for a value over a period.
+      - name: value
+        description: >
+          The value, with six decimal places.
+      - name: value_text
+        description: >
+          The number exactly as the SEC wrote the number.
+      - name: fiscal_year
+        description: >
+          Fiscal year of the filing which reported the fact, not of the period of the fact.
+      - name: fiscal_period
+        description: >
+          Fiscal period of the filing which reported the fact (FY, Q1, ...), not of the period of
+          the fact.
+      - name: form
+        description: >
+          Form type of the filing which reported the fact.
+      - name: filed_date
+        description: >
+          Filing date of the filing which reported the fact.
+        data_tests:
+          - not_null
+      - name: frame
+        description: >
+          Calendar frame which the SEC assigns to some facts.
+      - name: _source_file
+        description: >
+          Bronze object from which the row came.
+      - name: _source_md5
+        description: >
+          MD5 hash of the bronze object.
+      - name: _ingested_at
+        description: >
+          When the pipeline loaded the row into silver (UTC).
+      - name: _run_id
+        description: >
+          The orchestrator run which loaded the row.
+      - name: _pipeline_version
+        description: >
+          Version of the pipeline code which loaded the row.

@@ -1,0 +1,236 @@
+version: 2
+
+models:
+  - name: int_company__watchlist
+    description: >
+      The watchlist of the stack: the first rows of the seed watchlist, as many as the setting
+      GBMI_WATCHLIST_SIZE says. The SEC pipelines follow the same companies.
+    meta:
+      owner: data-engineering
+      layer: intermediate
+      grain: one row per watchlist company (cik)
+      sensitivity: public
+    columns:
+      - name: rank
+        description: >
+          Place of the company in the seed.
+        data_tests:
+          - not_null
+      - name: cik
+        description: >
+          Central Index Key of the company.
+        data_tests:
+          - not_null
+          - unique
+      - name: name_at_selection
+        description: >
+          Name of the company on the day of the selection.
+      - name: reason
+        description: >
+          Why the company is in the list.
+      - name: added_on
+        description: >
+          Day on which the company joined the list.
+
+  - name: int_company__snapshot_versions
+    description: >
+      The validity intervals of each company from the daily snapshots: one row for each run of
+      consecutive snapshots with equal attributes. Source: U.S. Securities and Exchange Commission,
+      EDGAR, https://www.sec.gov/.
+    meta:
+      owner: data-engineering
+      layer: intermediate
+      grain: "one row per company and start of a validity interval (cik, valid_from)"
+      sensitivity: public
+    columns:
+      - name: cik
+        description: >
+          Central Index Key of the company.
+        data_tests:
+          - not_null
+      - name: valid_from
+        description: >
+          First snapshot date with the attributes of the row; the first day of the interval.
+        data_tests:
+          - not_null
+      - name: valid_to
+        description: >
+          Start of the next interval of the company; the day itself is not part of the interval.
+          9999-12-31 for the last interval of a company.
+        data_tests:
+          - not_null
+      - name: attr_hash
+        description: >
+          Hash over the six attributes which define a version (blueprint 7.10).
+        data_tests:
+          - not_null
+      - name: name
+        description: >
+          Name of the company in the interval.
+        data_tests:
+          - not_null
+      - name: primary_ticker
+        description: >
+          Primary ticker in the interval.
+      - name: primary_exchange
+        description: >
+          Primary exchange in the interval.
+      - name: sic
+        description: >
+          SIC code in the interval.
+      - name: sic_description
+        description: >
+          Text of the SIC code on the first snapshot date of the interval.
+      - name: state_of_incorporation
+        description: >
+          State or country of incorporation in the interval.
+      - name: fiscal_year_end
+        description: >
+          End of the fiscal year (MMDD) in the interval.
+      - name: category
+        description: >
+          Filer category on the first snapshot date of the interval.
+      - name: entity_type
+        description: >
+          Entity type on the first snapshot date of the interval.
+
+  - name: int_company__former_name_versions
+    description: >
+      The names of a company before the first snapshot, from the former names of EDGAR: one row for
+      each range of the rule, with the status of the range. dim_company takes the rows with the
+      status kept. Source: U.S. Securities and Exchange Commission, EDGAR, https://www.sec.gov/.
+    meta:
+      owner: data-engineering
+      layer: intermediate
+      grain: "one row per company and range of a name (cik, name_kind, name, valid_from)"
+      sensitivity: public
+    columns:
+      - name: cik
+        description: >
+          Central Index Key of the company.
+        data_tests:
+          - not_null
+      - name: name
+        description: >
+          The name of the range: a former name, or the name of the first snapshot.
+        data_tests:
+          - not_null
+      - name: name_kind
+        description: >
+          former for a former name of EDGAR; current for the name of the first snapshot.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - former
+                  - current
+      - name: valid_from
+        description: >
+          Start of the range: the first date of the name.
+        data_tests:
+          - not_null
+      - name: valid_to
+        description: >
+          End of the range, cut at the first snapshot date; the day itself is not part of the
+          interval.
+        data_tests:
+          - not_null
+      - name: range_end
+        description: >
+          End of the range before the cut.
+        data_tests:
+          - not_null
+      - name: first_snapshot_date
+        description: >
+          First snapshot date of the company.
+        data_tests:
+          - not_null
+      - name: range_status
+        description: >
+          kept for a validity interval; otherwise the reason why the range is none:
+          ends_before_start, empty or after_first_snapshot.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - kept
+                  - ends_before_start
+                  - empty
+                  - after_first_snapshot
+
+unit_tests:
+  - name: snapshot_versions_a_b_a_gives_three_intervals
+    description: >
+      Blueprint 7.10: the attributes of a company change from A to B and back to A. The model
+      gives three intervals, and equal attributes on consecutive days stay one interval. A
+      second company with one snapshot gives one open interval.
+    model: int_company__snapshot_versions
+    given:
+      - input: ref('stg_sec__company_snapshot')
+        rows:
+          - {cik: 1, snapshot_date: "2026-11-01", attr_hash: "aaaaaaaaaaaaaaaa", name: "A Corp"}
+          - {cik: 1, snapshot_date: "2026-11-02", attr_hash: "aaaaaaaaaaaaaaaa", name: "A Corp"}
+          - {cik: 1, snapshot_date: "2026-11-03", attr_hash: "bbbbbbbbbbbbbbbb", name: "B Corp"}
+          - {cik: 1, snapshot_date: "2026-11-04", attr_hash: "bbbbbbbbbbbbbbbb", name: "B Corp"}
+          - {cik: 1, snapshot_date: "2026-11-05", attr_hash: "aaaaaaaaaaaaaaaa", name: "A Corp"}
+          - {cik: 1, snapshot_date: "2026-11-06", attr_hash: "aaaaaaaaaaaaaaaa", name: "A Corp"}
+          - {cik: 2, snapshot_date: "2026-11-04", attr_hash: "cccccccccccccccc", name: "C Corp"}
+    expect:
+      rows:
+        - {cik: 1, valid_from: "2026-11-01", valid_to: "2026-11-03", attr_hash: "aaaaaaaaaaaaaaaa", name: "A Corp"}
+        - {cik: 1, valid_from: "2026-11-03", valid_to: "2026-11-05", attr_hash: "bbbbbbbbbbbbbbbb", name: "B Corp"}
+        - {cik: 1, valid_from: "2026-11-05", valid_to: "9999-12-31", attr_hash: "aaaaaaaaaaaaaaaa", name: "A Corp"}
+        - {cik: 2, valid_from: "2026-11-04", valid_to: "9999-12-31", attr_hash: "cccccccccccccccc", name: "C Corp"}
+
+  - name: former_name_versions_end_where_the_snapshots_start
+    description: >
+      The rule of the former names (week 3 plan, WP-08 step 4), one company for each case.
+      Company 1: one former name, as Meta has; the current name fills the time up to the first
+      snapshot. Company 2: the second name starts before the first name ends, and the first
+      name ends where the second starts. Company 3: the last name ends before its start; the
+      range is dropped with its reason, and the current name starts on the start of the name.
+      Company 4: the name ended after the first snapshot; the range is cut at the first
+      snapshot date, and the current name has no day before the snapshots. Company 5: two names
+      start on the same day, and the first of the two holds no day. Company 6: a former name
+      without a last date holds until the first snapshot. Company 9 has no snapshot and gives
+      no row.
+    model: int_company__former_name_versions
+    given:
+      - input: ref('stg_sec__company_former_name')
+        rows:
+          - {cik: 1, former_name: "Old One", name_from: "2005-05-06", name_to: "2021-10-27"}
+          - {cik: 2, former_name: "First", name_from: "2000-01-01", name_to: "2010-06-30"}
+          - {cik: 2, former_name: "Second", name_from: "2010-03-01", name_to: "2015-12-31"}
+          - {cik: 3, former_name: "Odd", name_from: "2012-05-01", name_to: "2011-01-01"}
+          - {cik: 4, former_name: "Late", name_from: "2020-01-01", name_to: "2026-11-10"}
+          - {cik: 5, former_name: "Twin A", name_from: "2001-01-01", name_to: "2003-01-01"}
+          - {cik: 5, former_name: "Twin B", name_from: "2001-01-01", name_to: "2005-01-01"}
+          - {cik: 6, former_name: "Open", name_from: "2019-01-01", name_to: null}
+          - {cik: 9, former_name: "Gone", name_from: "1999-01-01", name_to: "2001-01-01"}
+      - input: ref('int_company__snapshot_versions')
+        rows:
+          - {cik: 1, valid_from: "2026-11-01", valid_to: "9999-12-31", name: "New One"}
+          - {cik: 2, valid_from: "2026-11-01", valid_to: "9999-12-31", name: "Third"}
+          - {cik: 3, valid_from: "2026-11-01", valid_to: "9999-12-31", name: "Even"}
+          - {cik: 4, valid_from: "2026-11-01", valid_to: "2026-11-11", name: "Late"}
+          - {cik: 4, valid_from: "2026-11-11", valid_to: "9999-12-31", name: "Later"}
+          - {cik: 5, valid_from: "2026-11-01", valid_to: "9999-12-31", name: "Single"}
+          - {cik: 6, valid_from: "2026-11-01", valid_to: "9999-12-31", name: "Closed"}
+    expect:
+      rows:
+        - {cik: 1, name: "Old One", name_kind: "former", valid_from: "2005-05-06", valid_to: "2021-10-27", range_status: "kept"}
+        - {cik: 1, name: "New One", name_kind: "current", valid_from: "2021-10-27", valid_to: "2026-11-01", range_status: "kept"}
+        - {cik: 2, name: "First", name_kind: "former", valid_from: "2000-01-01", valid_to: "2010-03-01", range_status: "kept"}
+        - {cik: 2, name: "Second", name_kind: "former", valid_from: "2010-03-01", valid_to: "2015-12-31", range_status: "kept"}
+        - {cik: 2, name: "Third", name_kind: "current", valid_from: "2015-12-31", valid_to: "2026-11-01", range_status: "kept"}
+        - {cik: 3, name: "Odd", name_kind: "former", valid_from: "2012-05-01", valid_to: "2011-01-01", range_status: "ends_before_start"}
+        - {cik: 3, name: "Even", name_kind: "current", valid_from: "2012-05-01", valid_to: "2026-11-01", range_status: "kept"}
+        - {cik: 4, name: "Late", name_kind: "former", valid_from: "2020-01-01", valid_to: "2026-11-01", range_status: "kept"}
+        - {cik: 4, name: "Late", name_kind: "current", valid_from: "2026-11-10", valid_to: "2026-11-01", range_status: "after_first_snapshot"}
+        - {cik: 5, name: "Twin A", name_kind: "former", valid_from: "2001-01-01", valid_to: "2001-01-01", range_status: "empty"}
+        - {cik: 5, name: "Twin B", name_kind: "former", valid_from: "2001-01-01", valid_to: "2005-01-01", range_status: "kept"}
+        - {cik: 5, name: "Single", name_kind: "current", valid_from: "2005-01-01", valid_to: "2026-11-01", range_status: "kept"}
+        - {cik: 6, name: "Open", name_kind: "former", valid_from: "2019-01-01", valid_to: "2026-11-01", range_status: "kept"}
+        - {cik: 6, name: "Closed", name_kind: "current", valid_from: "2026-11-01", valid_to: "2026-11-01", range_status: "after_first_snapshot"}

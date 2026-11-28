@@ -8,7 +8,7 @@ SHELL := /bin/bash
 export UV_PYTHON_PREFERENCE := only-managed
 export PATH := $(HOME)/.local/bin:$(PATH)
 
-SQL_PATHS := dbt/models tests/integration/dbt/project/models
+SQL_PATHS := dbt/models dbt/tests tests/integration/dbt/project/models
 
 # Two stacks on one laptop (week 2 plan 3.3). The working stack (Compose project gbmi, lake
 # data/lake) holds real data. The demo stack (project gbmi-demo, lake data/demo/lake, volumes of

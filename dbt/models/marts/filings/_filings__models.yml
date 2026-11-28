@@ -1,0 +1,196 @@
+version: 2
+
+models:
+  - name: fct_filing
+    description: >
+      One row for each filing and filer: every row of the daily index files of EDGAR, and every
+      filing of a watchlist company which no loaded index file names. The index gives the form and
+      the dates for every company; the submissions document gives the detail for the watchlist
+      companies. Source: U.S. Securities and Exchange Commission, EDGAR, https://www.sec.gov/.
+    config:
+      contract:
+        enforced: true
+    meta:
+      owner: data-engineering
+      layer: marts
+      grain: "one row per filing and filer (accession_number, cik)"
+      sensitivity: public
+      build: full rebuild
+    columns:
+      - name: accession_number
+        data_type: String
+        description: >
+          Number which EDGAR gives a filing, with dashes.
+        data_tests:
+          - not_null
+      - name: cik
+        data_type: Int64
+        description: >
+          Central Index Key of the filer of the row. One filing has one row for each filer.
+        data_tests:
+          - not_null
+      - name: form
+        data_type: String
+        description: >
+          Form type of the filing, for example 8-K, 10-Q or 4.
+        data_tests:
+          - not_null
+      - name: filing_date
+        data_type: Date32
+        description: >
+          Filing date.
+        data_tests:
+          - not_null
+      - name: index_date
+        data_type: Nullable(Date32)
+        description: >
+          Date of the first index file which lists the filing. NULL when no loaded index file names
+          the filing.
+      - name: filer_name
+        data_type: Nullable(String)
+        description: >
+          Name of the filer as the index file writes the name. NULL when no loaded index file names
+          the filing.
+      - name: report_date
+        data_type: Nullable(Date32)
+        description: >
+          Date of the period or event which the filing reports. From the submissions document; empty
+          for many forms.
+      - name: accepted_at
+        data_type: "Nullable(DateTime64(6, 'UTC'))"
+        description: >
+          Time at which EDGAR accepted the filing (UTC). From the submissions document: NULL for a
+          company outside the watchlist.
+      - name: items
+        data_type: Array(String)
+        description: >
+          Item numbers of a form 8-K, for example 2.02. Empty for other forms and without a
+          submissions document.
+      - name: primary_document
+        data_type: Nullable(String)
+        description: >
+          File name of the main document of the filing.
+      - name: primary_doc_description
+        data_type: Nullable(String)
+        description: >
+          Description of the main document.
+      - name: size_bytes
+        data_type: Nullable(Int64)
+        description: >
+          Size of the filing in bytes.
+      - name: is_xbrl
+        data_type: Nullable(Bool)
+        description: >
+          True when the filing holds XBRL data.
+      - name: is_inline_xbrl
+        data_type: Nullable(Bool)
+        description: >
+          True when the filing holds inline XBRL data.
+      - name: detail_source
+        data_type: String
+        description: >
+          What the platform holds for the row: index_only (a row of an index file), submissions_only
+          (a row of a submissions document) or index_and_submissions (both).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - index_only
+                  - submissions_only
+                  - index_and_submissions
+      - name: filing_url
+        data_type: String
+        description: >
+          Address of the index page of the filing at sec.gov.
+        data_tests:
+          - not_null
+      - name: primary_document_url
+        data_type: Nullable(String)
+        description: >
+          Address of the main document at sec.gov. NULL without a submissions document.
+      - name: _silver_snapshot_id
+        data_type: Int64
+        description: >
+          Iceberg snapshot of the silver table sec_filing_index from which the model was built; 0
+          for a build outside the DAG marts_build.
+      - name: _pipeline_version
+        data_type: String
+        description: >
+          Version of the pipeline code which built the model: the Git commit on the host.
+      - name: _built_at
+        data_type: "DateTime64(3, 'UTC')"
+        description: >
+          When the model was built (UTC).
+      - name: _dbt_invocation_id
+        data_type: String
+        description: >
+          The dbt run which built the model.
+
+  - name: fct_filing_item
+    description: >
+      One row for each item of a filing of the form 8-K of a watchlist company. An item number names
+      the kind of event which the filing reports. Source: U.S. Securities and Exchange Commission,
+      EDGAR, https://www.sec.gov/.
+    config:
+      contract:
+        enforced: true
+    meta:
+      owner: data-engineering
+      layer: marts
+      grain: "one row per filing, filer and item (accession_number, cik, item_code)"
+      sensitivity: public
+      build: full rebuild
+    columns:
+      - name: accession_number
+        data_type: String
+        description: >
+          Number which EDGAR gives a filing, with dashes.
+        data_tests:
+          - not_null
+      - name: cik
+        data_type: Int64
+        description: >
+          Central Index Key of the filer.
+        data_tests:
+          - not_null
+      - name: item_code
+        data_type: String
+        description: >
+          Item number of the form 8-K, for example 2.02 (results of operations) or 5.02 (change of
+          an officer or director).
+        data_tests:
+          - not_null
+      - name: form
+        data_type: String
+        description: >
+          Form type of the filing: 8-K or another form of the 8-K family.
+        data_tests:
+          - not_null
+      - name: filing_date
+        data_type: Date32
+        description: >
+          Filing date.
+        data_tests:
+          - not_null
+      - name: accepted_at
+        data_type: "Nullable(DateTime64(6, 'UTC'))"
+        description: >
+          Time at which EDGAR accepted the filing (UTC).
+      - name: _silver_snapshot_id
+        data_type: Int64
+        description: >
+          Iceberg snapshot of the silver table sec_filing_detail from which the model was built; 0
+          for a build outside the DAG marts_build.
+      - name: _pipeline_version
+        data_type: String
+        description: >
+          Version of the pipeline code which built the model: the Git commit on the host.
+      - name: _built_at
+        data_type: "DateTime64(3, 'UTC')"
+        description: >
+          When the model was built (UTC).
+      - name: _dbt_invocation_id
+        data_type: String
+        description: >
+          The dbt run which built the model.
