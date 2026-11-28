@@ -1,0 +1,48 @@
+# Contract of the silver table sec_company_former_name (blueprint 7.4 and 9.6; week 3 plan 3.3).
+# tests/contract compares the file with the schema in gbmi.lake.tables: a change of the table
+# without a change of the contract fails the test, and the other way round.
+table: sec_company_former_name
+layer: silver
+format: Apache Iceberg, format version 2, Parquet with ZSTD compression
+source: "U.S. Securities and Exchange Commission, EDGAR: the field formerNames of the submissions documents. https://www.sec.gov/"
+grain: "One row for each former name of a company, with the days between which the SEC lists the name."
+logical_key: [cik, former_name, valid_from]
+partition: null
+duplicates: "The rows of a refreshed company replace every earlier row of the company. An exact repeat inside one document counts as a duplicate."
+columns:
+  - name: cik
+    type: long
+    required: true
+    meaning: "Central Index Key: the number which the SEC gives each filer."
+  - name: former_name
+    type: string
+    required: true
+    meaning: "A former name of the company, as the submissions document of the SEC gives the name."
+  - name: valid_from
+    type: date
+    required: true
+    meaning: "First day of the name: the field \"from\" of the SEC, as a date in the time zone America/New_York."
+  - name: valid_to
+    type: date
+    required: false
+    meaning: "Last day of the name: the field \"to\" of the SEC, as a date in the time zone America/New_York. NULL when the SEC gives none."
+  - name: _source_file
+    type: string
+    required: false
+    meaning: "Key of the bronze object which carried the row, relative to the lake root."
+  - name: _source_md5
+    type: string
+    required: false
+    meaning: "MD5 of the stored bytes of the bronze object. The SEC publishes no hash for a file."
+  - name: _ingested_at
+    type: timestamptz
+    required: false
+    meaning: "Time of the run which wrote the row, in UTC. Differs between two builds of the same unit."
+  - name: _run_id
+    type: string
+    required: false
+    meaning: "Identifier of the orchestrator run which wrote the row. Differs between two builds of the same unit."
+  - name: _pipeline_version
+    type: string
+    required: false
+    meaning: "Version of the code which wrote the row: the Git commit in an image, the package version elsewhere."

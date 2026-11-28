@@ -1,0 +1,92 @@
+# Contract of the silver table sec_xbrl_fact (blueprint 7.4 and 9.6; week 3 plan 3.3).
+# tests/contract compares the file with the schema in gbmi.lake.tables: a change of the table
+# without a change of the contract fails the test, and the other way round.
+table: sec_xbrl_fact
+layer: silver
+format: Apache Iceberg, format version 2, Parquet with ZSTD compression
+source: "U.S. Securities and Exchange Commission, EDGAR: the company-facts documents (data.sec.gov/api/xbrl/companyfacts) of the watchlist companies. https://www.sec.gov/"
+grain: "One row for each tagged number (fact) which a filing of a watchlist company reported: a concept, a unit, a period and the filing."
+logical_key: [cik, taxonomy, concept, unit, period_start, period_end, accession_number]
+partition: cik
+duplicates: "An exact repeat of a row inside one document counts as a duplicate. A document with two different values for one key is quarantined as a whole."
+columns:
+  - name: cik
+    type: long
+    required: true
+    meaning: "Central Index Key of the company. The partition of the table (week 3 plan, change C15): the refreshed companies are the unit of work."
+  - name: taxonomy
+    type: string
+    required: true
+    meaning: "Taxonomy of the concept, for example us-gaap, ifrs-full or dei."
+  - name: concept
+    type: string
+    required: true
+    meaning: "Name of the tagged concept inside the taxonomy, for example Revenues."
+  - name: unit
+    type: string
+    required: true
+    meaning: "Unit of the value, for example USD, shares or USD/shares."
+  - name: period_start
+    type: date
+    required: true
+    meaning: "First day of the period which the value describes. Equal to period_end for a value at one point in time (week 3 plan, difference D39)."
+  - name: period_end
+    type: date
+    required: true
+    meaning: "Last day of the period, or the day of a value at one point in time."
+  - name: accession_number
+    type: string
+    required: true
+    meaning: "Identifier of the filing which reported the value."
+  - name: is_instant
+    type: boolean
+    required: true
+    meaning: "True for a value at one point in time: the SEC gives no start for such a fact."
+  - name: value
+    type: "decimal(38, 6)"
+    required: true
+    meaning: "The number as a decimal with six decimal places."
+  - name: value_text
+    type: string
+    required: true
+    meaning: "The number exactly as the facts document writes the number."
+  - name: fiscal_year
+    type: int
+    required: false
+    meaning: "Fiscal year of the filing which reported the value, not of the period of the value (week 3 plan, finding F6)."
+  - name: fiscal_period
+    type: string
+    required: false
+    meaning: "Fiscal period of the filing, for example FY or Q2: a property of the filing, not of the period of the value. NULL for some forms."
+  - name: form
+    type: string
+    required: true
+    meaning: "Form type of the filing which reported the value."
+  - name: filed_date
+    type: date
+    required: true
+    meaning: "Date on which the filing was filed: the day from which the value was known."
+  - name: frame
+    type: string
+    required: false
+    meaning: "Calendar frame which the SEC assigns to some facts, for example CY2025Q4I."
+  - name: _source_file
+    type: string
+    required: false
+    meaning: "Key of the bronze object which carried the row, relative to the lake root."
+  - name: _source_md5
+    type: string
+    required: false
+    meaning: "MD5 of the stored bytes of the bronze object. The SEC publishes no hash for a file."
+  - name: _ingested_at
+    type: timestamptz
+    required: false
+    meaning: "Time of the run which wrote the row, in UTC. Differs between two builds of the same unit."
+  - name: _run_id
+    type: string
+    required: false
+    meaning: "Identifier of the orchestrator run which wrote the row. Differs between two builds of the same unit."
+  - name: _pipeline_version
+    type: string
+    required: false
+    meaning: "Version of the code which wrote the row: the Git commit in an image, the package version elsewhere."

@@ -1,0 +1,64 @@
+# Contract of the silver table sec_filing_index (blueprint 7.4 and 9.6; week 3 plan 3.3).
+# tests/contract compares the file with the schema in gbmi.lake.tables: a change of the table
+# without a change of the contract fails the test, and the other way round.
+table: sec_filing_index
+layer: silver
+format: Apache Iceberg, format version 2, Parquet with ZSTD compression
+source: "U.S. Securities and Exchange Commission, EDGAR: the daily form index form.YYYYMMDD.idx under Archives/edgar/daily-index. https://www.sec.gov/"
+grain: "One row for each filing and filer of one daily index file. A filing with several filers has one row for each filer."
+logical_key: [index_date, accession_number, cik]
+partition: index_date
+duplicates: "An index file can repeat a pair of accession number and CIK. The row with the smallest line number stays; the other rows count as duplicates."
+columns:
+  - name: index_date
+    type: date
+    required: true
+    meaning: "Date of the index file which carried the row. The partition of the table: one index file is the unit of work."
+  - name: accession_number
+    type: string
+    required: true
+    meaning: "Identifier of the filing at the SEC, in the form 0000000000-00-000000."
+  - name: cik
+    type: long
+    required: true
+    meaning: "Central Index Key of one filer of the filing."
+  - name: form
+    type: string
+    required: true
+    meaning: "Form type of the filing as the index writes the type, for example 10-K or 8-K."
+  - name: company_name
+    type: string
+    required: true
+    meaning: "Name of the filer as the index writes the name."
+  - name: filing_date
+    type: date
+    required: true
+    meaning: "The date column of the row. The date can lie before index_date (week 3 plan, finding F11)."
+  - name: file_name
+    type: string
+    required: true
+    meaning: "Path of the filing below the Archives folder of the SEC, in the form edgar/data/<cik>/<accession>.txt."
+  - name: line_number
+    type: int
+    required: true
+    meaning: "Line of the row in the index file, counted from 1."
+  - name: _source_file
+    type: string
+    required: false
+    meaning: "Key of the bronze object which carried the row, relative to the lake root."
+  - name: _source_md5
+    type: string
+    required: false
+    meaning: "MD5 of the stored bytes of the bronze object. The SEC publishes no hash for a file."
+  - name: _ingested_at
+    type: timestamptz
+    required: false
+    meaning: "Time of the run which wrote the row, in UTC. Differs between two builds of the same unit."
+  - name: _run_id
+    type: string
+    required: false
+    meaning: "Identifier of the orchestrator run which wrote the row. Differs between two builds of the same unit."
+  - name: _pipeline_version
+    type: string
+    required: false
+    meaning: "Version of the code which wrote the row: the Git commit in an image, the package version elsewhere."
