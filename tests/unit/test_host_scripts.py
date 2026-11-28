@@ -374,7 +374,7 @@ def test_the_start_at_boot_brings_up_the_deployed_release(host: Host) -> None:
 
 def test_no_host_script_traces_its_commands() -> None:
     # A trace would print each command with its values into the output of a deployment.
-    for script in sorted(HOST.iterdir()):
+    for script in sorted(path for path in HOST.iterdir() if path.is_file()):
         text = script.read_text(encoding="utf-8")
         assert "set -x" not in text and "xtrace" not in text, script.name
         assert "set -euo pipefail" in text or script.suffix == ".py" or script.name == "common.sh"

@@ -81,6 +81,8 @@ export MEM_METABASE := 0
 export CH_MAX_SERVER_MEMORY_USAGE := 0
 endif
 
+# The profile of the AWS CLI which hands out the short-lived credentials of "aws login".
+AWS_PROFILE ?= gbmi
 TF := infra/terraform
 TF_ROOTS := $(TF)/bootstrap $(TF)/envs/prod
 TF_MODULES := $(TF)/modules/lake_s3 $(TF)/modules/glue_catalog $(TF)/modules/budgets
@@ -100,7 +102,8 @@ DEMO_HOUR := 2026-11-25T08
 TOOLBOX := $(COMPOSE_BI) --profile tools run --rm toolbox
 
 .PHONY: help setup fmt lint test test-dags env images up up-bi down reset ps logs smoke toolbox psql integration \
-	integration-aws dbt-build demo e2e drill bench logs-dump tf-check plan redact-check _other-stack-stopped _lake-dir _demo _e2e
+	integration-aws dbt-build demo e2e drill bench logs-dump tf-check plan redact-check host-secrets host-sec-source \
+	host-status host-deploy-log host-shell host-forward deploy _other-stack-stopped _lake-dir _demo _e2e
 
 help: ## List the available targets
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-14s %s\n", $$1, $$2}'
@@ -140,6 +143,37 @@ test: ## Unit, ledger, transformation and contract tests with the coverage gate;
 
 redact-check: ## Search the repository for the AWS account number and the addresses of the local files
 	@python3 tools/redact_check.py
+
+# --- the AWS host (week 3 plan, WP-12) ---------------------------------------------------------
+# Every target needs a sign-in (aws login --remote --profile gbmi-login; see
+# infra/terraform/README.md) and uses the profile gbmi. No target prints a value of a secret.
+HOST_AWS := AWS_PROFILE=$(AWS_PROFILE) AWS_DEFAULT_REGION=us-east-1
+
+host-secrets: ## Create the missing parameters of the AWS host below /gbmi/prod/ (never overwrites; prints names only)
+	@$(HOST_AWS) uv run python tools/host_secrets.py create
+	@$(HOST_AWS) uv run python tools/host_secrets.py list
+
+host-sec-source: ## Set the SEC source of the host: make host-sec-source SOURCE=live (the laptop has to be off first) or SOURCE=off
+	@test -n "$(SOURCE)" || { echo 'make host-sec-source SOURCE=off  or  SOURCE=live'; exit 1; }
+	@$(HOST_AWS) uv run python tools/host_secrets.py sec-source $(SOURCE)
+
+host-status: ## The AWS host: instance, agent, deployed release, services
+	@AWS_PROFILE=$(AWS_PROFILE) tools/host.sh status
+
+host-deploy-log: ## The status and the output of the newest deployment on the AWS host
+	@AWS_PROFILE=$(AWS_PROFILE) tools/host.sh deploy-log
+
+host-shell: ## A shell on the AWS host through Session Manager
+	@AWS_PROFILE=$(AWS_PROFILE) tools/host.sh shell
+
+host-forward: ## Forward a port of the host to the laptop: make host-forward (Airflow, 8080 to 18080) or PORT=3000 (Metabase)
+	@AWS_PROFILE=$(AWS_PROFILE) tools/host.sh forward $(or $(PORT),8080)
+
+deploy: ## Start the workflow deploy for the head of main; Jay approves the deployment in GitHub
+	@git fetch origin main --quiet
+	gh workflow run deploy.yml --ref main -f commit=$$(git rev-parse origin/main)
+	@echo "The workflow waits for the approval of the environment prod (Jay, in GitHub)."
+	@echo "Follow the run:  gh run list --workflow deploy.yml --limit 1"
 
 env: ## Create or complete .env with generated secrets
 	@command -v uv >/dev/null && uv run python compose/make_env.py || python3 compose/make_env.py

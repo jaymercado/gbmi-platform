@@ -6,7 +6,8 @@
 # Two modes. The default checks a stack of the laptop or of CI. GBMI_SMOKE_MODE=host checks
 # the stack of the AWS host after a deployment (compose/host/deploy.sh; week 3 plan, WP-10
 # step 5): both Compose files, the environment file of the host, and in place of the check of
-# the lake folder the checks of S3, Glue and the lake role, with one ingest run at the end.
+# the lake folder the checks of S3, Glue and the lake role, with one live hour of the tracer DAG
+# at the end.
 set -uo pipefail
 
 MODE="${GBMI_SMOKE_MODE:-laptop}"
@@ -279,9 +280,32 @@ clickhouse_cannot_write_with_the_lake_role() {
   clickhouse_write_is_refused ", extra_credentials(role_arn = '$(env_value GBMI_CH_LAKE_ROLE_ARN)')"
 }
 
-one_ingest_run() {
-  # Three of the newest GDELT files: the internet, the write to raw/ on S3 and the ledger.
-  "${COMPOSE[@]}" --profile tools run --rm -T toolbox gbmi gdelt ingest --batch-limit 3
+tracer_builds_one_live_hour() {
+  # The tracer DAG on one closed hour of the live GDELT files (week 3 plan, WP-12 step 5): the
+  # files land below raw/ on S3, the hour is committed to the four silver tables through
+  # Glue, ClickHouse pins gdelt_event through the lake role, dbt builds the mart with the
+  # target of the host, and the last task compares the counts of the layers. The hour which
+  # ended at least 30 minutes ago: its four files are published.
+  local hour run_id state attempt
+  hour="$(date -u -d '90 minutes ago' +%Y-%m-%dT%H)" || { echo "the host mode needs GNU date"; return 1; }
+  run_id="smoke__$(date -u +%Y%m%dT%H%M%S)"
+  "${COMPOSE[@]}" exec -T airflow-scheduler airflow dags unpause tracer_gdelt_events > /dev/null 2>&1 || return 1
+  "${COMPOSE[@]}" exec -T airflow-scheduler airflow dags trigger tracer_gdelt_events \
+    --run-id "$run_id" --conf "{\"hour\": \"$hour\", \"source\": \"live\"}" > /dev/null 2>&1 || {
+    echo "the run $run_id could not be triggered"
+    return 1
+  }
+  # Up to 30 minutes: an hour of the three feeds is about 20 files.
+  for attempt in $(seq 1 180); do
+    state="$("${COMPOSE[@]}" exec -T airflow-scheduler airflow dags state tracer_gdelt_events "$run_id" 2> /dev/null | tail -1)"
+    case "$state" in
+      success*) echo "the hour $hour is built (run $run_id)"; return 0 ;;
+      failed*) echo "the run $run_id for the hour $hour failed"; return 1 ;;
+    esac
+    sleep 10
+  done
+  echo "the run $run_id for the hour $hour did not end in 30 minutes (state: $state)"
+  return 1
 }
 
 check "long-running services are healthy" services_healthy
@@ -304,7 +328,7 @@ if [ "$MODE" = "host" ]; then
   check "Glue, S3 and the pinned read through the lake role answer (gbmi lake check)" lake_backend_answers
   check "ClickHouse cannot write to the lake without credentials" clickhouse_cannot_write_without_credentials
   check "ClickHouse cannot write to the lake with the lake role" clickhouse_cannot_write_with_the_lake_role
-  check "one ingest run lands the newest GDELT files" one_ingest_run
+  check "the tracer DAG lands and builds one live hour on S3 and Glue" tracer_builds_one_live_hour
 else
   check "Airflow writes /lake, ClickHouse reads it read-only" lake_is_shared
 fi
