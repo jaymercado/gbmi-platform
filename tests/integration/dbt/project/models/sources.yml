@@ -6,3 +6,7 @@ sources:
     tables:
       - name: source_events
         description: Rows the test inserts, changes and deletes; three days in two months.
+      - name: source_snapshots
+        description: >
+          An empty table with the columns of a company snapshot: a dbt unit test reads the types
+          of its input columns from the table (week 3 plan, finding F18).

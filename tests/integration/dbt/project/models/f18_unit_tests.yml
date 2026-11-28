@@ -1,0 +1,32 @@
+version: 2
+
+# Finding F18 of the week 3 plan: dbt unit tests on dbt-clickhouse. The first unit test has to
+# pass. The second one states a wrong end date on purpose and has to fail: a unit test which
+# cannot fail proves nothing. tests/integration/dbt/test_f18_unit_tests.py runs both.
+unit_tests:
+  - name: f18_a_b_a_gives_three_intervals
+    model: f18_snapshot_versions
+    given:
+      - input: source('sk3', 'source_snapshots')
+        rows:
+          - {cik: 1, snapshot_date: "2026-11-01", attr_hash: "aaaa", name: "A Corp"}
+          - {cik: 1, snapshot_date: "2026-11-02", attr_hash: "aaaa", name: "A Corp"}
+          - {cik: 1, snapshot_date: "2026-11-03", attr_hash: "bbbb", name: "B Corp"}
+          - {cik: 1, snapshot_date: "2026-11-04", attr_hash: "aaaa", name: "A Corp"}
+    expect:
+      rows:
+        - {cik: 1, valid_from: "2026-11-01", valid_to: "2026-11-03", name: "A Corp"}
+        - {cik: 1, valid_from: "2026-11-03", valid_to: "2026-11-04", name: "B Corp"}
+        - {cik: 1, valid_from: "2026-11-04", valid_to: "9999-12-31", name: "A Corp"}
+
+  - name: f18_a_wrong_expectation_fails
+    model: f18_snapshot_versions
+    given:
+      - input: source('sk3', 'source_snapshots')
+        rows:
+          - {cik: 1, snapshot_date: "2026-11-01", attr_hash: "aaaa", name: "A Corp"}
+          - {cik: 1, snapshot_date: "2026-11-03", attr_hash: "bbbb", name: "B Corp"}
+    expect:
+      rows:
+        - {cik: 1, valid_from: "2026-11-01", valid_to: "2026-11-02", name: "A Corp"}
+        - {cik: 1, valid_from: "2026-11-03", valid_to: "9999-12-31", name: "B Corp"}
