@@ -1,0 +1,290 @@
+version: 2
+
+models:
+  - name: int_financials__metric_facts
+    description: >
+      The financial facts as standard metrics: for each company, metric, unit and period, the first
+      concept of the seed metric_concept_map which has a value, with the first reported value and
+      the newest known value. The variable facts_as_of builds the model as it was known at a past
+      time. Source: U.S. Securities and Exchange Commission, EDGAR, https://www.sec.gov/.
+    meta:
+      owner: data-engineering
+      layer: intermediate
+      grain: "one row per company, metric, unit and period (cik, metric, unit, period_start, period_end)"
+      sensitivity: public
+    columns:
+      - name: cik
+        description: >
+          Central Index Key of the company.
+        data_tests:
+          - not_null
+      - name: metric
+        description: >
+          The standard metric.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - revenue
+                  - net_income
+                  - operating_income
+                  - total_assets
+                  - equity
+                  - cash
+                  - employees
+      - name: flow_or_stock
+        description: >
+          flow for a value over a period, stock for a balance at one moment (from the seed).
+        data_tests:
+          - not_null
+      - name: unit
+        description: >
+          Unit of the values, for example USD.
+        data_tests:
+          - not_null
+      - name: period_start
+        description: >
+          First day of the period; the balance date for a stock metric.
+        data_tests:
+          - not_null
+      - name: period_end
+        description: >
+          Last day of the period.
+        data_tests:
+          - not_null
+      - name: period_days
+        description: >
+          Length of the period in days, both bounds counted.
+        data_tests:
+          - not_null
+      - name: period_kind
+        description: >
+          Kind of the period from its length: instant, quarter, half_year, nine_months, year or
+          other.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - instant
+                  - quarter
+                  - half_year
+                  - nine_months
+                  - year
+                  - other
+      - name: taxonomy
+        description: >
+          Taxonomy of the chosen concept.
+        data_tests:
+          - not_null
+      - name: concept
+        description: >
+          The chosen concept: the first candidate of the seed which has a value for the period.
+        data_tests:
+          - not_null
+      - name: value_first_reported
+        description: >
+          Value of the first filing which reported the period.
+        data_tests:
+          - not_null
+      - name: first_accession_number
+        description: >
+          The first filing which reported the period.
+      - name: first_filed_date
+        description: >
+          Filing date of the first filing.
+      - name: first_known_at
+        description: >
+          Moment at which the first value became known (UTC).
+      - name: value_latest
+        description: >
+          The newest known value of the period.
+        data_tests:
+          - not_null
+      - name: latest_accession_number
+        description: >
+          The filing which reported the newest value.
+      - name: latest_filed_date
+        description: >
+          Filing date of the filing with the newest value.
+      - name: latest_known_at
+        description: >
+          Moment at which the newest value became known (UTC).
+      - name: reports
+        description: >
+          Number of filings which reported the period with the chosen concept.
+
+  - name: int_financials__quarters
+    description: >
+      The quarter values of the flow metrics: the three-month fact where a filing reports one, and
+      otherwise the year minus the nine months, with a flag. Source: U.S. Securities and Exchange
+      Commission, EDGAR, https://www.sec.gov/.
+    meta:
+      owner: data-engineering
+      layer: intermediate
+      grain: "one row per company, metric, unit and quarter (cik, metric, unit, period_start, period_end)"
+      sensitivity: public
+    columns:
+      - name: cik
+        description: >
+          Central Index Key of the company.
+        data_tests:
+          - not_null
+      - name: metric
+        description: >
+          The standard metric; flow metrics only.
+        data_tests:
+          - not_null
+      - name: unit
+        description: >
+          Unit of the values.
+        data_tests:
+          - not_null
+      - name: period_start
+        description: >
+          First day of the quarter.
+        data_tests:
+          - not_null
+      - name: period_end
+        description: >
+          Last day of the quarter.
+        data_tests:
+          - not_null
+      - name: period_days
+        description: >
+          Length of the quarter in days, both bounds counted.
+      - name: taxonomy
+        description: >
+          Taxonomy of the concept.
+      - name: concept
+        description: >
+          The concept of the value; for a derived quarter the concept of the year and of the nine
+          months.
+      - name: value_first_reported
+        description: >
+          First reported value; for a derived quarter the first value of the year minus the first
+          value of the nine months.
+      - name: first_filed_date
+        description: >
+          Filing date of the first value; for a derived quarter the later of the two filing dates.
+      - name: first_known_at
+        description: >
+          Moment at which the first value became known; for a derived quarter the later of the two
+          moments.
+      - name: value_latest
+        description: >
+          Newest known value; for a derived quarter the newest value of the year minus the newest
+          value of the nine months.
+      - name: latest_filed_date
+        description: >
+          Filing date of the newest value; for a derived quarter the later of the two filing dates.
+      - name: latest_known_at
+        description: >
+          Moment at which the newest value became known; for a derived quarter the later of the two
+          moments.
+      - name: is_derived
+        description: >
+          True when the quarter is the year minus the nine months; false for a reported three-month
+          fact.
+        data_tests:
+          - not_null
+
+unit_tests:
+  - name: metric_facts_keep_the_first_and_the_latest_value_of_a_restated_fact
+    description: >
+      Blueprint 7.10. The revenue of the year 2024 is reported as 100 and restated as 90 one
+      year later: the row holds the first reported value, the latest value and two reports.
+      One filing reports nine months and three months which end on the same day: the two
+      durations stay two rows. Two concepts of one metric have a value for the same quarter:
+      the concept with the first priority wins. A period with a value of the third concept
+      only takes the third concept. A period of six months is a half year. A period of 45
+      days is no standard period. A balance of the assets is an instant. A concept outside
+      the seed gives no row.
+    model: int_financials__metric_facts
+    given:
+      - input: ref('fct_financial_fact')
+        rows:
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2024-01-01", period_end: "2024-12-31", accession_number: "0000000001-25-000001", is_instant: false, value: "100.000000", filed_date: "2025-02-01", known_at: "2025-02-01 21:00:00"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2024-01-01", period_end: "2024-12-31", accession_number: "0000000001-26-000001", is_instant: false, value: "90.000000", filed_date: "2026-02-01", known_at: "2026-02-01 21:00:00"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2025-01-01", period_end: "2025-09-30", accession_number: "0000000001-25-000009", is_instant: false, value: "70.000000", filed_date: "2025-10-30", known_at: "2025-10-30 20:00:00"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2025-07-01", period_end: "2025-09-30", accession_number: "0000000001-25-000009", is_instant: false, value: "25.000000", filed_date: "2025-10-30", known_at: "2025-10-30 20:00:00"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "SalesRevenueNet", unit: "USD", period_start: "2025-07-01", period_end: "2025-09-30", accession_number: "0000000001-25-000009", is_instant: false, value: "24.000000", filed_date: "2025-10-30", known_at: "2025-10-30 20:00:00"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "SalesRevenueNet", unit: "USD", period_start: "2025-04-01", period_end: "2025-06-30", accession_number: "0000000001-25-000006", is_instant: false, value: "23.000000", filed_date: "2025-07-30", known_at: "2025-07-30 20:00:00"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2025-01-01", period_end: "2025-06-30", accession_number: "0000000001-25-000006", is_instant: false, value: "45.000000", filed_date: "2025-07-30", known_at: "2025-07-30 20:00:00"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2025-01-01", period_end: "2025-02-14", accession_number: "0000000001-25-000006", is_instant: false, value: "11.000000", filed_date: "2025-07-30", known_at: "2025-07-30 20:00:00"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "Assets", unit: "USD", period_start: "2025-09-30", period_end: "2025-09-30", accession_number: "0000000001-25-000009", is_instant: true, value: "500.000000", filed_date: "2025-10-30", known_at: "2025-10-30 20:00:00"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "Goodwill", unit: "USD", period_start: "2025-09-30", period_end: "2025-09-30", accession_number: "0000000001-25-000009", is_instant: true, value: "7.000000", filed_date: "2025-10-30", known_at: "2025-10-30 20:00:00"}
+      - input: ref('metric_concept_map')
+        rows:
+          - {metric: "revenue", taxonomy: "us-gaap", concept: "Revenues", priority: 1, flow_or_stock: "flow"}
+          - {metric: "revenue", taxonomy: "us-gaap", concept: "SalesRevenueNet", priority: 3, flow_or_stock: "flow"}
+          - {metric: "total_assets", taxonomy: "us-gaap", concept: "Assets", priority: 1, flow_or_stock: "stock"}
+    expect:
+      rows:
+        - {cik: 1, metric: "revenue", period_start: "2024-01-01", period_end: "2024-12-31", period_kind: "year", concept: "Revenues", value_first_reported: "100.000000", first_filed_date: "2025-02-01", value_latest: "90.000000", latest_filed_date: "2026-02-01", reports: 2}
+        - {cik: 1, metric: "revenue", period_start: "2025-01-01", period_end: "2025-09-30", period_kind: "nine_months", concept: "Revenues", value_first_reported: "70.000000", first_filed_date: "2025-10-30", value_latest: "70.000000", latest_filed_date: "2025-10-30", reports: 1}
+        - {cik: 1, metric: "revenue", period_start: "2025-07-01", period_end: "2025-09-30", period_kind: "quarter", concept: "Revenues", value_first_reported: "25.000000", first_filed_date: "2025-10-30", value_latest: "25.000000", latest_filed_date: "2025-10-30", reports: 1}
+        - {cik: 1, metric: "revenue", period_start: "2025-04-01", period_end: "2025-06-30", period_kind: "quarter", concept: "SalesRevenueNet", value_first_reported: "23.000000", first_filed_date: "2025-07-30", value_latest: "23.000000", latest_filed_date: "2025-07-30", reports: 1}
+        - {cik: 1, metric: "revenue", period_start: "2025-01-01", period_end: "2025-06-30", period_kind: "half_year", concept: "Revenues", value_first_reported: "45.000000", first_filed_date: "2025-07-30", value_latest: "45.000000", latest_filed_date: "2025-07-30", reports: 1}
+        - {cik: 1, metric: "revenue", period_start: "2025-01-01", period_end: "2025-02-14", period_kind: "other", concept: "Revenues", value_first_reported: "11.000000", first_filed_date: "2025-07-30", value_latest: "11.000000", latest_filed_date: "2025-07-30", reports: 1}
+        - {cik: 1, metric: "total_assets", period_start: "2025-09-30", period_end: "2025-09-30", period_kind: "instant", concept: "Assets", value_first_reported: "500.000000", first_filed_date: "2025-10-30", value_latest: "500.000000", latest_filed_date: "2025-10-30", reports: 1}
+
+  - name: metric_facts_as_of_a_time_before_the_restatement_give_the_first_value
+    description: >
+      The as-of logic of blueprint 7.10. The revenue of the year 2024 is reported as 100 on
+      1 February 2025 and restated as 90 on 1 February 2026. A question for 30 October 2025,
+      20:00:00 UTC, gives 100 as the known value, with one report: the restatement and the
+      quarter of a later filing are not known at that time. A fact which became known in the
+      same second as the question counts, and a fact which became known one second later does
+      not.
+    model: int_financials__metric_facts
+    overrides:
+      vars:
+        facts_as_of: "2025-10-30 20:00:00"
+    given:
+      - input: ref('fct_financial_fact')
+        rows:
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2024-01-01", period_end: "2024-12-31", accession_number: "0000000001-25-000001", is_instant: false, value: "100.000000", filed_date: "2025-02-01", known_at: "2025-02-01 21:00:00"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2024-01-01", period_end: "2024-12-31", accession_number: "0000000001-26-000001", is_instant: false, value: "90.000000", filed_date: "2026-02-01", known_at: "2026-02-01 21:00:00"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2025-07-01", period_end: "2025-09-30", accession_number: "0000000001-25-000009", is_instant: false, value: "25.000000", filed_date: "2025-10-30", known_at: "2025-10-30 20:00:00"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2025-10-01", period_end: "2025-12-31", accession_number: "0000000001-26-000001", is_instant: false, value: "30.000000", filed_date: "2026-02-01", known_at: "2026-02-01 21:00:00"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2025-04-01", period_end: "2025-06-30", accession_number: "0000000001-25-000010", is_instant: false, value: "22.000000", filed_date: "2025-10-30", known_at: "2025-10-30 20:00:01"}
+      - input: ref('metric_concept_map')
+        rows:
+          - {metric: "revenue", taxonomy: "us-gaap", concept: "Revenues", priority: 1, flow_or_stock: "flow"}
+    expect:
+      rows:
+        - {cik: 1, metric: "revenue", period_start: "2024-01-01", period_end: "2024-12-31", value_first_reported: "100.000000", value_latest: "100.000000", latest_accession_number: "0000000001-25-000001", reports: 1}
+        - {cik: 1, metric: "revenue", period_start: "2025-07-01", period_end: "2025-09-30", value_first_reported: "25.000000", value_latest: "25.000000", latest_accession_number: "0000000001-25-000009", reports: 1}
+
+  - name: quarters_derive_the_missing_quarter_as_year_minus_nine_months
+    description: >
+      Company 1 reports three quarters, nine months and the year: the fourth quarter is the
+      year minus the nine months, with the flag, for the first values (400 - 290) and for the
+      latest values (415 - 300), and the derived value is known when both parts are known.
+      Company 2 reports a half year and the year only: a period of six months is a half year
+      and never a quarter, so no quarter is derived. Company 3 reports the fourth quarter
+      itself: the reported value stays and nothing is derived. Company 4: the year and the
+      nine months use two concepts, and no quarter is derived. Company 5: a stock metric has
+      no quarter.
+    model: int_financials__quarters
+    given:
+      - input: ref('int_financials__metric_facts')
+        rows:
+          - {cik: 1, metric: "revenue", flow_or_stock: "flow", unit: "USD", period_start: "2025-07-01", period_end: "2025-09-30", period_days: 92, period_kind: "quarter", taxonomy: "us-gaap", concept: "Revenues", value_first_reported: "100.000000", first_filed_date: "2025-10-30", first_known_at: "2025-10-30 20:00:00", value_latest: "100.000000", latest_filed_date: "2025-10-30", latest_known_at: "2025-10-30 20:00:00"}
+          - {cik: 1, metric: "revenue", flow_or_stock: "flow", unit: "USD", period_start: "2025-01-01", period_end: "2025-09-30", period_days: 273, period_kind: "nine_months", taxonomy: "us-gaap", concept: "Revenues", value_first_reported: "290.000000", first_filed_date: "2025-10-30", first_known_at: "2025-10-30 20:00:00", value_latest: "300.000000", latest_filed_date: "2026-10-29", latest_known_at: "2026-10-29 20:00:00"}
+          - {cik: 1, metric: "revenue", flow_or_stock: "flow", unit: "USD", period_start: "2025-01-01", period_end: "2025-12-31", period_days: 365, period_kind: "year", taxonomy: "us-gaap", concept: "Revenues", value_first_reported: "400.000000", first_filed_date: "2026-02-01", first_known_at: "2026-02-01 21:00:00", value_latest: "415.000000", latest_filed_date: "2026-08-01", latest_known_at: "2026-08-01 21:00:00"}
+          - {cik: 2, metric: "revenue", flow_or_stock: "flow", unit: "USD", period_start: "2025-01-01", period_end: "2025-06-30", period_days: 181, period_kind: "half_year", taxonomy: "ifrs-full", concept: "Revenue", value_first_reported: "50.000000", first_filed_date: "2025-08-01", first_known_at: "2025-08-01 12:00:00", value_latest: "50.000000", latest_filed_date: "2025-08-01", latest_known_at: "2025-08-01 12:00:00"}
+          - {cik: 2, metric: "revenue", flow_or_stock: "flow", unit: "USD", period_start: "2025-01-01", period_end: "2025-12-31", period_days: 365, period_kind: "year", taxonomy: "ifrs-full", concept: "Revenue", value_first_reported: "120.000000", first_filed_date: "2026-03-01", first_known_at: "2026-03-01 12:00:00", value_latest: "120.000000", latest_filed_date: "2026-03-01", latest_known_at: "2026-03-01 12:00:00"}
+          - {cik: 3, metric: "net_income", flow_or_stock: "flow", unit: "USD", period_start: "2025-01-01", period_end: "2025-09-30", period_days: 273, period_kind: "nine_months", taxonomy: "us-gaap", concept: "NetIncomeLoss", value_first_reported: "30.000000", first_filed_date: "2025-10-30", first_known_at: "2025-10-30 20:00:00", value_latest: "30.000000", latest_filed_date: "2025-10-30", latest_known_at: "2025-10-30 20:00:00"}
+          - {cik: 3, metric: "net_income", flow_or_stock: "flow", unit: "USD", period_start: "2025-01-01", period_end: "2025-12-31", period_days: 365, period_kind: "year", taxonomy: "us-gaap", concept: "NetIncomeLoss", value_first_reported: "45.000000", first_filed_date: "2026-02-01", first_known_at: "2026-02-01 21:00:00", value_latest: "45.000000", latest_filed_date: "2026-02-01", latest_known_at: "2026-02-01 21:00:00"}
+          - {cik: 3, metric: "net_income", flow_or_stock: "flow", unit: "USD", period_start: "2025-10-01", period_end: "2025-12-31", period_days: 92, period_kind: "quarter", taxonomy: "us-gaap", concept: "NetIncomeLoss", value_first_reported: "14.000000", first_filed_date: "2026-02-01", first_known_at: "2026-02-01 21:00:00", value_latest: "14.000000", latest_filed_date: "2026-02-01", latest_known_at: "2026-02-01 21:00:00"}
+          - {cik: 4, metric: "revenue", flow_or_stock: "flow", unit: "USD", period_start: "2025-01-01", period_end: "2025-09-30", period_days: 273, period_kind: "nine_months", taxonomy: "us-gaap", concept: "SalesRevenueNet", value_first_reported: "60.000000", first_filed_date: "2025-10-30", first_known_at: "2025-10-30 20:00:00", value_latest: "60.000000", latest_filed_date: "2025-10-30", latest_known_at: "2025-10-30 20:00:00"}
+          - {cik: 4, metric: "revenue", flow_or_stock: "flow", unit: "USD", period_start: "2025-01-01", period_end: "2025-12-31", period_days: 365, period_kind: "year", taxonomy: "us-gaap", concept: "Revenues", value_first_reported: "80.000000", first_filed_date: "2026-02-01", first_known_at: "2026-02-01 21:00:00", value_latest: "80.000000", latest_filed_date: "2026-02-01", latest_known_at: "2026-02-01 21:00:00"}
+          - {cik: 5, metric: "total_assets", flow_or_stock: "stock", unit: "USD", period_start: "2025-12-31", period_end: "2025-12-31", period_days: 1, period_kind: "instant", taxonomy: "us-gaap", concept: "Assets", value_first_reported: "900.000000", first_filed_date: "2026-02-01", first_known_at: "2026-02-01 21:00:00", value_latest: "900.000000", latest_filed_date: "2026-02-01", latest_known_at: "2026-02-01 21:00:00"}
+    expect:
+      rows:
+        - {cik: 1, metric: "revenue", period_start: "2025-07-01", period_end: "2025-09-30", period_days: 92, value_first_reported: "100.000000", first_known_at: "2025-10-30 20:00:00", value_latest: "100.000000", latest_known_at: "2025-10-30 20:00:00", latest_filed_date: "2025-10-30", is_derived: false}
+        - {cik: 1, metric: "revenue", period_start: "2025-10-01", period_end: "2025-12-31", period_days: 92, value_first_reported: "110.000000", first_known_at: "2026-02-01 21:00:00", value_latest: "115.000000", latest_known_at: "2026-10-29 20:00:00", latest_filed_date: "2026-10-29", is_derived: true}
+        - {cik: 3, metric: "net_income", period_start: "2025-10-01", period_end: "2025-12-31", period_days: 92, value_first_reported: "14.000000", first_known_at: "2026-02-01 21:00:00", value_latest: "14.000000", latest_known_at: "2026-02-01 21:00:00", latest_filed_date: "2026-02-01", is_derived: false}

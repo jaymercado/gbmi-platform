@@ -24,6 +24,10 @@ models:
     staging:
       +schema: staging
       +materialized: view
+    # Without the block an intermediate model would land in the default database, marts.
+    intermediate:
+      +schema: intermediate
+      +materialized: view
     marts:
       +schema: marts
     # Operational marts are rebuilt in full on every run (blueprint 7.6).

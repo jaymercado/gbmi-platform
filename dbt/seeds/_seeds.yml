@@ -1,0 +1,66 @@
+version: 2
+
+seeds:
+  - name: watchlist
+    description: >
+      The watchlist, version 0: the 50 companies whose filings and financial facts the platform
+      follows (week 3 plan 3.3). Ranks 1 to 5 are the companies of the demo. The SEC pipelines
+      read the same file. config/watchlist/README.md says how the list was drawn.
+    columns:
+      - name: rank
+        description: Place in the list, from 1 without a gap. A stack follows the first ranks only.
+        data_tests:
+          - not_null
+          - unique
+      - name: cik
+        description: Central Index Key of the company.
+        data_tests:
+          - not_null
+          - unique
+      - name: name_at_selection
+        description: Name of the company in the ticker file of the SEC on the day of the selection.
+      - name: reason
+        description: Why the company is in the list.
+      - name: added_on
+        description: Day on which the company joined the list.
+  - name: metric_concept_map
+    description: >
+      The candidate concepts of each standard metric, in the order of their priority, for the
+      taxonomies us-gaap, ifrs-full and dei (blueprint 8.7). A metric of a company and period
+      takes the first concept of the list which has a value.
+    columns:
+      - name: metric
+        description: The standard metric.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - revenue
+                  - net_income
+                  - operating_income
+                  - total_assets
+                  - equity
+                  - cash
+                  - employees
+      - name: taxonomy
+        description: Vocabulary of the concept.
+        data_tests:
+          - not_null
+      - name: concept
+        description: Name of the concept in the taxonomy.
+        data_tests:
+          - not_null
+      - name: priority
+        description: Order of the concept among the candidates of the metric and taxonomy; 1 is first.
+        data_tests:
+          - not_null
+      - name: flow_or_stock
+        description: flow for a value over a period, stock for a balance at one moment.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - flow
+                  - stock

@@ -1,0 +1,371 @@
+version: 2
+
+models:
+  - name: fct_financial_fact
+    description: >
+      The financial facts of the watchlist companies, bitemporal: one row for each company, concept,
+      unit, period and filing. The period is the valid time; known_at is the knowledge time. A
+      restatement is a new row with a later known_at. Source: U.S. Securities and Exchange
+      Commission, EDGAR, https://www.sec.gov/.
+    config:
+      contract:
+        enforced: true
+    meta:
+      owner: data-engineering
+      layer: marts
+      grain: "one row per company, concept, unit, period and filing (cik, taxonomy, concept, unit, period_start, period_end, accession_number)"
+      sensitivity: public
+      build: full rebuild
+    columns:
+      - name: cik
+        data_type: Int64
+        description: >
+          Central Index Key of the company.
+        data_tests:
+          - not_null
+      - name: taxonomy
+        data_type: String
+        description: >
+          Vocabulary of the concept: us-gaap, ifrs-full, dei or another.
+        data_tests:
+          - not_null
+      - name: concept
+        data_type: String
+        description: >
+          Name of the reported item in the taxonomy, for example Revenues.
+        data_tests:
+          - not_null
+      - name: unit
+        data_type: String
+        description: >
+          Unit of the value, for example USD or shares.
+        data_tests:
+          - not_null
+      - name: period_start
+        data_type: Date32
+        description: >
+          First day of the period which the fact describes; the balance date for an instant fact.
+        data_tests:
+          - not_null
+      - name: period_end
+        data_type: Date32
+        description: >
+          Last day of the period which the fact describes.
+        data_tests:
+          - not_null
+      - name: accession_number
+        data_type: String
+        description: >
+          The filing which reported the value.
+        data_tests:
+          - not_null
+      - name: is_instant
+        data_type: Bool
+        description: >
+          True for a balance at one moment; false for a value over a period.
+        data_tests:
+          - not_null
+      - name: value
+        data_type: "Decimal(38, 6)"
+        description: >
+          The value, with six decimal places.
+        data_tests:
+          - not_null
+      - name: form
+        data_type: String
+        description: >
+          Form type of the filing which reported the fact.
+      - name: filed_date
+        data_type: Date32
+        description: >
+          Filing date of the filing which reported the fact.
+        data_tests:
+          - not_null
+      - name: fiscal_year
+        data_type: Nullable(Int32)
+        description: >
+          Fiscal year of the filing which reported the fact, not of the period of the fact. A metric
+          never uses the column.
+      - name: fiscal_period
+        data_type: Nullable(String)
+        description: >
+          Fiscal period of the filing which reported the fact (FY, Q1, ...), not of the period of
+          the fact. A metric never uses the column.
+      - name: frame
+        data_type: Nullable(String)
+        description: >
+          Calendar frame which the SEC assigns to some facts.
+      - name: known_at
+        data_type: "DateTime('UTC')"
+        description: >
+          Moment at which the fact became public: the acceptance time of the filing, or 05:00 UTC of
+          the day after the filing date.
+        data_tests:
+          - not_null
+      - name: known_at_source
+        data_type: String
+        description: >
+          acceptance_time when known_at is the acceptance time of the filing; filing_date when
+          known_at is derived from the filing date.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - acceptance_time
+                  - filing_date
+      - name: _silver_snapshot_id
+        data_type: Int64
+        description: >
+          Iceberg snapshot of the silver table sec_xbrl_fact from which the model was built; 0 for a
+          build outside the DAG marts_build.
+      - name: _pipeline_version
+        data_type: String
+        description: >
+          Version of the pipeline code which built the model: the Git commit on the host.
+      - name: _built_at
+        data_type: "DateTime64(3, 'UTC')"
+        description: >
+          When the model was built (UTC).
+      - name: _dbt_invocation_id
+        data_type: String
+        description: >
+          The dbt run which built the model.
+
+  - name: fct_financial_metric
+    description: >
+      The standard metrics of the watchlist companies by fiscal period: revenue, net income,
+      operating income, total assets, equity, cash and employees, each with the first reported
+      value, the newest known value and the change against the same period one year before. Source:
+      U.S. Securities and Exchange Commission, EDGAR, https://www.sec.gov/.
+    config:
+      contract:
+        enforced: true
+    meta:
+      owner: data-engineering
+      layer: marts
+      grain: "one row per company, metric, kind of period, period and unit (cik, metric, period_kind, period_start, period_end, unit)"
+      sensitivity: public
+      build: full rebuild
+    columns:
+      - name: cik
+        data_type: Int64
+        description: >
+          Central Index Key of the company.
+        data_tests:
+          - not_null
+      - name: metric
+        data_type: String
+        description: >
+          The standard metric.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - revenue
+                  - net_income
+                  - operating_income
+                  - total_assets
+                  - equity
+                  - cash
+                  - employees
+      - name: period_kind
+        data_type: String
+        description: >
+          Kind of the period, from its length in days: quarter (80 to 100), half_year (170 to 190),
+          nine_months (260 to 290), year (350 to 380), or instant for a balance date.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - instant
+                  - quarter
+                  - half_year
+                  - nine_months
+                  - year
+      - name: period_start
+        data_type: Date32
+        description: >
+          First day of the period; the balance date for an instant.
+        data_tests:
+          - not_null
+      - name: period_end
+        data_type: Date32
+        description: >
+          Last day of the period.
+        data_tests:
+          - not_null
+      - name: period_days
+        data_type: Int32
+        description: >
+          Length of the period in days, both bounds counted.
+        data_tests:
+          - not_null
+      - name: unit
+        data_type: String
+        description: >
+          Unit of the values, for example USD.
+        data_tests:
+          - not_null
+      - name: taxonomy
+        data_type: String
+        description: >
+          Taxonomy of the concept behind the metric.
+        data_tests:
+          - not_null
+      - name: concept
+        data_type: String
+        description: >
+          The concept behind the metric for the period: the first candidate of the seed
+          metric_concept_map which has a value.
+        data_tests:
+          - not_null
+      - name: value_first_reported
+        data_type: "Decimal(38, 6)"
+        description: >
+          Value of the first filing which reported the period.
+        data_tests:
+          - not_null
+      - name: first_filed_date
+        data_type: Date32
+        description: >
+          Filing date of the first value; for a derived quarter the later filing date of the two
+          parts.
+        data_tests:
+          - not_null
+      - name: first_known_at
+        data_type: "DateTime('UTC')"
+        description: >
+          Moment at which the first value became known (UTC).
+        data_tests:
+          - not_null
+      - name: value_latest
+        data_type: "Decimal(38, 6)"
+        description: >
+          The newest known value of the period.
+        data_tests:
+          - not_null
+      - name: latest_filed_date
+        data_type: Date32
+        description: >
+          Filing date of the newest value; for a derived quarter the later filing date of the two
+          parts.
+        data_tests:
+          - not_null
+      - name: latest_known_at
+        data_type: "DateTime('UTC')"
+        description: >
+          Moment at which the newest value became known (UTC).
+        data_tests:
+          - not_null
+      - name: is_restated
+        data_type: Bool
+        description: >
+          True when the newest value differs from the first reported value.
+        data_tests:
+          - not_null
+      - name: is_derived
+        data_type: Bool
+        description: >
+          True for a quarter which is derived as the year minus the nine months; false for a
+          reported value.
+        data_tests:
+          - not_null
+      - name: year_ago_period_end
+        data_type: Nullable(Date32)
+        description: >
+          End of the period of the same kind one year before: within 7 days of the date one year
+          earlier. NULL when the model holds no such period.
+      - name: value_year_ago
+        data_type: "Nullable(Decimal(38, 6))"
+        description: >
+          Newest known value of the period one year before.
+      - name: change_year_on_year
+        data_type: Nullable(Float64)
+        description: >
+          value_latest minus value_year_ago, divided by the absolute value of value_year_ago: 0.25
+          means 25 percent more. NULL when no period one year before exists or when its value is 0.
+      - name: _silver_snapshot_id
+        data_type: Int64
+        description: >
+          Iceberg snapshot of the silver table sec_xbrl_fact from which the model was built; 0 for a
+          build outside the DAG marts_build.
+      - name: _pipeline_version
+        data_type: String
+        description: >
+          Version of the pipeline code which built the model: the Git commit on the host.
+      - name: _built_at
+        data_type: "DateTime64(3, 'UTC')"
+        description: >
+          When the model was built (UTC).
+      - name: _dbt_invocation_id
+        data_type: String
+        description: >
+          The dbt run which built the model.
+
+unit_tests:
+  - name: financial_fact_known_at_is_the_acceptance_time_or_the_day_after_the_filing
+    description: >
+      Week 3 plan, difference D48. The first fact comes from a filing whose acceptance time the
+      submissions document holds: known_at is the acceptance time. The second fact comes from
+      a filing which the submissions document holds without an acceptance time, and the third
+      from a filing which no submissions document holds: both receive the later knowledge
+      time, 05:00 UTC of the day after the filing date. The third filing date is the last day
+      of a year.
+    model: fct_financial_fact
+    given:
+      - input: ref('stg_sec__xbrl_fact')
+        rows:
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2025-01-01", period_end: "2025-12-31", accession_number: "0000000001-26-000001", is_instant: false, value: "100.000000", form: "10-K", filed_date: "2026-02-03"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2024-01-01", period_end: "2024-12-31", accession_number: "0000000001-25-000001", is_instant: false, value: "90.000000", form: "10-K", filed_date: "2025-02-04"}
+          - {cik: 1, taxonomy: "us-gaap", concept: "Revenues", unit: "USD", period_start: "2023-01-01", period_end: "2023-12-31", accession_number: "0000000001-24-000001", is_instant: false, value: "80.000000", form: "10-K", filed_date: "2024-12-31"}
+      - input: ref('stg_sec__filing_detail')
+        rows:
+          - {cik: 1, accession_number: "0000000001-26-000001", form: "10-K", filing_date: "2026-02-03", accepted_at: "2026-02-03 21:54:12"}
+          - {cik: 1, accession_number: "0000000001-25-000001", form: "10-K", filing_date: "2025-02-04", accepted_at: null}
+          - {cik: 2, accession_number: "0000000001-24-000001", form: "10-K", filing_date: "2024-12-31", accepted_at: "2024-12-31 22:00:00"}
+    expect:
+      rows:
+        - {cik: 1, accession_number: "0000000001-26-000001", value: "100.000000", known_at: "2026-02-03 21:54:12", known_at_source: "acceptance_time"}
+        - {cik: 1, accession_number: "0000000001-25-000001", value: "90.000000", known_at: "2025-02-05 05:00:00", known_at_source: "filing_date"}
+        - {cik: 1, accession_number: "0000000001-24-000001", value: "80.000000", known_at: "2025-01-01 05:00:00", known_at_source: "filing_date"}
+
+  - name: financial_metric_compares_with_the_same_period_one_year_before
+    description: >
+      Company 1 has fiscal years of 52 weeks which end on 28 January 2024 and on 26 January
+      2025: the year before is found although its end lies two days from the date one year
+      earlier, and the change is 25 percent. The first year has no year before. Company 2: a
+      loss shrinks from 100 to 50, and the change is plus 50 percent; the newest value differs
+      from the first reported value, so the row is restated. Company 3: the balance one year
+      before is 0, and the change is NULL. Company 4: the end of the earlier year lies 8 days
+      from the date one year earlier, and no year before is found. A derived quarter keeps its
+      flag, and a period of the kind other is no row of the mart.
+    model: fct_financial_metric
+    given:
+      - input: ref('int_financials__metric_facts')
+        rows:
+          - {cik: 1, metric: "revenue", flow_or_stock: "flow", unit: "USD", period_start: "2023-01-30", period_end: "2024-01-28", period_days: 364, period_kind: "year", taxonomy: "us-gaap", concept: "Revenues", value_first_reported: "200.000000", first_filed_date: "2024-03-01", first_known_at: "2024-03-01 21:00:00", value_latest: "200.000000", latest_filed_date: "2024-03-01", latest_known_at: "2024-03-01 21:00:00"}
+          - {cik: 1, metric: "revenue", flow_or_stock: "flow", unit: "USD", period_start: "2024-01-29", period_end: "2025-01-26", period_days: 364, period_kind: "year", taxonomy: "us-gaap", concept: "Revenues", value_first_reported: "250.000000", first_filed_date: "2025-03-01", first_known_at: "2025-03-01 21:00:00", value_latest: "250.000000", latest_filed_date: "2025-03-01", latest_known_at: "2025-03-01 21:00:00"}
+          - {cik: 1, metric: "revenue", flow_or_stock: "flow", unit: "USD", period_start: "2024-01-29", period_end: "2024-03-10", period_days: 42, period_kind: "other", taxonomy: "us-gaap", concept: "Revenues", value_first_reported: "9.000000", first_filed_date: "2024-05-01", first_known_at: "2024-05-01 21:00:00", value_latest: "9.000000", latest_filed_date: "2024-05-01", latest_known_at: "2024-05-01 21:00:00"}
+          - {cik: 2, metric: "net_income", flow_or_stock: "flow", unit: "USD", period_start: "2023-01-01", period_end: "2023-12-31", period_days: 365, period_kind: "year", taxonomy: "us-gaap", concept: "NetIncomeLoss", value_first_reported: "-100.000000", first_filed_date: "2024-02-01", first_known_at: "2024-02-01 21:00:00", value_latest: "-100.000000", latest_filed_date: "2024-02-01", latest_known_at: "2024-02-01 21:00:00"}
+          - {cik: 2, metric: "net_income", flow_or_stock: "flow", unit: "USD", period_start: "2024-01-01", period_end: "2024-12-31", period_days: 366, period_kind: "year", taxonomy: "us-gaap", concept: "NetIncomeLoss", value_first_reported: "-60.000000", first_filed_date: "2025-02-01", first_known_at: "2025-02-01 21:00:00", value_latest: "-50.000000", latest_filed_date: "2026-02-01", latest_known_at: "2026-02-01 21:00:00"}
+          - {cik: 3, metric: "cash", flow_or_stock: "stock", unit: "USD", period_start: "2023-12-31", period_end: "2023-12-31", period_days: 1, period_kind: "instant", taxonomy: "us-gaap", concept: "CashAndCashEquivalentsAtCarryingValue", value_first_reported: "0.000000", first_filed_date: "2024-02-01", first_known_at: "2024-02-01 21:00:00", value_latest: "0.000000", latest_filed_date: "2024-02-01", latest_known_at: "2024-02-01 21:00:00"}
+          - {cik: 3, metric: "cash", flow_or_stock: "stock", unit: "USD", period_start: "2024-12-31", period_end: "2024-12-31", period_days: 1, period_kind: "instant", taxonomy: "us-gaap", concept: "CashAndCashEquivalentsAtCarryingValue", value_first_reported: "50.000000", first_filed_date: "2025-02-01", first_known_at: "2025-02-01 21:00:00", value_latest: "50.000000", latest_filed_date: "2025-02-01", latest_known_at: "2025-02-01 21:00:00"}
+          - {cik: 4, metric: "revenue", flow_or_stock: "flow", unit: "USD", period_start: "2023-01-09", period_end: "2024-01-08", period_days: 365, period_kind: "year", taxonomy: "us-gaap", concept: "Revenues", value_first_reported: "10.000000", first_filed_date: "2024-03-01", first_known_at: "2024-03-01 21:00:00", value_latest: "10.000000", latest_filed_date: "2024-03-01", latest_known_at: "2024-03-01 21:00:00"}
+          - {cik: 4, metric: "revenue", flow_or_stock: "flow", unit: "USD", period_start: "2024-01-01", period_end: "2024-12-31", period_days: 366, period_kind: "year", taxonomy: "us-gaap", concept: "Revenues", value_first_reported: "20.000000", first_filed_date: "2025-03-01", first_known_at: "2025-03-01 21:00:00", value_latest: "20.000000", latest_filed_date: "2025-03-01", latest_known_at: "2025-03-01 21:00:00"}
+      - input: ref('int_financials__quarters')
+        rows:
+          - {cik: 1, metric: "revenue", unit: "USD", period_start: "2024-10-28", period_end: "2025-01-26", period_days: 91, taxonomy: "us-gaap", concept: "Revenues", value_first_reported: "70.000000", first_filed_date: "2025-03-01", first_known_at: "2025-03-01 21:00:00", value_latest: "70.000000", latest_filed_date: "2025-03-01", latest_known_at: "2025-03-01 21:00:00", is_derived: true}
+    expect:
+      rows:
+        - {cik: 1, metric: "revenue", period_kind: "year", period_end: "2024-01-28", value_latest: "200.000000", is_restated: false, is_derived: false, year_ago_period_end: null, value_year_ago: null, change_year_on_year: null}
+        - {cik: 1, metric: "revenue", period_kind: "year", period_end: "2025-01-26", value_latest: "250.000000", is_restated: false, is_derived: false, year_ago_period_end: "2024-01-28", value_year_ago: "200.000000", change_year_on_year: 0.25}
+        - {cik: 1, metric: "revenue", period_kind: "quarter", period_end: "2025-01-26", value_latest: "70.000000", is_restated: false, is_derived: true, year_ago_period_end: null, value_year_ago: null, change_year_on_year: null}
+        - {cik: 2, metric: "net_income", period_kind: "year", period_end: "2023-12-31", value_latest: "-100.000000", is_restated: false, is_derived: false, year_ago_period_end: null, value_year_ago: null, change_year_on_year: null}
+        - {cik: 2, metric: "net_income", period_kind: "year", period_end: "2024-12-31", value_latest: "-50.000000", is_restated: true, is_derived: false, year_ago_period_end: "2023-12-31", value_year_ago: "-100.000000", change_year_on_year: 0.5}
+        - {cik: 3, metric: "cash", period_kind: "instant", period_end: "2023-12-31", value_latest: "0.000000", is_restated: false, is_derived: false, year_ago_period_end: null, value_year_ago: null, change_year_on_year: null}
+        - {cik: 3, metric: "cash", period_kind: "instant", period_end: "2024-12-31", value_latest: "50.000000", is_restated: false, is_derived: false, year_ago_period_end: "2023-12-31", value_year_ago: "0.000000", change_year_on_year: null}
+        - {cik: 4, metric: "revenue", period_kind: "year", period_end: "2024-01-08", value_latest: "10.000000", is_restated: false, is_derived: false, year_ago_period_end: null, value_year_ago: null, change_year_on_year: null}
+        - {cik: 4, metric: "revenue", period_kind: "year", period_end: "2024-12-31", value_latest: "20.000000", is_restated: false, is_derived: false, year_ago_period_end: null, value_year_ago: null, change_year_on_year: null}

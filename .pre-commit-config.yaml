@@ -26,7 +26,7 @@ repos:
         name: sqlfluff lint
         entry: uv run --project dbt sqlfluff lint
         language: system
-        files: ^(dbt/models|tests/integration/dbt/project/models)/.*\.sql$
+        files: ^(dbt/models|dbt/tests|tests/integration/dbt/project/models)/.*\.sql$
         require_serial: true
       - id: uv-lock-check
         name: uv lock --check

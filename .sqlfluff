@@ -17,6 +17,10 @@ load_macros_from_path = dbt/macros
 [sqlfluff:templater:jinja:context]
 invocation_id = 00000000-0000-0000-0000-000000000000
 
+# dbt functions which the built-ins of sqlfluff do not define: the default of the call stands in.
+[sqlfluff:templater:jinja:macros]
+env_var = {% macro env_var(name, default='') %}{{ default }}{% endmacro %}
+
 [sqlfluff:indentation]
 tab_space_size = 4
 indented_joins = False
