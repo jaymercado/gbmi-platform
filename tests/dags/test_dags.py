@@ -21,6 +21,8 @@ import jinja2
 
 DAGS = Path(__file__).resolve().parents[2] / "dags"
 GDELT_DAGS = ("gdelt_ingest", "gdelt_silver_hourly", "gdelt_silver_daily")
+#: The three SEC DAGs of week 3, each with its one task which asks the SEC.
+SEC_DAGS = {"sec_filings": "filings", "sec_reference_daily": "reference", "sec_xbrl_facts": "facts"}
 TRACER = "tracer_gdelt_events"
 GBMI_PYTHON = "/opt/venvs/gbmi/bin/python"
 #: The tasks which commit to silver tables, for each DAG.
@@ -29,8 +31,11 @@ SILVER_WRITERS = {
     "gdelt_silver_hourly": {"build_units"},
     "gdelt_silver_daily": {"build_export", "build_mentions", "build_gkg"},
     TRACER: {"build_silver"},
+    # The SEC tasks commit to the five SEC tables only, and no other job writes the five
+    # tables: the tasks take the pool sec_api and not the pool silver_writer (D49).
+    **{dag_id: set() for dag_id in SEC_DAGS},
 }
-#: The task after each task, for the three GDELT DAGs.
+#: The task after each task, for the scheduled DAGs.
 ORDER = {
     "gdelt_ingest": {
         "reconcile": {"ingest"},
@@ -44,6 +49,7 @@ ORDER = {
         "build_gkg": {"summary"},
         "summary": set(),
     },
+    **{dag_id: {name: {"summary"}, "summary": set()} for dag_id, name in SEC_DAGS.items()},
 }
 
 
@@ -92,7 +98,7 @@ class DagFilesTest(unittest.TestCase):
 
     def test_every_dag_file_imports_without_an_error(self) -> None:
         self.assertEqual(self.bag.import_errors, {})
-        self.assertEqual(sorted(self.bag.dags), sorted([*GDELT_DAGS, TRACER]))
+        self.assertEqual(sorted(self.bag.dags), sorted([*GDELT_DAGS, *SEC_DAGS, TRACER]))
 
     def test_the_import_starts_no_dbt_command(self) -> None:
         # Cosmos renders the dbt models from the prebuilt manifest (spike answer B3).
@@ -163,10 +169,10 @@ class DagFilesTest(unittest.TestCase):
         self.assertEqual(interval.start, datetime(2026, 11, 25, 8, 25, tzinfo=UTC))
         self.assertEqual(interval.end, datetime(2026, 11, 26, 8, 25, tzinfo=UTC))
 
-    def test_no_gdelt_dag_has_a_start_date(self) -> None:
+    def test_no_scheduled_dag_has_a_start_date(self) -> None:
         # With a start date, an unpause would create a run for the most recent past time at
         # once, beside the runs of a backfill (week 2 plan 3.5, change C3).
-        for dag_id in GDELT_DAGS:
+        for dag_id in (*GDELT_DAGS, *SEC_DAGS):
             with self.subTest(dag=dag_id):
                 self.assertIsNone(self.bag.dags[dag_id].start_date)
 
@@ -217,12 +223,111 @@ class DagFilesTest(unittest.TestCase):
             self.assertEqual(task.retries, configured)
 
 
+class SecDagsTest(unittest.TestCase):
+    """The wiring of the three SEC DAGs (week 3 plan, WP-07)."""
+
+    bag: Any
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.bag, _ = load()
+
+    def test_the_schedules_are_the_schedules_of_the_week_3_plan(self) -> None:
+        # One hour apart: the filings first, then the universe, then the facts.
+        cron = {
+            "type": "CronTriggerTimetable",
+            "timezone": "UTC",
+            "run_immediately": False,
+            "interval": timedelta(0),
+        }
+        expressions = {dag_id: timetable_of(self.bag.dags[dag_id]) for dag_id in SEC_DAGS}
+        self.assertEqual(
+            expressions,
+            {
+                "sec_filings": {**cron, "expression": "30 8 * * *"},
+                "sec_reference_daily": {**cron, "expression": "30 9 * * *"},
+                "sec_xbrl_facts": {**cron, "expression": "30 10 * * *"},
+            },
+        )
+
+    def test_one_task_of_each_dag_asks_the_sec_and_takes_the_pool_with_one_slot(self) -> None:
+        for dag_id, name in SEC_DAGS.items():
+            with self.subTest(dag=dag_id):
+                tasks = self.bag.dags[dag_id].tasks
+                self.assertEqual({task.task_id for task in tasks}, {name, "summary"})
+                in_the_pool = {task.task_id for task in tasks if task.pool == "sec_api"}
+                self.assertEqual(in_the_pool, {name})
+        for dag_id in (*GDELT_DAGS, TRACER):
+            pools = {task.pool for task in self.bag.dags[dag_id].tasks}
+            self.assertNotIn("sec_api", pools)
+
+    def test_the_time_limits_of_the_sec_tasks(self) -> None:
+        limits = {
+            dag_id: {task.task_id: task.execution_timeout for task in self.bag.dags[dag_id].tasks}
+            for dag_id in SEC_DAGS
+        }
+        self.assertEqual(
+            limits,
+            {
+                "sec_filings": {
+                    "filings": timedelta(minutes=30),
+                    "summary": timedelta(minutes=10),
+                },
+                # One download of 1.58 GB with a limit of 30 minutes, and 8,000 documents.
+                "sec_reference_daily": {
+                    "reference": timedelta(minutes=90),
+                    "summary": timedelta(minutes=10),
+                },
+                "sec_xbrl_facts": {
+                    "facts": timedelta(minutes=30),
+                    "summary": timedelta(minutes=10),
+                },
+            },
+        )
+
+    def test_an_sec_task_has_one_retry_twenty_minutes_after_the_failure(self) -> None:
+        # A block by the SEC lasts 15 minutes: the retry has to start after the block.
+        configured = int(os.environ.get("GBMI_TASK_RETRIES", "3"))
+        for dag_id in SEC_DAGS:
+            for task in self.bag.dags[dag_id].tasks:
+                with self.subTest(dag=dag_id, task=task.task_id):
+                    self.assertEqual(task.retries, min(configured, 1))
+                    self.assertEqual(task.retry_delay, timedelta(minutes=20))
+                    self.assertIs(task.retry_exponential_backoff, False)
+
+    def test_the_summary_runs_after_a_failed_task_too(self) -> None:
+        for dag_id, name in SEC_DAGS.items():
+            rules = {
+                task.task_id: str(getattr(task.trigger_rule, "value", task.trigger_rule))
+                for task in self.bag.dags[dag_id].tasks
+            }
+            self.assertEqual(rules, {name: "all_success", "summary": "all_done"})
+
+    def test_no_sec_dag_has_a_parameter_for_the_source(self) -> None:
+        # The stack decides the source of the SEC client (week 3 plan 3.3, change C22).
+        parameters = {dag_id: set(self.bag.dags[dag_id].params) for dag_id in SEC_DAGS}
+        self.assertEqual(
+            parameters,
+            {
+                "sec_filings": {"first_day", "last_day", "accept_volume", "as_of"},
+                "sec_reference_daily": {"bulk", "accept_volume", "as_of"},
+                "sec_xbrl_facts": {"full", "accept_volume", "as_of"},
+            },
+        )
+
+    def test_a_boolean_parameter_arrives_as_the_text_true_or_false(self) -> None:
+        # The task compares the rendered text with "True".
+        self.assertEqual(render("{{ params.bulk }}", params={"bulk": True}), "True")
+        self.assertEqual(render("{{ params.full }}", params={"full": False}), "False")
+        self.assertEqual(render("{{ params.first_day or '' }}", params={"first_day": None}), "")
+
+
 class SchedulesOffTest(unittest.TestCase):
     def test_the_demo_stack_runs_its_dags_by_hand_only(self) -> None:
         bag, _ = load(schedules="off")
 
         self.assertEqual(bag.import_errors, {})
-        for dag_id in (*GDELT_DAGS, TRACER):
+        for dag_id in (*GDELT_DAGS, *SEC_DAGS, TRACER):
             with self.subTest(dag=dag_id):
                 self.assertEqual(type(bag.dags[dag_id].timetable).__name__, "NullTimetable")
 
