@@ -40,7 +40,7 @@ variable "host_instance_type" {
 }
 
 variable "host_zone" {
-  description = "Availability zone of the subnet and of the host. Fixed when the network is created: a change would replace the subnet and the instance. The status report records why the zone was chosen."
+  description = "Availability zone of the subnet and of the host. Fixed when the network is created: a change would replace the subnet and the instance. us-east-1d had the lowest and the steadiest spot price for the instance type on 2026-11-28 (status report of phase P2)."
   type        = string
-  default     = "us-east-1a"
+  default     = "us-east-1d"
 }
