@@ -29,7 +29,7 @@ from typing import Any
 import pyarrow as pa
 import pyarrow.compute as pc
 
-from gbmi.lake.commit import Unit, UnitMismatchError
+from gbmi.lake.commit import UnitMismatchError, UnitOfWork
 from gbmi.quality.results import ACCEPTED, FAILED, G3, PASSED, SKIPPED, CheckResult
 
 #: A day is plausible between half and twice the median of the same weekday (week 2 plan, F10).
@@ -62,7 +62,7 @@ def _result(
     *,
     table: str | None,
     feed: str | None,
-    unit: Unit,
+    unit: UnitOfWork,
     observed: float | None = None,
     threshold: str | None = None,
 ) -> CheckResult:
@@ -80,7 +80,12 @@ def _result(
 
 
 def check_accounting(
-    counts: UnitCounts, rows: int, unit: Unit, *, table: str | None = None, feed: str | None = None
+    counts: UnitCounts,
+    rows: int,
+    unit: UnitOfWork,
+    *,
+    table: str | None = None,
+    feed: str | None = None,
 ) -> list[CheckResult]:
     """The two accounting identities, and the rows to commit against the accounting."""
     raw = (
@@ -126,7 +131,7 @@ def check_accounting(
 def check_quarantine(
     counts: UnitCounts,
     quarantine_rows: int,
-    unit: Unit,
+    unit: UnitOfWork,
     *,
     table: str | None = None,
     feed: str | None = None,
@@ -158,7 +163,7 @@ def null_lists(data: pa.Table) -> int:
 
 def check_keys(
     data: pa.Table,
-    unit: Unit,
+    unit: UnitOfWork,
     *,
     key: Sequence[str],
     table: str | None = None,
@@ -204,7 +209,7 @@ def check_keys(
 def check_lists(
     missing: int,
     columns: Sequence[str],
-    unit: Unit,
+    unit: UnitOfWork,
     *,
     table: str | None = None,
     feed: str | None = None,
@@ -223,7 +228,7 @@ def check_lists(
 
 def check_rows(
     data: pa.Table,
-    unit: Unit,
+    unit: UnitOfWork,
     *,
     key: Sequence[str],
     table: str | None = None,
@@ -238,7 +243,7 @@ def check_rows(
 
 
 def check_org_rows(
-    org_rows: int, org_count_total: int, unit: Unit, *, table: str, feed: str
+    org_rows: int, org_count_total: int, unit: UnitOfWork, *, table: str, feed: str
 ) -> CheckResult:
     """The organisation table: its rows are the organisation strings which the documents count."""
     return _result(
@@ -257,19 +262,21 @@ def check_org_rows(
 def check_volume(
     rows: int,
     history: Sequence[int | None],
-    unit: Unit,
+    unit: UnitOfWork,
     *,
     table: str,
     feed: str,
     accept_note: str | None = None,
+    band: tuple[float, float] = VOLUME_BAND,
 ) -> CheckResult:
     """The row count of a day against the median of the four preceding same weekdays.
 
     ``history`` holds the row count of the current day-level version of each of the four dates,
     None where a date has none. With a missing date the check is skipped. An operator can
-    accept a day outside the band with a note.
+    accept a day outside the band with a note. ``band`` is the band of the GDELT days by
+    default; the index files of the SEC differ more and take a wider band (week 3 plan 3.3).
     """
-    low, high = VOLUME_BAND
+    low, high = band
     threshold = f"between {low} and {high} times the median of {VOLUME_HISTORY} same weekdays"
     known = [value for value in history if value is not None]
 
@@ -298,19 +305,103 @@ def check_volume(
     return outcome(FAILED, {**detail, "problem": problem})
 
 
+def _compared(
+    name: str,
+    status: str,
+    rows: int,
+    threshold: str,
+    unit: UnitOfWork,
+    table: str,
+    feed: str,
+    detail: dict[str, Any],
+) -> CheckResult:
+    return CheckResult(
+        gate=G3,
+        check_name=name,
+        status=status,
+        observed_value=float(rows),
+        threshold=threshold,
+        feed=feed,
+        table_name=table,
+        unit=unit.label,
+        detail=detail,
+    )
+
+
+def check_change(
+    rows: int,
+    previous: int | None,
+    unit: UnitOfWork,
+    *,
+    table: str,
+    feed: str,
+    tolerance: float,
+    name: str,
+    accept_note: str | None = None,
+) -> CheckResult:
+    """The row count of a unit against the version before: at most ``tolerance`` up or down.
+
+    The universe of the SEC may differ by 5% from the snapshot before (blueprint 8.5). Without
+    a version before, the check is skipped. An operator can accept a larger change with a note.
+    """
+    threshold = f"within {tolerance:.0%} of the version before"
+    if previous is None:
+        return _compared(
+            name, SKIPPED, rows, threshold, unit, table, feed, {"reason": "no version before"}
+        )
+    detail: dict[str, Any] = {"previous": previous}
+    if abs(rows - previous) <= tolerance * previous:
+        return _compared(name, PASSED, rows, threshold, unit, table, feed, detail)
+    detail["problem"] = f"{rows} rows differ by more than {tolerance:.0%} from {previous} rows"
+    if accept_note:
+        detail["note"] = accept_note
+        return _compared(name, ACCEPTED, rows, threshold, unit, table, feed, detail)
+    return _compared(name, FAILED, rows, threshold, unit, table, feed, detail)
+
+
+def check_fall(
+    rows: int,
+    previous: int | None,
+    unit: UnitOfWork,
+    *,
+    table: str,
+    feed: str,
+    max_fall: float,
+    name: str,
+) -> CheckResult:
+    """The row count of a document against the load before: at most ``max_fall`` fewer rows.
+
+    The facts of a company may not fall by more than 2% between two loads (blueprint 8.7): a
+    document which lost facts is suspect. More rows always pass. Without a load before, the
+    check is skipped.
+    """
+    threshold = f"at most {max_fall:.0%} fewer rows than the load before"
+    if previous is None:
+        return _compared(
+            name, SKIPPED, rows, threshold, unit, table, feed, {"reason": "no load before"}
+        )
+    detail: dict[str, Any] = {"previous": previous}
+    if rows >= previous * (1 - max_fall):
+        return _compared(name, PASSED, rows, threshold, unit, table, feed, detail)
+    detail["problem"] = f"{rows} rows are more than {max_fall:.0%} below {previous} rows"
+    return _compared(name, FAILED, rows, threshold, unit, table, feed, detail)
+
+
 def problems(results: Sequence[CheckResult]) -> list[str]:
     """The problems of the failed checks, in the order of the checks."""
     return [str(result.detail.get("problem")) for result in results if result.status == FAILED]
 
 
-def raise_if_failed(results: Sequence[CheckResult], unit: Unit) -> None:
+def raise_if_failed(results: Sequence[CheckResult], unit: UnitOfWork) -> None:
     """Raise AuditError when a check failed."""
     found = problems(results)
     if found:
         raise AuditError(f"unit {unit.label} failed the pre-commit audit: " + "; ".join(found))
 
 
-def audit_unit(counts: UnitCounts, data: pa.Table, unit: Unit, *, key: str | Sequence[str]) -> None:
+def audit_unit(
+    counts: UnitCounts, data: pa.Table, unit: UnitOfWork, *, key: str | Sequence[str]
+) -> None:
     """Raise AuditError unless the unit may be committed: the accounting and the rows."""
     keys = [key] if isinstance(key, str) else list(key)
     raise_if_failed(

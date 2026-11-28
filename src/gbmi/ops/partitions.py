@@ -3,6 +3,10 @@
 The row is the evidence of a build (blueprint 8.4): which files went in, where every raw line
 went, and the checksum of what the unit holds afterwards. The newest row for a table and a date
 is the current version of the date.
+
+A GDELT unit is a slot-hour or a slot-date. A unit of an SEC table can also be a set of key
+values or the whole table (week 3 plan 3.3): such a row has the kind ``keys`` or ``table``, a
+``unit_label`` and no ``slot_date``.
 """
 
 from __future__ import annotations
@@ -18,6 +22,8 @@ from gbmi.ledger.db import Connection
 
 HOUR = "hour"
 DAY = "day"
+KEYS = "keys"
+TABLE = "table"
 
 
 @dataclass(frozen=True)
@@ -26,7 +32,8 @@ class PartitionVersion:
 
     feed: str
     table_name: str
-    slot_date: date
+    #: The date of an hour unit or a day unit; None for a unit of keys or of a whole table.
+    slot_date: date | None
     slot_hour: int | None
     committed_rows: int
     file_count: int
@@ -45,9 +52,26 @@ class PartitionVersion:
     run_id: str | None = None
     duration_ms: int | None = None
     detail: Mapping[str, Any] = field(default_factory=dict)
+    #: ``keys`` or ``table`` for a unit without a date; None for a slot-hour and a slot-date.
+    kind: str | None = None
+    #: The label of the unit; a unit without a date needs the label.
+    unit_label: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.kind in (KEYS, TABLE):
+            if self.slot_date is not None or self.slot_hour is not None or not self.unit_label:
+                raise ValueError(
+                    f"a unit of the kind {self.kind} has a label and neither a date nor an hour"
+                )
+        elif self.kind is not None:
+            raise ValueError(f"the kind of a unit without a date is keys or table, got {self.kind}")
+        elif self.slot_date is None:
+            raise ValueError("an hour unit and a day unit need slot_date")
 
     @property
     def unit_kind(self) -> str:
+        if self.kind is not None:
+            return self.kind
         return DAY if self.slot_hour is None else HOUR
 
 
@@ -60,8 +84,9 @@ def record_versions(
             "INSERT INTO ops.silver_partition (source, feed, table_name, slot_date, unit_kind, "
             "slot_hour, commit_id, snapshot_id, previous_snapshot_id, raw_lines, parsed_rows, "
             "quarantined_rows, duplicate_rows, committed_rows, file_count, fileset_hash, "
-            "content_digest, run_id, pipeline_version, duration_ms, detail) VALUES "
-            "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "content_digest, run_id, pipeline_version, duration_ms, detail, unit_label) VALUES "
+            "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, "
+            "%s)",
             [
                 (
                     source,
@@ -85,6 +110,7 @@ def record_versions(
                     version.pipeline_version,
                     version.duration_ms,
                     Jsonb(dict(version.detail)),
+                    version.unit_label,
                 )
                 for version in versions
             ],
@@ -128,3 +154,15 @@ def versions_of_run(
         }
         for row in rows
     }
+
+
+def label_rows(
+    connection: Connection, *, source: str, table_name: str, unit_label: str
+) -> int | None:
+    """The row count of the current version of a labelled unit; None when the unit has none."""
+    row = connection.execute(
+        "SELECT committed_rows FROM ops.silver_partition WHERE source = %s AND table_name = %s "
+        "AND unit_label = %s ORDER BY partition_version_id DESC LIMIT 1",
+        (source, table_name, unit_label),
+    ).fetchone()
+    return int(row[0]) if row is not None else None

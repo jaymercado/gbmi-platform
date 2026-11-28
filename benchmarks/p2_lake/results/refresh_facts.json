@@ -1,0 +1,62 @@
+{
+  "measured_at": "2026-11-28T03:58:18+00:00",
+  "machine": "Linux aarch64",
+  "companies": 50,
+  "facts_per_company": 26000,
+  "variants": {
+    "no_partition": {
+      "load": {
+        "rows": 1300000,
+        "seconds": 0.51,
+        "data_files": 1,
+        "bytes": 5343610,
+        "peak_mib": 563.0
+      },
+      "refresh": {
+        "refreshed_companies": 3,
+        "new_rows": 78030,
+        "rows_before": 1300000,
+        "rows_after": 1300030,
+        "seconds": 1.52,
+        "peak_mib_before_the_commit": 169.5,
+        "peak_mib": 1029.1,
+        "operations": [
+          "overwrite",
+          "append"
+        ],
+        "data_files_before": 1,
+        "data_files_after": 2,
+        "data_files_kept": 0,
+        "data_files_written": 2,
+        "bytes_written": 5482216
+      }
+    },
+    "partition_by_cik": {
+      "load": {
+        "rows": 1300000,
+        "seconds": 0.51,
+        "data_files": 50,
+        "bytes": 11990060,
+        "peak_mib": 820.8
+      },
+      "refresh": {
+        "refreshed_companies": 3,
+        "new_rows": 78030,
+        "rows_before": 1300000,
+        "rows_after": 1300030,
+        "seconds": 0.08,
+        "peak_mib_before_the_commit": 179.1,
+        "peak_mib": 284.2,
+        "operations": [
+          "delete",
+          "append"
+        ],
+        "data_files_before": 50,
+        "data_files_after": 50,
+        "data_files_kept": 47,
+        "data_files_written": 3,
+        "bytes_written": 720516
+      }
+    }
+  }
+}

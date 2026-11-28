@@ -1,0 +1,104 @@
+# Contract of the silver table sec_company_snapshot (blueprint 7.4 and 9.6; week 3 plan 3.3).
+# tests/contract compares the file with the schema in gbmi.lake.tables: a change of the table
+# without a change of the contract fails the test, and the other way round.
+table: sec_company_snapshot
+layer: silver
+format: Apache Iceberg, format version 2, Parquet with ZSTD compression
+source: "U.S. Securities and Exchange Commission, EDGAR: the ticker file company_tickers_exchange.json, and the submissions documents (data.sec.gov/submissions and the bulk archive submissions.zip). https://www.sec.gov/"
+grain: "One row for each company of the universe and snapshot date. The universe of a date is every CIK of the ticker file of the date."
+logical_key: [snapshot_date, cik]
+partition: snapshot_date
+duplicates: "The ticker file can hold several rows for one CIK, one for each ticker. The rows of a CIK become one row with two lists."
+columns:
+  - name: snapshot_date
+    type: date
+    required: true
+    meaning: "UTC date of the run which built the snapshot. The partition of the table: one date holds one row for every company of the universe."
+  - name: cik
+    type: long
+    required: true
+    meaning: "Central Index Key: the number which the SEC gives each filer."
+  - name: name
+    type: string
+    required: true
+    meaning: "Name of the company in the ticker file of the SEC on the snapshot date."
+  - name: tickers
+    type: list<string>
+    required: true
+    meaning: "Every ticker of the company in the ticker file, in file order. Never NULL."
+  - name: exchanges
+    type: list<string>
+    required: true
+    meaning: "Every exchange of the company in the ticker file, in file order, without repeats. Never NULL: a company without an exchange value has an empty list."
+  - name: primary_ticker
+    type: string
+    required: false
+    meaning: "Ticker of the first row of the company in the ticker file (week 3 plan, finding F2)."
+  - name: primary_exchange
+    type: string
+    required: false
+    meaning: "Exchange of the first row of the company in the ticker file. NULL when the ticker file gives none."
+  - name: sic
+    type: string
+    required: false
+    meaning: "Standard Industrial Classification code from the submissions document, as text. NULL when the document gives none, or when no document of the company is known."
+  - name: sic_description
+    type: string
+    required: false
+    meaning: "Text of the SIC code from the submissions document."
+  - name: state_of_incorporation
+    type: string
+    required: false
+    meaning: "State or country of incorporation from the submissions document."
+  - name: fiscal_year_end
+    type: string
+    required: false
+    meaning: "End of the fiscal year as month and day (MMDD) from the submissions document."
+  - name: category
+    type: string
+    required: false
+    meaning: "Filer category of the SEC, for example \"Large accelerated filer\". NULL for most foreign companies."
+  - name: entity_type
+    type: string
+    required: false
+    meaning: "Entity type of the SEC from the submissions document, for example \"operating\"."
+  - name: lei
+    type: string
+    required: false
+    meaning: "Legal Entity Identifier, when the SEC holds one for the company."
+  - name: attr_hash
+    type: string
+    required: true
+    meaning: "First 16 hexadecimal characters of the SHA-256 hash over name, primary ticker, primary exchange, SIC code, state and fiscal-year end. Two snapshots of a company with equal hashes describe the same attributes."
+  - name: attributes_as_of
+    type: date
+    required: false
+    meaning: "Date of the submissions document which gave the attributes from the SIC code to the LEI. NULL when no document of the company is known yet."
+  - name: is_stale
+    type: boolean
+    required: true
+    meaning: "True when the submissions document is older than 8 days on the snapshot date, or when no document is known."
+  - name: is_inactive
+    type: boolean
+    required: true
+    meaning: "True when the SEC answers \"no such document\" for the company. The last known attributes stay."
+  - name: _source_file
+    type: string
+    required: false
+    meaning: "Key of the bronze object which carried the row, relative to the lake root."
+  - name: _source_md5
+    type: string
+    required: false
+    meaning: "MD5 of the stored bytes of the bronze object. The SEC publishes no hash for a file."
+  - name: _ingested_at
+    type: timestamptz
+    required: false
+    meaning: "Time of the run which wrote the row, in UTC. Differs between two builds of the same unit."
+  - name: _run_id
+    type: string
+    required: false
+    meaning: "Identifier of the orchestrator run which wrote the row. Differs between two builds of the same unit."
+  - name: _pipeline_version
+    type: string
+    required: false
+    meaning: "Version of the code which wrote the row: the Git commit in an image, the package version elsewhere."

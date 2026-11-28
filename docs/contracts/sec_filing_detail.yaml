@@ -1,0 +1,100 @@
+# Contract of the silver table sec_filing_detail (blueprint 7.4 and 9.6; week 3 plan 3.3).
+# tests/contract compares the file with the schema in gbmi.lake.tables: a change of the table
+# without a change of the contract fails the test, and the other way round.
+table: sec_filing_detail
+layer: silver
+format: Apache Iceberg, format version 2, Parquet with ZSTD compression
+source: "U.S. Securities and Exchange Commission, EDGAR: the field filings.recent of the submissions documents of the watchlist companies. https://www.sec.gov/"
+grain: "One row for each filing which the submissions document of a watchlist company lists."
+logical_key: [cik, accession_number]
+partition: null
+duplicates: "The rows of a refreshed company replace the earlier rows of the company. A filing which has left the newest filings of the document keeps the stored row."
+columns:
+  - name: cik
+    type: long
+    required: true
+    meaning: "Central Index Key of the watchlist company whose submissions document lists the filing."
+  - name: accession_number
+    type: string
+    required: true
+    meaning: "Identifier of the filing at the SEC, in the form 0000000000-00-000000."
+  - name: form
+    type: string
+    required: true
+    meaning: "Form type of the filing, for example 10-Q."
+  - name: filing_date
+    type: date
+    required: true
+    meaning: "Date on which the filing was filed."
+  - name: report_date
+    type: date
+    required: false
+    meaning: "End of the period which the filing reports. NULL for a form without a period."
+  - name: acceptance_ts
+    type: timestamptz
+    required: false
+    meaning: "Time at which the SEC accepted the filing, in UTC: the moment at which the filing became known."
+  - name: act
+    type: string
+    required: false
+    meaning: "Securities act under which the filing was made, as the SEC writes the value."
+  - name: file_number
+    type: string
+    required: false
+    meaning: "File number of the SEC for the filing."
+  - name: film_number
+    type: string
+    required: false
+    meaning: "Film number of the SEC for the filing."
+  - name: items
+    type: list<string>
+    required: true
+    meaning: "Item numbers of a form 8-K, for example 2.02. Never NULL: a form without items has an empty list."
+  - name: core_type
+    type: string
+    required: false
+    meaning: "Core form type of the SEC for the filing (field core_type)."
+  - name: size_bytes
+    type: long
+    required: false
+    meaning: "Size of the filing in bytes, as the SEC states the size."
+  - name: is_xbrl
+    type: boolean
+    required: false
+    meaning: "True when the filing carries XBRL data. NULL when the SEC gives no value."
+  - name: is_inline_xbrl
+    type: boolean
+    required: false
+    meaning: "True when the filing carries inline XBRL data. NULL when the SEC gives no value."
+  - name: is_xbrl_numeric
+    type: boolean
+    required: false
+    meaning: "True when the filing carries numeric XBRL data. NULL when the SEC gives no value."
+  - name: primary_document
+    type: string
+    required: false
+    meaning: "File name of the primary document of the filing."
+  - name: primary_doc_description
+    type: string
+    required: false
+    meaning: "Description of the primary document, as the SEC writes the text."
+  - name: _source_file
+    type: string
+    required: false
+    meaning: "Key of the bronze object which carried the row, relative to the lake root."
+  - name: _source_md5
+    type: string
+    required: false
+    meaning: "MD5 of the stored bytes of the bronze object. The SEC publishes no hash for a file."
+  - name: _ingested_at
+    type: timestamptz
+    required: false
+    meaning: "Time of the run which wrote the row, in UTC. Differs between two builds of the same unit."
+  - name: _run_id
+    type: string
+    required: false
+    meaning: "Identifier of the orchestrator run which wrote the row. Differs between two builds of the same unit."
+  - name: _pipeline_version
+    type: string
+    required: false
+    meaning: "Version of the code which wrote the row: the Git commit in an image, the package version elsewhere."

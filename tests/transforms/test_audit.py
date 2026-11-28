@@ -7,11 +7,13 @@ from datetime import UTC, date, datetime
 import pyarrow as pa
 import pytest
 
-from gbmi.lake.commit import Unit
+from gbmi.lake.commit import Scope, Unit
 from gbmi.quality.audit import (
     AuditError,
     UnitCounts,
     check_accounting,
+    check_change,
+    check_fall,
     check_keys,
     check_lists,
     check_org_rows,
@@ -253,3 +255,97 @@ def test_a_failed_check_raises_with_every_problem() -> None:
     assert message.startswith("unit 2026-11-25T08 failed the pre-commit audit: ")
     assert message.count(";") == 2
     raise_if_failed(check_accounting(UnitCounts(10, 9, 1, 2, 7), 7, HOUR), HOUR)
+
+
+# --- the units and the volume rules of the SEC tables (week 3 plan 3.3) -------------------------
+
+
+def test_the_row_checks_take_any_unit_of_work() -> None:
+    scope = Scope.for_keys("cik", [1326801, 1045810])
+    good = pa.table({"cik": [1326801, 1045810], "accession_number": ["a", "b"]})
+    foreign = pa.table({"cik": [1326801, 63276], "accession_number": ["a", "a"]})
+
+    passed = check_rows(good, scope, key=["cik", "accession_number"], table="sec_filing_detail")
+    failed = check_rows(foreign, scope, key=["cik", "accession_number"], table="sec_filing_detail")
+
+    assert {result.status for result in passed} == {PASSED}
+    assert {result.unit for result in passed} == {scope.label}
+    assert [result.check_name for result in failed if result.status == FAILED] == [
+        "unit_membership"
+    ]
+    assert "rows of cik 63276" in problems(failed)[0]
+    with pytest.raises(AuditError, match=f"unit {scope.label} failed the pre-commit audit"):
+        raise_if_failed(failed, scope)
+
+
+def test_the_volume_band_of_an_index_file_is_wider_than_the_band_of_a_gdelt_day() -> None:
+    # The index files of one quarter differ by a factor of 2.7 in size (week 3 plan, F10).
+    unit = Scope.for_date("index_date", DAY)
+    history = [5000, 6000, 5500, 5800]  # the median is 5650
+
+    def check(rows: int, **options: object) -> str:
+        return check_volume(
+            rows, history, unit, table="sec_filing_index", feed="index", **options
+        ).status  # type: ignore[arg-type]
+
+    assert check(2000) == FAILED  # below half of the median: outside the band of phase P1
+    assert check(2000, band=(0.33, 3.0)) == PASSED
+    assert check(16_000, band=(0.33, 3.0)) == PASSED
+    assert check(1800, band=(0.33, 3.0)) == FAILED
+    assert check(17_000, band=(0.33, 3.0)) == FAILED
+    result = check_volume(
+        1800, history, unit, table="t", feed="index", band=(0.33, 3.0), accept_note="half day"
+    )
+    assert result.status == ACCEPTED and "0.33 and 3.0 times" in (result.threshold or "")
+    assert check_volume(5000, [None, 1, 2, 3], unit, table="t", feed="index").status == SKIPPED
+
+
+def test_the_universe_may_change_by_five_percent_in_both_directions() -> None:
+    unit = Scope.for_date("snapshot_date", DAY)
+
+    def check(rows: int, previous: int | None, note: str | None = None) -> CheckResult:
+        return check_change(
+            rows,
+            previous,
+            unit,
+            table="sec_company_snapshot",
+            feed="reference",
+            tolerance=0.05,
+            name="universe_change",
+            accept_note=note,
+        )
+
+    assert check(7988, None).status == SKIPPED  # the first snapshot has no snapshot before
+    assert check(7988, 7988).status == PASSED
+    assert check(8387, 7988).status == PASSED  # 5% more, rounded down
+    assert check(7589, 7988).status == PASSED
+    assert check(8388, 7988).status == FAILED
+    assert check(7588, 7988).status == FAILED
+    failed = check(4000, 7988)
+    assert (failed.gate, failed.check_name, failed.unit) == (G3, "universe_change", "2026-11-25")
+    assert failed.detail["previous"] == 7988 and "more than 5%" in failed.detail["problem"]
+    accepted = check(4000, 7988, "the SEC removed the over-the-counter companies")
+    assert accepted.status == ACCEPTED and accepted.detail["note"].startswith("the SEC removed")
+
+
+def test_the_facts_of_a_company_may_not_fall_by_more_than_two_percent() -> None:
+    unit = Scope.for_keys("cik", [63276])
+
+    def check(rows: int, previous: int | None) -> CheckResult:
+        return check_fall(
+            rows,
+            previous,
+            unit,
+            table="sec_xbrl_fact",
+            feed="companyfacts",
+            max_fall=0.02,
+            name="facts_not_fewer",
+        )
+
+    assert check(28_712, None).status == SKIPPED
+    assert check(28_712, 28_712).status == PASSED
+    assert check(40_000, 28_712).status == PASSED  # more facts always pass
+    assert check(28_138, 28_712).status == PASSED  # 2% fewer, rounded up
+    failed = check(27_850, 28_712)  # 3% fewer
+    assert failed.status == FAILED and failed.check_name == "facts_not_fewer"
+    assert "more than 2% below 28712 rows" in failed.detail["problem"]

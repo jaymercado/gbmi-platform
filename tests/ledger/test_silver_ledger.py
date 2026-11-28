@@ -7,11 +7,13 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
 
+import pytest
+
 from gbmi.core.gdelt import Feed
 from gbmi.ledger.db import Connection
 from gbmi.ledger.repository import Ledger, PendingUnit, SlotKey, fileset_hash
 from gbmi.ledger.states import State
-from gbmi.ops.partitions import PartitionVersion, day_rows, record_versions
+from gbmi.ops.partitions import PartitionVersion, day_rows, label_rows, record_versions
 
 from .helpers import T0, key, listed, listing, loaded, verified
 
@@ -232,3 +234,77 @@ def test_the_volume_history_is_the_newest_day_version_of_each_date(
         None,
         None,
     ]
+
+
+# --- partition versions of the SEC units (week 3 plan 3.3) --------------------------------------
+
+
+LABEL = "cik:3:9f2c0a1b"
+
+
+def sec_version(table: str, **values: object) -> PartitionVersion:
+    options = {
+        "feed": "companyfacts",
+        "table_name": table,
+        "slot_date": None,
+        "slot_hour": None,
+        "committed_rows": 100,
+        "file_count": 3,
+        "fileset_hash": "f" * 64,
+        "content_digest": "0" * 16,
+        "pipeline_version": "test",
+        **values,
+    }
+    return PartitionVersion(**options)  # type: ignore[arg-type]
+
+
+def test_a_unit_of_keys_and_a_unit_of_a_table_are_recorded_with_a_label(
+    ops: Connection, source: str
+) -> None:
+    keys = sec_version("sec_xbrl_fact", kind="keys", unit_label=LABEL, detail={"cik": [1, 2, 3]})
+    table = sec_version(
+        "sec_company_former_name", kind="table", unit_label="table", feed="reference"
+    )
+    day = sec_version(
+        "sec_company_snapshot", slot_date=DAY, unit_label="2026-11-25", committed_rows=7988
+    )
+    assert [version.unit_kind for version in (keys, table, day)] == ["keys", "table", "day"]
+
+    record_versions(ops, [keys, table, day], source=source)
+    record_versions(
+        ops,
+        [sec_version("sec_xbrl_fact", kind="keys", unit_label=LABEL, committed_rows=120)],
+        source=source,
+    )
+
+    rows = ops.execute(
+        "SELECT table_name, unit_kind, slot_date, unit_label, committed_rows, detail "
+        "FROM ops.silver_partition WHERE source = %s ORDER BY partition_version_id",
+        (source,),
+    ).fetchall()
+    assert rows == [
+        ("sec_xbrl_fact", "keys", None, LABEL, 100, {"cik": [1, 2, 3]}),
+        ("sec_company_former_name", "table", None, "table", 100, {}),
+        ("sec_company_snapshot", "day", DAY, "2026-11-25", 7988, {}),
+        ("sec_xbrl_fact", "keys", None, LABEL, 120, {}),
+    ]
+    # The newest version of a unit with a label is the current one.
+    assert label_rows(ops, source=source, table_name="sec_xbrl_fact", unit_label=LABEL) == 120
+    assert label_rows(ops, source=source, table_name="sec_xbrl_fact", unit_label="other") is None
+    # A date of an SEC table is a day unit: the question of phase P1 finds the version.
+    assert day_rows(ops, source=source, table_name="sec_company_snapshot", dates=[DAY]) == [7988]
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        {"kind": "keys"},  # no label
+        {"kind": "table", "unit_label": "table", "slot_date": DAY},  # a date
+        {"kind": "keys", "unit_label": "cik:1:ab", "slot_hour": 8},  # an hour
+        {"kind": "week", "unit_label": "w"},  # an unknown kind
+        {},  # neither a date nor a kind
+    ],
+)
+def test_a_partition_version_names_its_unit_in_one_way(values: dict[str, object]) -> None:
+    with pytest.raises(ValueError, match="unit"):
+        sec_version("sec_xbrl_fact", **values)
