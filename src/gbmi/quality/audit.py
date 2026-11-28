@@ -368,12 +368,13 @@ def check_fall(
     feed: str,
     max_fall: float,
     name: str,
+    accept_note: str | None = None,
 ) -> CheckResult:
     """The row count of a document against the load before: at most ``max_fall`` fewer rows.
 
     The facts of a company may not fall by more than 2% between two loads (blueprint 8.7): a
     document which lost facts is suspect. More rows always pass. Without a load before, the
-    check is skipped.
+    check is skipped. An operator can accept a larger fall with a note.
     """
     threshold = f"at most {max_fall:.0%} fewer rows than the load before"
     if previous is None:
@@ -384,6 +385,9 @@ def check_fall(
     if rows >= previous * (1 - max_fall):
         return _compared(name, PASSED, rows, threshold, unit, table, feed, detail)
     detail["problem"] = f"{rows} rows are more than {max_fall:.0%} below {previous} rows"
+    if accept_note:
+        detail["note"] = accept_note
+        return _compared(name, ACCEPTED, rows, threshold, unit, table, feed, detail)
     return _compared(name, FAILED, rows, threshold, unit, table, feed, detail)
 
 

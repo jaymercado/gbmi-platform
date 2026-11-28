@@ -354,9 +354,16 @@ class ObjectLedger:
         )
 
     def mark_loaded(
-        self, entries: Sequence[ObjectAccounting], *, as_of: datetime | None = None
+        self,
+        entries: Sequence[ObjectAccounting],
+        *,
+        as_of: datetime | None = None,
+        reason: str = "silver committed",
     ) -> set[ObjectKey]:
         """Record a silver commit for the files of a unit; returns the objects which moved.
+
+        ``reason`` names another way in which a pipeline used an object up: a listing and an
+        archive give no row to silver.
 
         A verified object moves ``verified → loaded``. An object which is loaded already keeps
         its state, because a rebuild is no change of state, and takes the new accounting. Any
@@ -399,7 +406,7 @@ class ObjectLedger:
                     "loaded_at = clock_timestamp(), {assignments} FROM {inputs} WHERE {match}"
                 ).format(assignments=assignments, inputs=inputs, match=_MATCH),
                 parameters,
-                reason="silver committed",
+                reason=reason,
                 as_of=as_of,
             )
             left = sorted(set(keys) - rebuilt - moved)
@@ -474,14 +481,31 @@ class ObjectLedger:
         superseded``. The statement moves nothing unless ``key`` is loaded: ``superseded`` is
         final, so a wrong call must not close an object. Returns the objects which moved.
         """
-        reason = f"the object of {key.object_date.isoformat()} was loaded first"
+        return self.supersede_older_many(key.dataset, key.object_date, [key.name], as_of=as_of)
+
+    def supersede_older_many(
+        self,
+        dataset: Dataset,
+        object_date: date,
+        names: Sequence[str],
+        *,
+        as_of: datetime | None = None,
+    ) -> set[ObjectKey]:
+        """``supersede_older`` for many file names of one dataset and one date.
+
+        One transaction with one statement for each open state, whatever the number of names:
+        a bulk day loads the documents of about 8,000 companies.
+        """
+        if not names:
+            return set()
+        reason = f"the object of {object_date.isoformat()} was loaded first"
         moved: set[ObjectKey] = set()
         with self.connection.transaction():
             for from_state in sorted(OPEN):
                 update = sql.SQL(
                     "UPDATE ops.source_object o SET state = %(to_state)s, reason = %(reason)s "
                     "WHERE o.source = %(source)s AND o.dataset = %(dataset)s "
-                    "AND o.object_name = %(name)s AND o.object_date < %(object_date)s "
+                    "AND o.object_name = ANY(%(names)s) AND o.object_date < %(object_date)s "
                     "AND o.state = %(from_state)s AND EXISTS ("
                     "SELECT 1 FROM ops.source_object n WHERE n.source = o.source "
                     "AND n.dataset = o.dataset AND n.object_name = o.object_name "
@@ -491,11 +515,7 @@ class ObjectLedger:
                     from_state,
                     ObjectState.SUPERSEDED,
                     update,
-                    {
-                        "dataset": key.dataset.value,
-                        "name": key.name,
-                        "object_date": key.object_date,
-                    },
+                    {"dataset": dataset.value, "names": list(names), "object_date": object_date},
                     reason=reason,
                     as_of=as_of,
                 )
@@ -602,6 +622,31 @@ class ObjectLedger:
             },
         ).fetchone()
         return _record(row) if row is not None else None
+
+    def newest_by_cik(
+        self,
+        dataset: Dataset,
+        *,
+        states: Collection[ObjectState] | None = None,
+        not_after: date | None = None,
+    ) -> dict[int, ObjectRecord]:
+        """The newest object of a dataset for each company, in one question."""
+        rows = self.connection.execute(
+            sql.SQL(
+                "SELECT DISTINCT ON (cik) {columns} FROM ops.source_object "
+                "WHERE source = %(source)s AND dataset = %(dataset)s AND cik IS NOT NULL "
+                "AND (%(states)s::text[] IS NULL OR state = ANY(%(states)s)) "
+                "AND (%(not_after)s::date IS NULL OR object_date <= %(not_after)s) "
+                "ORDER BY cik, object_date DESC"
+            ).format(columns=_COLUMNS),
+            {
+                "source": self.source,
+                "dataset": dataset.value,
+                "states": sorted(state.value for state in states) if states is not None else None,
+                "not_after": not_after,
+            },
+        ).fetchall()
+        return {int(row[4]): _record(row) for row in rows}
 
     def status(
         self, *, first: date | None = None, last: date | None = None

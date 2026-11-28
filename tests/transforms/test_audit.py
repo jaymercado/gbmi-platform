@@ -349,3 +349,16 @@ def test_the_facts_of_a_company_may_not_fall_by_more_than_two_percent() -> None:
     failed = check(27_850, 28_712)  # 3% fewer
     assert failed.status == FAILED and failed.check_name == "facts_not_fewer"
     assert "more than 2% below 28712 rows" in failed.detail["problem"]
+    # An operator who knows the reason accepts the fall with a note.
+    accepted = check_fall(
+        27_850,
+        28_712,
+        unit,
+        table="sec_xbrl_fact",
+        feed="companyfacts",
+        max_fall=0.02,
+        name="facts_not_fewer",
+        accept_note="the SEC removed old facts",
+    )
+    assert accepted.status == ACCEPTED
+    assert accepted.detail["note"] == "the SEC removed old facts"
