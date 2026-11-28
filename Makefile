@@ -85,7 +85,8 @@ endif
 AWS_PROFILE ?= gbmi
 TF := infra/terraform
 TF_ROOTS := $(TF)/bootstrap $(TF)/envs/prod
-TF_MODULES := $(TF)/modules/lake_s3 $(TF)/modules/glue_catalog $(TF)/modules/budgets
+TF_MODULES := $(TF)/modules/lake_s3 $(TF)/modules/glue_catalog $(TF)/modules/budgets \
+	$(TF)/modules/network $(TF)/modules/iam $(TF)/modules/ec2_host $(TF)/modules/monitoring
 
 # The Glue/S3 halves of the integration tests run only on request. Credentials from `aws login`
 # last 15 minutes, less than the AWS halves take, so they run one test at a time:

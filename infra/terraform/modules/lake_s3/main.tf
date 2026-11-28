@@ -204,6 +204,21 @@ resource "aws_s3_bucket_lifecycle_configuration" "ops" {
     }
   }
 
+  # The task logs of Airflow (blueprint 7.9). The bucket keeps versions, so an expired log
+  # stays 30 more days as an old version: 60 days in all.
+  rule {
+    id     = "expire-airflow-logs"
+    status = "Enabled"
+
+    filter {
+      prefix = "airflow-logs/"
+    }
+
+    expiration {
+      days = 30
+    }
+  }
+
   rule {
     id     = "expire-tmp"
     status = "Enabled"
