@@ -103,8 +103,8 @@ DEMO_HOUR := 2026-11-25T08
 TOOLBOX := $(COMPOSE_BI) --profile tools run --rm toolbox
 
 .PHONY: help setup fmt lint test test-dags env images up up-bi down reset ps logs smoke toolbox psql integration \
-	integration-aws dbt-build demo e2e drill bench logs-dump tf-check plan redact-check host-secrets host-sec-source \
-	host-rehearsal host-policy-check host-status host-deploy-log host-start host-stop host-shell host-forward deploy _other-stack-stopped _lake-dir _demo _e2e
+	integration-aws dbt-build demo docs e2e drill bench logs-dump tf-check plan redact-check host-secrets host-sec-source \
+	host-rehearsal host-policy-check host-status host-deploy-log host-start host-stop host-shell host-forward deploy _other-stack-stopped _lake-dir _demo _docs _e2e
 
 help: ## List the available targets
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-14s %s\n", $$1, $$2}'
@@ -322,6 +322,20 @@ _demo:
 	@echo "Demo passed. Dashboard: http://127.0.0.1:3000  (sign in with METABASE_ADMIN_EMAIL"
 	@echo "and METABASE_ADMIN_PASSWORD from .env). Airflow: http://127.0.0.1:8080"
 	@if [ -t 1 ] && [ -z "$CI" ] && command -v open >/dev/null; then open http://127.0.0.1:3000; fi
+
+# The dbt documentation as one file, site/index.html, built from the warehouse of the demo
+# stack after make demo (week 3 plan, WP-14). The workflow e2e publishes the folder with
+# GitHub Pages on a push to main. The site is public: the last step searches its files for
+# every secret of the stack.
+docs: ## Build the dbt documentation site in site/ on the demo stack (after make demo)
+	@$(MAKE) --no-print-directory STACK=$(DEMO_STACK) _docs
+
+_docs: _other-stack-stopped
+	$(TOOLBOX) dbt docs generate --static --project-dir dbt --profiles-dir dbt/profiles
+	@rm -rf site && mkdir -p site
+	@cp dbt/target/static_index.html site/index.html
+	@python3 tools/site_check.py site
+	@echo "The documentation site is in site/index.html"
 
 e2e: ## End-to-end assertions against the demo stack, on which the demo has run
 	@$(MAKE) --no-print-directory STACK=$(DEMO_STACK) _e2e
