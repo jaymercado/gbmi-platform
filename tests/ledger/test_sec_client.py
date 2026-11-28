@@ -14,6 +14,7 @@ import json
 import random
 import time
 import uuid
+import zipfile
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
@@ -45,9 +46,11 @@ from gbmi.sources.sec.errors import (
     SourceBlockedError,
 )
 from gbmi.sources.sec.limiter import WINDOW_SECONDS
+from gbmi.sources.sec.transport import LAST_MODIFIED
 from gbmi.sources.sec.urls import (
     DATA_HOST,
     SUBMISSIONS_ARCHIVE_URL,
+    TICKER_FILE_NAME,
     TICKER_FILE_URL,
     WWW_HOST,
     companyfacts_url,
@@ -68,6 +71,8 @@ from .sec_server import (
     too_many,
 )
 
+#: The recorded files of the source fixture (week 3 plan, WP-04).
+SEC_FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "sec"
 #: A made-up identity. No test may find the text anywhere but in the headers of a request.
 SECRET = "Example Research Desk secret-contact@example.org"
 MARKS = ("secret-contact", "Example Research Desk")
@@ -293,18 +298,63 @@ def test_the_form_of_a_declared_identity() -> None:
 
 
 def test_only_the_source_live_can_open_a_network_connection(
-    open_client: Any, server: SecServer
+    open_client: Any, server: SecServer, tmp_path: Path
 ) -> None:
     with pytest.raises(SecConfigurationError, match="GBMI_SEC_SOURCE is off"):
         SecClient(settings(sec_source="off"))
     with pytest.raises(SecConfigurationError, match="GBMI_SEC_SOURCE is off"):
         SecClient(Settings(_env_file=None))  # off is the default
-    with pytest.raises(SecConfigurationError, match="only the source live opens a network"):
-        SecClient(settings(sec_source="fixture"))
-    # With the transport of the recorded files the client works and sends the placeholder.
+    # The source fixture reads the recorded files and never the network: a folder without
+    # the files is refused when the client is built.
+    with pytest.raises(SecConfigurationError, match="holds no recorded SEC files"):
+        SecClient(settings(sec_source="fixture", sec_fixtures_dir=str(tmp_path)))
+    # Whatever transport answers, a client of the source fixture sends the placeholder.
     with open_client(settings=settings(sec_source="fixture")) as client:
         client.get(META)
     assert server.arrivals[0].headers["user-agent"] == FIXTURE_USER_AGENT
+
+
+def test_the_source_fixture_reads_the_recorded_files_through_the_same_client(
+    ops_db: str, source: str, ops: Connection, clock: FakeTime, tmp_path: Path
+) -> None:
+    # make demo and CI: no transport is passed, and no user agent is set (week 3 plan 3.3).
+    recorded = Settings(_env_file=None, sec_source="fixture", sec_fixtures_dir=str(SEC_FIXTURES))
+    holiday = index_file_url(date(2026, 11, 26))
+    target = tmp_path / "submissions.zip"
+
+    with SecClient(
+        recorded,
+        dsn=ops_db,
+        source=source,
+        run_id="fixture-run",
+        clock=clock.clock,
+        sleep=clock.sleep,
+        now=clock.now,
+    ) as client:
+        ticker = client.get(TICKER_FILE_URL, listed=True)
+        with pytest.raises(ObjectMissingError) as no_facts:
+            client.get(companyfacts_url(1470419))
+        with pytest.raises(ObjectMissingError) as no_index:
+            client.get(holiday)
+        archive = client.download(SUBMISSIONS_ARCHIVE_URL, target)
+
+    assert ticker.content == (SEC_FIXTURES / WWW_HOST / "files" / TICKER_FILE_NAME).read_bytes()
+    assert ticker.last_modified == LAST_MODIFIED
+    assert (no_facts.value.status, no_index.value.status) == (404, 403)
+    assert b"<Code>NoSuchKey</Code>" in no_facts.value.body
+    assert b"<Code>AccessDenied</Code>" in no_index.value.body
+    assert (archive.status, archive.byte_count) == (200, target.stat().st_size)
+    with zipfile.ZipFile(target) as bundle:
+        assert len(bundle.namelist()) == 8
+    # The limiter, the request log and the circuit work as for the live source.
+    assert log_rows(ops, source) == [
+        (1, "ok", 200, False),
+        (1, "missing", 404, False),
+        (1, "missing", 403, False),
+        (1, "ok", 200, False),
+    ]
+    assert max_requests_in_window(ops, source=source) <= 8
+    assert not read_circuit(ops, source).recorded
 
 
 def test_a_client_with_a_network_connection_needs_the_source_sec_and_the_database_of_the_stack(

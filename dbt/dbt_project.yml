@@ -31,6 +31,20 @@ models:
       +schema: ops
       +materialized: table
 
+# Seeds land in the database seeds with fixed column types (week 3 plan, WP-08 step 2). The
+# metric seed is written in WP-04: the recorded facts documents are shortened to its concepts
+# (change C13).
+seeds:
+  gbmi:
+    +schema: seeds
+    metric_concept_map:
+      +column_types:
+        metric: String
+        taxonomy: String
+        concept: String
+        priority: UInt8
+        flow_or_stock: String
+
 vars:
   # The feeds of the GDELT source: each has 96 slots in a UTC day (blueprint 8.2).
   gdelt_feeds: ["export", "mentions", "gkg"]
