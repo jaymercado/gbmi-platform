@@ -82,6 +82,8 @@ def test_a_quoted_value_of_the_env_file_arrives_without_the_quotes(
         assert environment["GBMI_SEC_USER_AGENT"] == IDENTITY
         assert environment["GBMI_SEC_SOURCE"] == "live"
         assert environment["GBMI_SEC_FIXTURES_DIR"] == "/fixtures/sec"
+        assert environment["GBMI_WATCHLIST_FILE"] == "/opt/gbmi/dbt/seeds/watchlist.csv"
+        assert environment["GBMI_WATCHLIST_SIZE"] == "50"
 
 
 def test_without_the_makefile_the_source_is_off_and_the_identity_is_empty(tmp_path: Path) -> None:

@@ -30,11 +30,15 @@ ledger_app = typer.Typer(help="The ledger of expected source files.", no_args_is
 lake_app = typer.Typer(help="The lake as the warehouse sees it.", no_args_is_help=True)
 quality_app = typer.Typer(help="Quality gates and reconciliation.", no_args_is_help=True)
 silver_app = typer.Typer(help="Silver: build units from verified files.", no_args_is_help=True)
-sec_app = typer.Typer(help="SEC EDGAR: the fair-access client.", no_args_is_help=True)
+sec_app = typer.Typer(help="SEC EDGAR: the three pipelines and the client.", no_args_is_help=True)
 sec_circuit_app = typer.Typer(
     help="The circuit which remembers a block by the SEC.", no_args_is_help=True
 )
+sec_objects_app = typer.Typer(help="The object ledger: the files which the SEC is asked for.")
+sec_requests_app = typer.Typer(help="The request log of the SEC.", no_args_is_help=True)
 sec_app.add_typer(sec_circuit_app, name="circuit")
+sec_app.add_typer(sec_objects_app, name="objects")
+sec_app.add_typer(sec_requests_app, name="requests")
 app.add_typer(config_app, name="config")
 app.add_typer(db_app, name="db")
 app.add_typer(gdelt_app, name="gdelt")
@@ -498,3 +502,212 @@ def sec_circuit_close(
             "closed_by": decided_by if closed else None,
         }
     )
+
+
+# --- the three SEC pipelines (week 3 plan, WP-06 step 6) ---------------------------------------
+
+FromDayOrNone = Annotated[
+    str | None, typer.Option("--from", help="First UTC day of the range, YYYY-MM-DD.")
+]
+ToDayOrNone = Annotated[
+    str | None, typer.Option("--to", help="Last UTC day of the range, YYYY-MM-DD.")
+]
+AcceptVolume = Annotated[
+    str | None,
+    typer.Option(
+        "--accept-volume",
+        help="Accept a file outside its volume band; the text says why and is stored.",
+    ),
+]
+
+
+def _sec_pipeline(command: str, run: Callable[[], object]) -> None:
+    """Run one pipeline; a refused run is one line on standard error and exit code 1."""
+    from gbmi.ledger.db import LedgerConfigurationError
+    from gbmi.quality.audit import AuditError
+    from gbmi.sources.sec.errors import SecError
+    from gbmi.sources.sec.land import BronzeError
+    from gbmi.sources.sec.silver import PipelineError
+
+    try:
+        _print(run())
+    except (
+        ValueError,
+        SecError,
+        PipelineError,
+        BronzeError,
+        AuditError,
+        LedgerConfigurationError,
+    ) as error:
+        raise _fail(command, error) from error
+
+
+@sec_app.command("filings")
+def sec_filings(
+    first: FromDayOrNone = None,
+    last: ToDayOrNone = None,
+    accept_volume: AcceptVolume = None,
+    as_of: AsOf = None,
+    run_id: RunId = None,
+) -> None:
+    """Pipeline PL-4: the daily index files and the filing detail of the watchlist.
+
+    Without a range the run looks at the seven days before the day of the run. A range of
+    days is a backfill of the index files.
+    """
+    from gbmi.sources.sec.tasks import filings_task
+
+    _sec_pipeline("sec filings", lambda: filings_task(as_of, first, last, accept_volume, run_id))
+
+
+@sec_app.command("reference")
+def sec_reference(
+    bulk: Annotated[
+        bool,
+        typer.Option("--bulk", help="Load the bulk archive of the submissions documents."),
+    ] = False,
+    accept_volume: AcceptVolume = None,
+    as_of: AsOf = None,
+    run_id: RunId = None,
+) -> None:
+    """Pipeline PL-3: the company universe of the day and the former names.
+
+    The first run and a Sunday run load the bulk archive without the option.
+    """
+    from gbmi.sources.sec.tasks import reference_task
+
+    _sec_pipeline("sec reference", lambda: reference_task(as_of, bulk, accept_volume, run_id))
+
+
+@sec_app.command("facts")
+def sec_facts(
+    full: Annotated[
+        bool, typer.Option("--full", help="Load the facts of every watchlist company.")
+    ] = False,
+    accept_volume: AcceptVolume = None,
+    as_of: AsOf = None,
+    run_id: RunId = None,
+) -> None:
+    """Pipeline PL-5: the financial facts of the watchlist companies."""
+    from gbmi.sources.sec.tasks import facts_task
+
+    _sec_pipeline("sec facts", lambda: facts_task(as_of, full, accept_volume, run_id))
+
+
+@sec_objects_app.callback(invoke_without_command=True)
+def sec_objects(
+    context: typer.Context, first: FromDayOrNone = None, last: ToDayOrNone = None
+) -> None:
+    """Count the objects in each state, for each dataset, for a range of days."""
+    from gbmi.core.clock import parse_day
+    from gbmi.ledger.db import LedgerConfigurationError
+    from gbmi.ledger.objects import open_object_ledger
+
+    if context.invoked_subcommand is not None:
+        return
+    try:
+        first_day = parse_day(first) if first else None
+        last_day = parse_day(last) if last else None
+        with open_object_ledger() as ledger:
+            report = {
+                "source": ledger.source,
+                "states": ledger.status(first=first_day, last=last_day),
+                "open": [
+                    {
+                        "object": item.key.label,
+                        "state": item.state.value,
+                        "attempts": item.attempts,
+                        "reason": item.reason or item.last_error,
+                    }
+                    for item in ledger.pending(first=first_day, last=last_day)
+                ],
+            }
+    except (LedgerConfigurationError, ValueError) as error:
+        raise _fail("sec objects", error) from error
+    _print(report)
+
+
+@sec_objects_app.command("requeue")
+def sec_objects_requeue(
+    first: FromDay,
+    last: ToDay,
+    note: Note,
+    dataset: Annotated[
+        str | None,
+        typer.Option(help="reference, submissions, index, companyfacts or bulk (default: all)."),
+    ] = None,
+    decided_by: DecidedBy = "operator",
+    as_of: AsOf = None,
+) -> None:
+    """Send the quarantined objects of the range back to the pipelines.
+
+    The bytes of a requeued object stay in bronze: the next run reads the bytes again and
+    sends no request for the object.
+    """
+    from gbmi.core.clock import parse_day, resolve_as_of
+    from gbmi.ledger.db import LedgerConfigurationError
+    from gbmi.ledger.object_states import ObjectState
+    from gbmi.ledger.objects import Dataset, open_object_ledger
+
+    try:
+        if not note.strip():
+            raise ValueError("the note is empty: say why the objects go back")
+        with open_object_ledger() as ledger:
+            quarantined = ledger.select(
+                states={ObjectState.QUARANTINED},
+                dataset=Dataset(dataset) if dataset else None,
+                first=parse_day(first),
+                last=parse_day(last),
+            )
+            moved = ledger.requeue(
+                [item.key for item in quarantined],
+                decided_by=decided_by,
+                note=note.strip(),
+                as_of=resolve_as_of(as_of),
+            )
+    except (LedgerConfigurationError, ValueError) as error:
+        raise _fail("sec objects requeue", error) from error
+    _print({"requeued": sorted(key.label for key in moved)})
+
+
+@sec_requests_app.command("max-burst")
+def sec_requests_max_burst(first: FromDayOrNone = None, last: ToDayOrNone = None) -> None:
+    """The largest number of requests to the SEC in any second (exit-gate row 1).
+
+    The range counts whole UTC days; without a range the command reads the whole log.
+    """
+    from datetime import UTC, datetime, time, timedelta
+
+    from gbmi.core.clock import parse_day
+    from gbmi.ledger.db import LedgerConfigurationError, connect
+    from gbmi.ops.requests import (
+        max_requests_in_session_window,
+        max_requests_in_window,
+        request_counts,
+    )
+    from gbmi.sources.sec.client import SOURCE
+
+    try:
+        start = datetime.combine(parse_day(first), time.min, tzinfo=UTC) if first else None
+        end = (
+            datetime.combine(parse_day(last) + timedelta(days=1), time.min, tzinfo=UTC)
+            if last
+            else None
+        )
+        with connect(autocommit=True) as connection:
+            report = {
+                "source": SOURCE,
+                "from": start,
+                "to": end,
+                "ceiling": get_settings().sec_max_rps,
+                "max_requests_in_one_second": max_requests_in_window(
+                    connection, source=SOURCE, start=start, end=end
+                ),
+                "max_requests_in_one_second_of_one_client": max_requests_in_session_window(
+                    connection, source=SOURCE, start=start, end=end
+                ),
+                "requests": request_counts(connection, source=SOURCE, start=start, end=end),
+            }
+    except (LedgerConfigurationError, ValueError) as error:
+        raise _fail("sec requests max-burst", error) from error
+    _print(report)

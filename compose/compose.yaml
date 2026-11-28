@@ -54,6 +54,10 @@ x-airflow-common: &airflow-common
     # in CI and in a fresh clone. No command prints the value.
     GBMI_SEC_USER_AGENT: ${GBMI_SEC_USER_AGENT:-}
     GBMI_SEC_FIXTURES_DIR: /fixtures/sec
+    # The seed of the watchlist: dbt reads the file as a seed, and the SEC pipelines read its
+    # first GBMI_WATCHLIST_SIZE rows. The demo stack reads five rows (week 3 plan 3.3).
+    GBMI_WATCHLIST_FILE: /opt/gbmi/dbt/seeds/watchlist.csv
+    GBMI_WATCHLIST_SIZE: ${GBMI_WATCHLIST_SIZE:-50}
     # dbt profile (dbt/profiles/profiles.yml).
     DBT_TARGET: ${DBT_TARGET:-local}
     DBT_CH_HOST: clickhouse
