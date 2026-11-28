@@ -17,7 +17,16 @@ class SecConfigurationError(SecError):
 
 
 class ObjectMissingError(SecError):
-    """The SEC has no such object (week 3 plan, findings F8 and F9). No block, no retry."""
+    """The SEC has no such object (week 3 plan, findings F8 and F9). No block, no retry.
+
+    ``status`` and ``body`` are the status and the first bytes of the answer: the recording of
+    the test files keeps both.
+    """
+
+    def __init__(self, message: str, *, status: int, body: bytes = b"") -> None:
+        super().__init__(message)
+        self.status = status
+        self.body = body
 
 
 class SourceBlockedError(SecError):

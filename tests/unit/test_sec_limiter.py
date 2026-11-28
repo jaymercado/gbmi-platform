@@ -137,3 +137,75 @@ def test_for_any_arrival_times_the_rule_holds_and_no_grant_waits_longer_than_nee
         if index >= max_requests:
             needed = max(needed, grants[index - max_requests] + WINDOW_SECONDS)
         assert grant == pytest.approx(needed, abs=1e-6)
+
+
+# --- a grant is not a departure (review 1, finding B1) -----------------------------------------
+
+
+def test_a_settled_grant_counts_from_the_moment_the_answer_arrived() -> None:
+    clock = Clock()
+    gate = limiter(clock)
+    gate.settle()  # nothing was granted: nothing moves
+    assert gate.last_grant is None
+
+    gate.acquire()
+    clock.value += 0.4  # the request took 400 ms
+    gate.settle()
+
+    assert gate.last_grant == pytest.approx(100.4)
+    clock.value -= 0.3  # a clock which is read earlier never moves a grant back
+    gate.settle()
+    assert gate.last_grant == pytest.approx(100.4)
+
+
+def test_a_slow_first_request_cannot_pull_nine_departures_into_one_second() -> None:
+    # The first request needs 120 ms to set up its connection, the others leave at once and
+    # are answered after 50 ms. Without settle() the ninth request would leave 1.05 s after
+    # the first grant, which is 0.93 s after the first departure.
+    clock = Clock()
+    gate = limiter(clock)
+    departures = []
+    for number in range(24):
+        gate.acquire()
+        clock.value += 0.12 if number == 0 else 0.0
+        departures.append(clock.value)
+        clock.value += 0.05
+        gate.settle()
+
+    assert max_in_window(departures) <= MAX_REQUESTS
+    assert departures[8] - departures[0] >= WINDOW_SECONDS
+
+
+@settings(max_examples=300, deadline=None)
+@given(
+    requests=st.lists(
+        st.tuples(
+            st.floats(min_value=0.0, max_value=0.4, allow_nan=False),  # until the departure
+            st.floats(min_value=0.0, max_value=0.4, allow_nan=False),  # until the answer
+            st.floats(min_value=0.0, max_value=1.5, allow_nan=False),  # until the next call
+        ),
+        min_size=1,
+        max_size=60,
+    ),
+    max_requests=st.integers(min_value=1, max_value=MAX_REQUESTS),
+)
+def test_for_any_request_times_no_second_holds_more_departures_than_the_ceiling(
+    requests: list[tuple[float, float, float]], max_requests: int
+) -> None:
+    clock = Clock()
+    gate = limiter(clock, max_requests=max_requests)
+    departures: list[float] = []
+    arrivals: list[float] = []
+    for setup, answer, pause in requests:
+        gate.acquire()
+        clock.value += setup
+        departures.append(clock.value)  # the request leaves
+        clock.value += answer / 2
+        arrivals.append(clock.value)  # the request reaches the server
+        clock.value += answer / 2
+        gate.settle()  # the answer is back
+        clock.value += pause
+
+    # The rule holds where the requests leave and where the requests arrive.
+    assert max_in_window(departures) <= max_requests
+    assert max_in_window(arrivals) <= max_requests

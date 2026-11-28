@@ -6,6 +6,13 @@ more than one second, so no window of one second holds more than 8 requests. The
 milliseconds are the margin between the clock of the limiter and the clocks which write the
 evidence. A token bucket would allow 16 requests in one second after a pause: 8 saved tokens
 and 8 new ones.
+
+A grant is not a departure. After the grant the client still writes a log row and may have to
+set up a connection, so a request can leave later than its grant, and two requests can be
+closer on the wire than their grants. The client therefore calls ``settle`` when the answer of
+a request has arrived: the grant moves to that moment. Request n then leaves at least one
+window after request n - 8 was answered, and the rule holds where the requests leave and
+where the requests arrive (review 1 of week 3, finding B1).
 """
 
 from __future__ import annotations
@@ -66,6 +73,12 @@ class SlidingWindowLimiter:
         if len(self._grants) == self.max_requests:
             moment = max(moment, self._grants[0] + self.window)
         return moment
+
+    def settle(self) -> None:
+        """Move the newest grant to now: the request of the grant has been answered."""
+        with self._lock:
+            if self._grants:
+                self._grants[-1] = max(self._grants[-1], self._clock())
 
     def acquire(self) -> float:
         """Wait until the rule allows one more request; returns the seconds waited."""
