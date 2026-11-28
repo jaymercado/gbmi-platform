@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Stand-in for docker during the deployments of the rehearsal: no Docker daemon runs in the
+# container. Records each call. "manifest inspect" answers from a marker file, and a Compose
+# command checks first that the environment file exists and that only root can read it.
+echo "docker $*" >> /var/log/rehearsal-docker.log
+case "${1:-}" in
+  manifest)
+    if [ -e /run/rehearsal/no-image ]; then
+      echo "stand-in docker: no such manifest" >&2
+      exit 1
+    fi
+    ;;
+  compose)
+    previous=""
+    for argument in "$@"; do
+      if [ "$previous" = "--env-file" ] \
+        && [ "$(stat --format '%a %U' "$argument" 2> /dev/null)" != "600 root" ]; then
+        echo "stand-in docker: the environment file is missing, or not for root alone" >&2
+        exit 1
+      fi
+      previous="$argument"
+    done
+    ;;
+esac
+exit 0

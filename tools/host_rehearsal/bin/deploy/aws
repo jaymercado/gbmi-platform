@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Stand-in for the AWS CLI during the deployments of the rehearsal: the container has no AWS
+# access. Answers the two calls of compose/host/render_env.sh and refuses every other call.
+echo "aws $*" >> /var/log/rehearsal-aws.log
+case "${1:-} ${2:-}" in
+  "sts get-caller-identity")
+    echo "123456789012"
+    ;;
+  "ssm get-parameters-by-path")
+    cat /run/rehearsal/parameters.json
+    ;;
+  *)
+    echo "stand-in aws: a call which the rehearsal does not expect" >&2
+    exit 2
+    ;;
+esac

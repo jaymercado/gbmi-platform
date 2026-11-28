@@ -59,6 +59,12 @@ case " $* " in
 esac
 exit 0
 """
+# The lock tool of Linux, which macOS does not bring. The stand-in records the call and
+# answers "free" or "held"; the rehearsal in the container uses the real tool.
+FLOCK_STUB = """#!/bin/bash
+printf 'flock %s\\n' "$*" >> "$STUB_CALLS"
+exit "${STUB_FLOCK_EXIT:-0}"
+"""
 SMOKE_STUB = """#!/bin/bash
 line="smoke mode=$GBMI_SMOKE_MODE release=$GBMI_RELEASE cwd=$PWD"
 printf '%s\\n' "$line" >> "$STUB_CALLS"
@@ -87,7 +93,7 @@ class Host:
         self.parameters = root / "parameters.json"
         self.bin = root / "bin"
         self.bin.mkdir()
-        for name, text in (("aws", AWS_STUB), ("docker", DOCKER_STUB)):
+        for name, text in (("aws", AWS_STUB), ("docker", DOCKER_STUB), ("flock", FLOCK_STUB)):
             stub = self.bin / name
             stub.write_text(text, encoding="utf-8")
             stub.chmod(0o755)
@@ -122,6 +128,7 @@ class Host:
                 "PATH": f"{self.bin}:/usr/bin:/bin",
                 "GBMI_HOME": str(self.home),
                 "GBMI_ENV_FILE": str(self.env_file),
+                "GBMI_DEPLOY_LOCK": str(self.root / "deploy.lock"),
                 "STUB_CALLS": str(self.calls),
                 "STUB_PARAMETERS": str(self.parameters),
                 "STUB_ACCOUNT": ACCOUNT,
@@ -285,9 +292,17 @@ def test_compose_reads_the_rendered_file_and_receives_each_value(
     assert services["airflow-scheduler"]["image"].endswith(f":{COMMIT}")
 
 
+def marker(host: Host, name: str) -> str | None:
+    path = host.home / name
+    return path.read_text(encoding="utf-8").strip() if path.exists() else None
+
+
 def deployed(host: Host) -> str | None:
-    marker = host.home / "DEPLOYED"
-    return marker.read_text(encoding="utf-8").strip() if marker.exists() else None
+    return marker(host, "DEPLOYED")
+
+
+def releases(host: Host) -> list[str]:
+    return sorted(path.name for path in (host.home / "releases").iterdir())
 
 
 def test_a_deployment_records_the_release_only_after_a_passed_smoke_test(host: Host) -> None:
@@ -318,10 +333,42 @@ def test_a_deployment_records_the_release_only_after_a_passed_smoke_test(host: H
         f"smoke mode=host release={COMMIT} cwd={release}",
         "docker image prune --all --force",
     ]
-    # The release before stays for a way back; an older one is removed.
-    assert sorted(path.name for path in (host.home / "releases").iterdir()) == sorted(
-        [COMMIT, PREVIOUS]
-    )
+    # The release before stays for a way back, and PREVIOUS names it; an older one is removed.
+    assert marker(host, "PREVIOUS") == PREVIOUS
+    assert releases(host) == sorted([COMMIT, PREVIOUS])
+
+
+def test_a_second_deployment_of_the_running_commit_keeps_the_way_back(host: Host) -> None:
+    # Found by the rehearsal of week 3: the clean-up kept the new release and the release
+    # which ran until now. For the commit which already runs, both are the same folder, and
+    # the release before was removed.
+    host.release(PREVIOUS)
+    (host.home / "DEPLOYED").write_text(PREVIOUS + "\n", encoding="utf-8")
+    assert host.run(host.script("deploy.sh"), COMMIT).returncode == 0
+
+    again = host.run(host.script("deploy.sh"), COMMIT)
+
+    assert again.returncode == 0, again.stdout + again.stderr
+    assert deployed(host) == COMMIT
+    assert marker(host, "PREVIOUS") == PREVIOUS
+    assert releases(host) == sorted([COMMIT, PREVIOUS])
+
+    # Going back is a deployment like any other: the two files change places.
+    back = host.run(host.script("deploy.sh", PREVIOUS), PREVIOUS)
+
+    assert back.returncode == 0, back.stdout + back.stderr
+    assert deployed(host) == PREVIOUS
+    assert marker(host, "PREVIOUS") == COMMIT
+    assert releases(host) == sorted([COMMIT, PREVIOUS])
+
+
+def test_the_first_deployment_of_a_host_names_no_release_before(host: Host) -> None:
+    result = host.run(host.script("deploy.sh"), COMMIT)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert deployed(host) == COMMIT
+    assert marker(host, "PREVIOUS") is None
+    assert releases(host) == [COMMIT]
 
 
 @pytest.mark.parametrize("failing", [{"STUB_SMOKE_EXIT": "1"}, {"STUB_UP_EXIT": "1"}])
@@ -336,11 +383,10 @@ def test_a_failed_deployment_leaves_the_release_before_as_the_deployed_one(
     assert result.returncode != 0
     no_value_in(result)
     assert deployed(host) == PREVIOUS
+    assert marker(host, "PREVIOUS") is None
     assert "DEPLOYED" not in result.stdout
     # Nothing was cleaned up: both release folders are still there.
-    assert sorted(path.name for path in (host.home / "releases").iterdir()) == sorted(
-        [COMMIT, PREVIOUS]
-    )
+    assert releases(host) == sorted([COMMIT, PREVIOUS])
 
 
 def test_deploy_runs_only_from_the_release_folder_of_its_commit(host: Host) -> None:
@@ -370,6 +416,22 @@ def test_the_start_at_boot_brings_up_the_deployed_release(host: Host) -> None:
     )
     # The environment file is written again at every start: a changed parameter takes effect.
     assert host.variables()["GBMI_RELEASE"] == f"'{COMMIT}'"
+    # The start takes the lock of the deployments first, without waiting.
+    assert host.called()[0] == "flock --nonblock 9"
+
+
+def test_the_start_does_nothing_while_a_deployment_holds_the_lock(host: Host) -> None:
+    # Review 3 of week 3: a deployment which arrives during the boot and the start at boot
+    # both wrote the environment file and called Compose. One lock now covers both.
+    (host.home / "DEPLOYED").write_text(COMMIT + "\n", encoding="utf-8")
+
+    result = host.run(host.script("stack-up"), STUB_FLOCK_EXIT="1")
+
+    # The exit code 75 is a success for the unit of the host: the deployment starts the stack.
+    assert result.returncode == 75
+    assert "a deployment is running" in result.stdout
+    assert host.called() == ["flock --nonblock 9"]
+    assert not host.env_file.exists()
 
 
 def test_no_host_script_traces_its_commands() -> None:

@@ -9,7 +9,7 @@ import boto3
 import pytest
 from botocore.stub import Stubber
 
-from gbmi.lake.objects import is_s3, s3_location, write_object
+from gbmi.lake.objects import delete_object, is_s3, s3_location, write_object
 
 KEY = "raw/gdelt/v2/export/dt=2026-11-25/20261125080000.export.CSV.zip"
 
@@ -90,3 +90,38 @@ def test_the_last_moment_before_the_object_is_visible_comes_before_the_request(s
 def test_only_an_s3_address_takes_the_s3_path() -> None:
     assert is_s3("s3://bucket/prefix")
     assert not is_s3("file:///lake")
+
+
+def test_the_removal_on_s3_is_one_head_request_and_one_delete_request(s3: Any) -> None:
+    client, stub = s3
+    # The stub refuses every other call: no listing, and no marker object for the folder of
+    # the removed file, which a delete through PyArrow writes.
+    location = {"Bucket": "bucket", "Key": f"ci/{KEY}"}
+    stub.add_response("head_object", {"ContentLength": 9}, location)
+    stub.add_response("delete_object", {}, location)
+
+    assert delete_object("s3://bucket/ci", KEY, client=client) is True
+
+
+def test_a_missing_object_on_s3_is_not_deleted_and_another_error_is_raised(s3: Any) -> None:
+    client, stub = s3
+    location = {"Bucket": "bucket", "Key": KEY}
+    stub.add_client_error("head_object", service_error_code="404", expected_params=location)
+
+    assert delete_object("s3://bucket", KEY, client=client) is False
+
+    # A refusal is no "missing": the caller has to see it.
+    stub.add_client_error(
+        "head_object", service_error_code="403", http_status_code=403, expected_params=location
+    )
+    with pytest.raises(client.exceptions.ClientError):
+        delete_object("s3://bucket", KEY, client=client)
+
+
+def test_the_local_removal_says_whether_a_file_existed(tmp_path: Path) -> None:
+    lake_uri = f"file://{tmp_path}"
+    write_object(lake_uri, KEY, b"zip bytes")
+
+    assert delete_object(lake_uri, KEY) is True
+    assert not (tmp_path / KEY).exists()
+    assert delete_object(lake_uri, KEY) is False

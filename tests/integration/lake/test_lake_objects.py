@@ -19,7 +19,12 @@ import pytest
 
 from gbmi.lake.commit import Unit
 from gbmi.lake.objects import is_s3, s3_client, s3_location
-from gbmi.quality.quarantine import QUARANTINE_SCHEMA, write_quarantine, write_quarantined_file
+from gbmi.quality.quarantine import (
+    QUARANTINE_SCHEMA,
+    clear_hour_quarantine,
+    write_quarantine,
+    write_quarantined_file,
+)
 from gbmi.sources.gdelt.land import Bronze
 from tests.integration.conftest import Lake
 
@@ -107,6 +112,14 @@ def test_the_quarantine_files_are_whole_objects(lake: Lake, source: str) -> None
     assert rows_key is not None
     assert set(stored(lake, f"quarantine/{source}")) == {rows_key, file_key}
 
-    # A rerun which rejects no row removes the file of the rows; the rejected file stays.
+    # A rerun which rejects no row removes the file of the rows; the rejected file stays, and
+    # no marker object for the folder of the removed file appears (S3: one DELETE request).
     assert write_quarantine(lake_uri, source, "export", unit, rows.slice(0, 0)) is None
     assert set(stored(lake, f"quarantine/{source}")) == {file_key}
+
+    # A day build removes the files of the hour builds of the day and leaves nothing else.
+    for hour in (8, 9):
+        assert write_quarantine(lake_uri, source, "export", Unit(DAY, hour), rows) is not None
+    assert clear_hour_quarantine(lake_uri, source, "export", DAY) == 2
+    assert set(stored(lake, f"quarantine/{source}")) == {file_key}
+    assert clear_hour_quarantine(lake_uri, source, "export", DAY) == 0

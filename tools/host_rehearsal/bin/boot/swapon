@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Stand-in for swapon during the user data of the rehearsal: a container cannot turn swap on.
+echo "swapon $*" >> /var/log/rehearsal-swapon.log
+exit 0

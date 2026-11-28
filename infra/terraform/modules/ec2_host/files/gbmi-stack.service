@@ -1,0 +1,27 @@
+# Starts the deployed release of the GBMI platform at boot (week 3 plan 3.3). The schedule of
+# the host stops the instance each night and starts it each morning; the unit brings the
+# stack up again. Without a deployed release the unit does nothing.
+[Unit]
+Description=GBMI platform: the Compose stack of the deployed release
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+ConditionPathExists=/opt/gbmi/DEPLOYED
+# A failed start is tried again (below): at most five starts in 15 minutes.
+StartLimitIntervalSec=900
+StartLimitBurst=5
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/gbmi-stack-up
+TimeoutStartSec=1200
+# A short failure at boot (the name service, Parameter Store) must not leave the stack down
+# for the day.
+Restart=on-failure
+RestartSec=60
+# The exit code 75 of the start script: a deployment holds the lock and starts the stack.
+SuccessExitStatus=75
+
+[Install]
+WantedBy=multi-user.target

@@ -2,7 +2,10 @@
 #
 # Every skipped check is listed with its reason. The platform runs on about USD 30 a month in
 # one region and holds only public-source data, so three controls are left out on purpose:
-# a customer-managed KMS key, cross-region replication and S3 access logging.
+# a customer-managed KMS key, cross-region replication and S3 access logging. Week 3 adds the
+# host with its network and monitoring, and eight more skips; the security review of phase P4
+# decides each of them again. One more skip stands beside its resource:
+# CKV_AWS_356 in infra/terraform/bootstrap/github_oidc.tf.
 directory:
   - infra/terraform
 framework:
@@ -22,3 +25,31 @@ skip-check:
   # S3 event notifications. Nothing consumes object events: pipelines are level-triggered from
   # the ledger, not edge-triggered from storage (blueprint 5.1, principle 3).
   - CKV2_AWS_62
+  # --- week 3: the host, its network and its monitoring (week 3 plan, WP-11 step 3) ---
+  # Public address of the instance. The design has no NAT gateway (about USD 33 a month, more
+  # than the budget): the host reaches its sources through an internet gateway. The security
+  # group has no inbound rule, the instance has no key pair, and the default security group
+  # is closed. Session Manager is the only way in (exit-gate row 4 of week 3).
+  - CKV_AWS_88
+  # Detailed monitoring. It costs extra for each metric; the five alarms use periods of five
+  # minutes, which basic monitoring delivers.
+  - CKV_AWS_126
+  # VPC flow logs. Nothing reads them at this size, and they would cost log storage. The one
+  # outbound rule is HTTPS, and there is no inbound rule.
+  - CKV2_AWS_11
+  # Security group attached to a resource. The group of the module network is attached to the
+  # instance of the module ec2_host; the check does not follow the output of a module.
+  - CKV2_AWS_5
+  # Customer-managed key for the log groups. The logs hold the output of pipelines on
+  # public-source data; no host script and no log format prints a secret.
+  - CKV_AWS_158
+  # Log retention of one year. The blueprint keeps logs for 30 days (7.9): they serve the
+  # diagnosis of a failed run, not an audit.
+  - CKV_AWS_338
+  # Encryption of the SNS topic. A CloudWatch alarm cannot publish to a topic which the key of
+  # AWS encrypts (SNS developer guide, "Managing encryption keys"); the topic would need a
+  # customer-managed key for USD 1 a month. A message names an alarm and holds no data.
+  - CKV_AWS_26
+  # Customer-managed key for the two schedules. The input of a schedule is the id of the host
+  # instance; there is nothing to protect.
+  - CKV_AWS_297

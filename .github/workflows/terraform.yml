@@ -1,7 +1,8 @@
 name: terraform
 
-# Checks that need no AWS access. A plan job that assumes gbmi-ci-plan through OIDC is a
-# stretch item of week 1 and is added once the repository and the roles exist.
+# checks: the checks that need no AWS access; a required check of the branch main.
+# plan:   terraform plan for both configurations with the read-only role gbmi-ci-plan, for a
+#         pull request of the repository (week 3 plan, WP-11 step 4); not a required check.
 on:
   pull_request:
   push:
@@ -43,3 +44,54 @@ jobs:
           # tflint downloads its AWS ruleset from GitHub releases.
           GITHUB_TOKEN: ${{ github.token }}
         run: make tf-check
+
+  # The role gbmi-ci-plan trusts the OIDC subject of a pull request of the repository and
+  # nothing else (infra/terraform/bootstrap/github_oidc.tf), so the job runs for a pull
+  # request only. A pull request from a fork gets no token and no secret: the job does not
+  # start for a fork.
+  #
+  # The log of the job is public, and the text of a plan names the AWS account in every ARN.
+  # tools/ci_plan.py keeps the output of Terraform in memory and shows one result line for
+  # each configuration; after a failure the script also shows the error messages of
+  # Terraform. The account number and the alert address are secrets of the repository,
+  # which GitHub masks in the log.
+  #
+  # The job takes no state lock: a job which GitHub cancels halfway would leave the lock file
+  # behind, and the next apply on the laptop would stop.
+  plan:
+    name: terraform plan with the read-only role
+    if: >-
+      github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.17.2"
+          terraform_wrapper: false
+
+      - uses: aws-actions/configure-aws-credentials@45666896f5d8e0f10ae255413f3a4cdd03bdc8f5 # v6.3.1
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/gbmi-ci-plan
+          role-session-name: gbmi-plan-${{ github.run_id }}
+          aws-region: us-east-1
+
+      - name: terraform plan for both configurations
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          TF_IN_AUTOMATION: "true"
+          # The variables of the two configurations. The local file infra/terraform/local.env
+          # gives the same four values on the laptop.
+          TF_VAR_alert_email: ${{ secrets.TF_VAR_ALERT_EMAIL }}
+          TF_VAR_github_repository: ${{ github.repository }}
+          TF_VAR_github_owner_id: ${{ github.repository_owner_id }}
+          TF_VAR_github_repository_id: ${{ github.repository_id }}
+        run: python3 tools/ci_plan.py

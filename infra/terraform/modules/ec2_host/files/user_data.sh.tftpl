@@ -1,0 +1,77 @@
+#!/bin/bash
+# The first boot of the host of the GBMI platform (week 3 plan 3.3). cloud-init runs the script
+# once, as root. A later change of the script does not reach a running host: Terraform ignores
+# the user data of an existing instance, so the script only prepares the machine. Everything
+# which a deployment does lives in the release (compose/host/ of the repository).
+#
+# Rendered by Terraform: a dollar sign with braces is a value of Terraform; the variables of
+# the shell are written without braces.
+set -euo pipefail
+exec > >(tee -a /var/log/gbmi-user-data.log) 2>&1
+echo "gbmi user data: start $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# 1. Packages of Amazon Linux 2023: Docker, Git for the release files, Python 3.12 for the
+#    measuring scripts, the CloudWatch agent. The host scripts also need tar, flock
+#    (util-linux-core) and the AWS CLI: the image of an instance brings the three, and the
+#    names stand here so that the script does not depend on the image. The Systems Manager
+#    agent is part of the image.
+#    A failed download is tried again: the first boot runs once, and a half-finished first
+#    boot costs a new instance.
+installed=""
+for attempt in 1 2 3; do
+  if dnf install --assumeyes --quiet docker git tar util-linux-core awscli-2 python3.12 \
+    amazon-cloudwatch-agent; then
+    installed="yes"
+    break
+  fi
+  echo "dnf install failed: attempt $attempt of 3"
+  sleep 20
+done
+[ -n "$installed" ]
+
+# 2. The Compose plugin is no package of Amazon Linux 2023: a release file with a checksum.
+install -d -m 755 /usr/local/lib/docker/cli-plugins
+curl --fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 5 \
+  --output /usr/local/lib/docker/cli-plugins/docker-compose \
+  "https://github.com/docker/compose/releases/download/${compose_version}/docker-compose-linux-aarch64"
+echo "${compose_sha256}  /usr/local/lib/docker/cli-plugins/docker-compose" | sha256sum --check -
+chmod 755 /usr/local/lib/docker/cli-plugins/docker-compose
+
+# 3. Two gigabytes of swap: the host has 8 GB, and the limits of the containers add up to
+#    5.9 GB (7.2 GB with Metabase).
+if ! grep -q '^/swapfile ' /etc/fstab; then
+  dd if=/dev/zero of=/swapfile bs=1M count=2048 status=none
+  chmod 600 /swapfile
+  mkswap /swapfile > /dev/null
+  swapon /swapfile
+  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+
+# 4. The folders of the releases, and the folder of the environment file, which only root reads.
+install -d -m 755 /opt/gbmi /opt/gbmi/releases
+install -d -m 700 /etc/gbmi
+cat > /etc/gbmi/host.conf << 'CONF'
+GBMI_REPOSITORY=${repository}
+GBMI_IMAGE=${image}
+CONF
+chmod 644 /etc/gbmi/host.conf
+
+# 5. The fixed deployment script, the script and the unit which start the stack at boot, and
+#    the configuration of the CloudWatch agent (memory, swap, disk; the two logs of the host).
+echo '${deploy_script_b64}' | base64 --decode > /usr/local/sbin/gbmi-deploy
+echo '${stack_up_b64}' | base64 --decode > /usr/local/sbin/gbmi-stack-up
+chmod 755 /usr/local/sbin/gbmi-deploy /usr/local/sbin/gbmi-stack-up
+echo '${stack_unit_b64}' | base64 --decode > /etc/systemd/system/gbmi-stack.service
+echo '${agent_config_b64}' | base64 --decode > /etc/gbmi/cloudwatch-agent.json
+
+# 6. Services. Docker starts at every boot; the stack unit does nothing before the first
+#    deployment has written /opt/gbmi/DEPLOYED.
+systemctl daemon-reload
+systemctl enable --now docker
+systemctl enable gbmi-stack.service
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s \
+  -c file:/etc/gbmi/cloudwatch-agent.json
+
+docker --version
+docker compose version
+echo "gbmi user data: done $(date -u +%Y-%m-%dT%H:%M:%SZ)"

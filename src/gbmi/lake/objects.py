@@ -9,6 +9,10 @@ One write is atomic on both backends (blueprint 5.6): a reader sees the whole ob
   and send three requests for one multipart upload.
 
 The role of the AWS host therefore needs no right to delete below ``raw/``.
+
+A removal goes the same way: one DELETE request on S3. PyArrow would write an empty marker
+object for the "directory" of the removed file (found by the AWS half of the integration
+tests on 2026-11-28).
 """
 
 from __future__ import annotations
@@ -75,3 +79,29 @@ def write_object(
     if before_visible is not None:
         before_visible()
     filesystem.move(temporary, path)
+
+
+def delete_object(lake_uri: str, key: str, *, client: Any | None = None) -> bool:
+    """Remove one object below the lake root; returns False when no such object existed.
+
+    On S3: one HEAD request, which says whether the object exists, and one DELETE request for
+    the key. Nothing else is written. ``client`` replaces the S3 client of the process in a
+    test.
+    """
+    if is_s3(lake_uri):
+        bucket, object_key = s3_location(lake_uri, key)
+        s3 = client or s3_client()
+        try:
+            s3.head_object(Bucket=bucket, Key=object_key)
+        except s3.exceptions.ClientError as error:
+            if error.response.get("Error", {}).get("Code") in ("404", "NoSuchKey", "NotFound"):
+                return False
+            raise
+        s3.delete_object(Bucket=bucket, Key=object_key)
+        return True
+    filesystem, root = pafs.FileSystem.from_uri(lake_uri)
+    path = f"{root.rstrip('/')}/{key}"
+    if filesystem.get_file_info(path).type == pafs.FileType.NotFound:
+        return False
+    filesystem.delete_file(path)
+    return True

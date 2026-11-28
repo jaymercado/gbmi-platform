@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from datetime import UTC
 from pathlib import Path
 from typing import Any
 
@@ -127,7 +128,8 @@ def listing(client: Any) -> int:
     for name in sorted(present):
         entry = present[name]
         changed = entry.get("LastModifiedDate")
-        stamp = changed.strftime("%Y-%m-%d %H:%M UTC") if changed is not None else ""
+        # AWS answers with a time of the zone of the machine: the label says UTC, so convert.
+        stamp = changed.astimezone(UTC).strftime("%Y-%m-%d %H:%M UTC") if changed else ""
         out(f"{name:<28} {entry.get('Type', ''):<13} {stamp}")
     out(f"{len(present)} entries below {PREFIX}")
     return 0

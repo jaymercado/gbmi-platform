@@ -5,6 +5,10 @@
 #
 # Without an argument the script starts the release which $GBMI_HOME/DEPLOYED names. The
 # environment file is written again first, so a changed parameter takes effect at a start.
+#
+# The script takes the lock of the deployments without waiting. While a deployment runs, the
+# deployment starts the stack itself: the script then starts nothing and ends with the exit
+# code 75, which the unit of the host counts as a success.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -18,6 +22,12 @@ if [ -z "$release" ]; then
 fi
 require_commit "$release"
 [ -d "$(release_dir "$release")" ] || die "the release folder of $release is missing"
+
+exec 9> "$GBMI_DEPLOY_LOCK"
+if ! flock --nonblock 9; then
+  say "a deployment is running: the deployment starts the stack, and the start does nothing"
+  exit 75
+fi
 
 say "render the environment file"
 "$(release_dir "$release")/compose/host/render_env.sh" "$release"

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Stand-in for systemctl during the user data of the rehearsal: a container has no systemd as
+# its first process. Records the call. Without an argument it prints the one line by which the
+# control script of the CloudWatch agent recognises systemd; "is-active" answers "not active".
+echo "systemctl $*" >> /var/log/rehearsal-systemctl.log
+if [ "$#" -eq 0 ]; then
+  echo "  -.mount   loaded active mounted Root Mount"
+fi
+if [ "${1:-}" = "is-active" ]; then
+  exit 3
+fi
+exit 0

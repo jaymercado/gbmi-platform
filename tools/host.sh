@@ -6,6 +6,7 @@
 #   tools/host.sh forward [port]     forward a port of the host to 127.0.0.1 of the laptop:
 #                                    8080 is the API server of Airflow (the default), 3000 Metabase
 #   tools/host.sh deploy-log         the status and the output of the newest deployment
+#   tools/host.sh start | stop       start or stop the instance by hand, and wait for the state
 #
 # The host has no inbound rule and no key pair: Session Manager is the only way in (exit-gate
 # row 4). The commands use the profile gbmi of "aws login" (infra/terraform/README.md). The
@@ -60,7 +61,7 @@ case "${1:-}" in
     fi
     aws ssm describe-instance-information --filters "Key=InstanceIds,Values=$id" --output table \
       --query 'InstanceInformationList[0].{Agent:PingStatus,LastPing:LastPingDateTime,AgentVersion:AgentVersion}'
-    on_host "$id" '["echo deployed: $(cat /opt/gbmi/DEPLOYED 2>/dev/null || echo none)","docker ps --format \"{{.Names}} {{.Status}}\" | sort","uptime","df -h / | tail -1","free -m | sed -n 2p"]'
+    on_host "$id" '["echo deployed: $(cat /opt/gbmi/DEPLOYED 2>/dev/null || echo none)","echo previous: $(cat /opt/gbmi/PREVIOUS 2>/dev/null || echo none)","docker ps --format \"{{.Names}} {{.Status}}\" | sort","uptime","df -h / | tail -1","free -m | sed -n 2p"]'
     ;;
   shell)
     aws ssm start-session --target "$(instance)"
@@ -90,8 +91,24 @@ case "${1:-}" in
     aws ssm get-command-invocation --command-id "$command" --instance-id "$id" \
       --query StandardErrorContent --output text
     ;;
+  start)
+    # A start by hand: after a morning without spot capacity, or after a stop by hand. The
+    # unit gbmi-stack.service then starts the deployed release.
+    id="$(instance)"
+    aws ec2 start-instances --instance-ids "$id" \
+      --query 'StartingInstances[0].CurrentState.Name' --output text
+    aws ec2 wait instance-running --instance-ids "$id"
+    echo "The host is running. Give the stack a few minutes; make host-status shows the services."
+    ;;
+  stop)
+    id="$(instance)"
+    aws ec2 stop-instances --instance-ids "$id" \
+      --query 'StoppingInstances[0].CurrentState.Name' --output text
+    aws ec2 wait instance-stopped --instance-ids "$id"
+    echo "The host is stopped. The schedule starts the host at 08:00 UTC; make host-start starts it now."
+    ;;
   *)
-    echo "usage: tools/host.sh status | shell | forward [port] | deploy-log" >&2
+    echo "usage: tools/host.sh status | shell | forward [port] | deploy-log | start | stop" >&2
     exit 2
     ;;
 esac

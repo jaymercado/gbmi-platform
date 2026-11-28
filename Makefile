@@ -85,7 +85,8 @@ endif
 AWS_PROFILE ?= gbmi
 TF := infra/terraform
 TF_ROOTS := $(TF)/bootstrap $(TF)/envs/prod
-TF_MODULES := $(TF)/modules/lake_s3 $(TF)/modules/glue_catalog $(TF)/modules/budgets
+TF_MODULES := $(TF)/modules/lake_s3 $(TF)/modules/glue_catalog $(TF)/modules/budgets \
+	$(TF)/modules/network $(TF)/modules/iam $(TF)/modules/ec2_host $(TF)/modules/monitoring
 
 # The Glue/S3 halves of the integration tests run only on request. Credentials from `aws login`
 # last 15 minutes, less than the AWS halves take, so they run one test at a time:
@@ -103,7 +104,7 @@ TOOLBOX := $(COMPOSE_BI) --profile tools run --rm toolbox
 
 .PHONY: help setup fmt lint test test-dags env images up up-bi down reset ps logs smoke toolbox psql integration \
 	integration-aws dbt-build demo e2e drill bench logs-dump tf-check plan redact-check host-secrets host-sec-source \
-	host-status host-deploy-log host-shell host-forward deploy _other-stack-stopped _lake-dir _demo _e2e
+	host-rehearsal host-policy-check host-status host-deploy-log host-start host-stop host-shell host-forward deploy _other-stack-stopped _lake-dir _demo _e2e
 
 help: ## List the available targets
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-14s %s\n", $$1, $$2}'
@@ -157,11 +158,26 @@ host-sec-source: ## Set the SEC source of the host: make host-sec-source SOURCE=
 	@test -n "$(SOURCE)" || { echo 'make host-sec-source SOURCE=off  or  SOURCE=live'; exit 1; }
 	@$(HOST_AWS) uv run python tools/host_secrets.py sec-source $(SOURCE)
 
+# The one target of the block without a sign-in: the first boot and the deployments of the
+# host in a container of Amazon Linux 2023 on the laptop (week 3 plan, change C16 b). Run it
+# before a change of the user data or of a host script reaches an instance.
+host-rehearsal: ## Rehearse the user data and the host scripts in an Amazon Linux 2023 arm64 container (no AWS access)
+	@bash tools/host_rehearsal/run.sh
+
+host-policy-check: ## Ask IAM to evaluate the policies of the five roles against a table of requests (changes nothing)
+	@$(HOST_AWS) uv run python tools/policy_check.py
+
 host-status: ## The AWS host: instance, agent, deployed release, services
 	@AWS_PROFILE=$(AWS_PROFILE) tools/host.sh status
 
 host-deploy-log: ## The status and the output of the newest deployment on the AWS host
 	@AWS_PROFILE=$(AWS_PROFILE) tools/host.sh deploy-log
+
+host-start: ## Start the AWS host by hand and wait until it runs (the schedule starts it at 08:00 UTC)
+	@AWS_PROFILE=$(AWS_PROFILE) tools/host.sh start
+
+host-stop: ## Stop the AWS host by hand and wait until it is stopped (the schedule stops it at 24:00 UTC)
+	@AWS_PROFILE=$(AWS_PROFILE) tools/host.sh stop
 
 host-shell: ## A shell on the AWS host through Session Manager
 	@AWS_PROFILE=$(AWS_PROFILE) tools/host.sh shell
