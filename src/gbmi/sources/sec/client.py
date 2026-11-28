@@ -56,6 +56,7 @@ from gbmi.sources.sec.errors import (
     SecTransportError,
 )
 from gbmi.sources.sec.limiter import WINDOW_SECONDS, SlidingWindowLimiter
+from gbmi.sources.sec.transport import fixture_transport
 from gbmi.sources.sec.urls import split
 
 log = get_logger(__name__)
@@ -220,13 +221,11 @@ class SecClient:
             raise SecConfigurationError(
                 "GBMI_SEC_SOURCE is off: the stack sends no request to the SEC"
             )
-        #: True when the client opens a real connection to the SEC.
+        if transport is None and self._settings.sec_source is SecSource.FIXTURE:
+            # The recorded files stand in for the SEC: the same client, limiter and circuit.
+            transport = fixture_transport(self._settings.sec_fixtures_dir)
+        #: True when the client opens a real connection to the SEC: only the source live.
         self._network = transport is None
-        if self._network and self._settings.sec_source is not SecSource.LIVE:
-            raise SecConfigurationError(
-                "the source fixture needs the transport of the recorded files; only the source "
-                "live opens a network connection"
-            )
         if self._network and source != SOURCE:
             raise SecConfigurationError(
                 f"a client which opens a network connection works on the source {SOURCE!r} "
