@@ -104,7 +104,7 @@ TOOLBOX := $(COMPOSE_BI) --profile tools run --rm toolbox
 
 .PHONY: help setup fmt lint test test-dags env images up up-bi down reset ps logs smoke toolbox psql integration \
 	integration-aws dbt-build demo e2e drill bench logs-dump tf-check plan redact-check host-secrets host-sec-source \
-	host-status host-deploy-log host-shell host-forward deploy _other-stack-stopped _lake-dir _demo _e2e
+	host-rehearsal host-status host-deploy-log host-shell host-forward deploy _other-stack-stopped _lake-dir _demo _e2e
 
 help: ## List the available targets
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-14s %s\n", $$1, $$2}'
@@ -157,6 +157,12 @@ host-secrets: ## Create the missing parameters of the AWS host below /gbmi/prod/
 host-sec-source: ## Set the SEC source of the host: make host-sec-source SOURCE=live (the laptop has to be off first) or SOURCE=off
 	@test -n "$(SOURCE)" || { echo 'make host-sec-source SOURCE=off  or  SOURCE=live'; exit 1; }
 	@$(HOST_AWS) uv run python tools/host_secrets.py sec-source $(SOURCE)
+
+# The one target of the block without a sign-in: the first boot and the deployments of the
+# host in a container of Amazon Linux 2023 on the laptop (week 3 plan, change C16 b). Run it
+# before a change of the user data or of a host script reaches an instance.
+host-rehearsal: ## Rehearse the user data and the host scripts in an Amazon Linux 2023 arm64 container (no AWS access)
+	@bash tools/host_rehearsal/run.sh
 
 host-status: ## The AWS host: instance, agent, deployed release, services
 	@AWS_PROFILE=$(AWS_PROFILE) tools/host.sh status
