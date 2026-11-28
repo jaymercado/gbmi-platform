@@ -48,12 +48,10 @@ export COMPOSE_PROJECT_NAME := $(STACK)
 export GBMI_LAKE_DIR := ./$(LAKE_DIR)
 export GBMI_DAG_SCHEDULES := $(DAG_SCHEDULES)
 export GBMI_TASK_RETRIES := $(TASK_RETRIES)
-# The stack decides the source of the SEC client. A value of the shell does not change the
-# source. A value on the command line of make does, for the one command (week 3 plan, change
-# C12):  make toolbox STACK=gbmi-demo GBMI_SEC_SOURCE=live CMD="..."
-ifneq ($(origin GBMI_SEC_SOURCE),command line)
-GBMI_SEC_SOURCE := $(SEC_SOURCE)
-endif
+# The stack alone decides the source of the SEC client: neither a value of the shell nor a
+# value on the command line of make changes the source. Live requests leave from the working
+# stack only, so one database remembers a block by the SEC (review 1 of week 3, finding B2).
+override GBMI_SEC_SOURCE := $(SEC_SOURCE)
 export GBMI_SEC_SOURCE
 
 # Compose files live in compose/, so the project directory and the env file are always passed
@@ -180,6 +178,7 @@ ifeq ($(STACK),$(WORKING_STACK))
 		echo "To delete the demo stack:     make reset STACK=$(DEMO_STACK)"; \
 		exit 1; \
 	fi
+	@bash compose/circuit_guard.sh
 endif
 	$(COMPOSE_BI) --profile tools down --volumes --remove-orphans
 	rm -rf $(LAKE_DIR)
@@ -246,7 +245,7 @@ dbt-build: _other-stack-stopped _lake-dir ## Build and test every dbt model agai
 	$(TOOLBOX) dbt build --project-dir dbt --profiles-dir dbt/profiles --full-refresh
 
 demo: ## The whole pipeline on committed fixtures, with one chart, on the demo stack; needs no cloud account
-	@$(MAKE) --no-print-directory STACK=$(DEMO_STACK) GBMI_SEC_SOURCE=fixture _demo
+	@$(MAKE) --no-print-directory STACK=$(DEMO_STACK) _demo
 
 _demo:
 	$(MAKE) up-bi
@@ -265,7 +264,7 @@ _demo:
 	@if [ -t 1 ] && [ -z "$CI" ] && command -v open >/dev/null; then open http://127.0.0.1:3000; fi
 
 e2e: ## End-to-end assertions against the demo stack, on which the demo has run
-	@$(MAKE) --no-print-directory STACK=$(DEMO_STACK) GBMI_SEC_SOURCE=fixture _e2e
+	@$(MAKE) --no-print-directory STACK=$(DEMO_STACK) _e2e
 
 _e2e: _other-stack-stopped _lake-dir
 	$(TOOLBOX) pytest tests/e2e -m e2e -p no:cacheprovider $(PYTEST_ARGS)
