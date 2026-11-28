@@ -12,6 +12,8 @@ import io
 import json
 import os
 import zipfile
+from datetime import UTC, date, datetime, time, timedelta
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -37,8 +39,8 @@ def document_name(cik: int) -> str:
     return f"CIK{cik:010d}.json"
 
 
-def index_rows() -> int:
-    """One row for each pair of filing and filer: a repeated pair counts once (F11 c)."""
+def index_pairs() -> set[tuple[str, int]]:
+    """The pairs of accession number and filer of the recorded index file."""
     lines = INDEX_FILE.read_bytes().decode("latin-1").split("\n")
     start = next(number for number, line in enumerate(lines) if line.startswith("-----")) + 1
     pairs = set()
@@ -49,15 +51,44 @@ def index_rows() -> int:
         # The three last words of a row: the CIK, the date and the file name.
         cik, _, file_name = words[-3:]
         pairs.add((file_name.rsplit("/", 1)[-1].removesuffix(".txt"), int(cik)))
-    return len(pairs)
+    return pairs
+
+
+def index_rows() -> int:
+    """One row for each pair of filing and filer: a repeated pair counts once (F11 c)."""
+    return len(index_pairs())
+
+
+def recent_filings(cik: int) -> list[dict[str, Any]]:
+    """The filings which the submissions document of a watchlist company lists, each once."""
+    document = json.loads((DATA / "submissions" / document_name(cik)).read_bytes())
+    recent = document["filings"]["recent"]
+    filings = {}
+    for position, accession in enumerate(recent["accessionNumber"]):
+        filings[accession] = {name: values[position] for name, values in recent.items()}
+    return list(filings.values())
 
 
 def detail_rows() -> int:
     """One row for each filing which the document of a watchlist company lists."""
+    return sum(len(recent_filings(cik)) for cik in watchlist())
+
+
+def filing_pairs() -> set[tuple[str, int]]:
+    """The grain of fct_filing: every pair of the index file and of the watchlist documents."""
+    listed = {
+        (filing["accessionNumber"], cik) for cik in watchlist() for filing in recent_filings(cik)
+    }
+    return index_pairs() | listed
+
+
+def filing_item_rows() -> int:
+    """One row for each different item of a filing of the 8-K family of a watchlist company."""
     total = 0
     for cik in watchlist():
-        document = json.loads((DATA / "submissions" / document_name(cik)).read_bytes())
-        total += len(set(document["filings"]["recent"]["accessionNumber"]))
+        for filing in recent_filings(cik):
+            if filing["form"].startswith("8-K"):
+                total += len({item.strip() for item in filing["items"].split(",") if item.strip()})
     return total
 
 
@@ -124,3 +155,73 @@ def sec_rows() -> dict[str, int]:
         "sec_company_former_name": former_name_rows(),
         "sec_xbrl_fact": fact_rows(),
     }
+
+
+def acceptance_times(cik: int) -> dict[str, datetime]:
+    """The acceptance time of each filing which the submissions document of a company lists."""
+    return {
+        filing["accessionNumber"]: datetime.fromisoformat(
+            filing["acceptanceDateTime"].replace("Z", "+00:00")
+        )
+        for filing in recent_filings(cik)
+        if filing["acceptanceDateTime"]
+    }
+
+
+def reports(cik: int, taxonomy: str, concept: str, unit: str) -> list[dict[str, Any]]:
+    """Each report of a concept of a company: the period, the value, and when it became known.
+
+    The knowledge time is the acceptance time of the filing when the submissions document
+    lists the filing, and otherwise 05:00 UTC of the day after the filing date (week 3 plan,
+    difference D48).
+    """
+    document = json.loads(
+        (DATA / "api" / "xbrl" / "companyfacts" / document_name(cik)).read_bytes()
+    )
+    accepted = acceptance_times(cik)
+    found = {}
+    for value in document["facts"][taxonomy][concept]["units"][unit]:
+        known_at = accepted.get(value["accn"]) or datetime.combine(
+            date.fromisoformat(value["filed"]) + timedelta(days=1), time(5), tzinfo=UTC
+        )
+        period = (value.get("start", value["end"]), value["end"])
+        found[(period, value["accn"])] = {
+            "period": period,
+            "accession": value["accn"],
+            "known_at": known_at,
+            "filed": value["filed"],
+            "value": Decimal(str(value["val"])),
+        }
+    return list(found.values())
+
+
+def known_values(
+    cik: int, taxonomy: str, concept: str, unit: str, moment: datetime | None = None
+) -> dict[tuple[str, str], Decimal]:
+    """For each period: the newest value which was known at the moment (blueprint 7.10).
+
+    Of two reports with the same knowledge time, the higher accession number counts. Without
+    a moment: everything which the recorded file holds.
+    """
+    newest: dict[tuple[str, str], dict[str, Any]] = {}
+    for report in reports(cik, taxonomy, concept, unit):
+        if moment is not None and report["known_at"] > moment:
+            continue
+        current = newest.get(report["period"])
+        rank = (report["known_at"], report["accession"])
+        if current is None or rank > (current["known_at"], current["accession"]):
+            newest[report["period"]] = report
+    return {period: report["value"] for period, report in newest.items()}
+
+
+def first_values(
+    cik: int, taxonomy: str, concept: str, unit: str
+) -> dict[tuple[str, str], Decimal]:
+    """For each period: the value of the first report."""
+    first: dict[tuple[str, str], dict[str, Any]] = {}
+    for report in reports(cik, taxonomy, concept, unit):
+        current = first.get(report["period"])
+        rank = (report["known_at"], report["accession"])
+        if current is None or rank < (current["known_at"], current["accession"]):
+            first[report["period"]] = report
+    return {period: report["value"] for period, report in first.items()}
