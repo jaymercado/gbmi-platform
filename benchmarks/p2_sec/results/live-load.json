@@ -1,0 +1,597 @@
+{
+  "ledger": {
+    "requests": {
+      "total": 99,
+      "by_outcome": {
+        "missing": 2,
+        "ok": 97
+      },
+      "max_in_one_second": 4,
+      "max_in_one_second_of_one_client": 4,
+      "by_run": [
+        {
+          "run_id": "record-sec-fixtures-20261128T043750Z",
+          "requests": 18,
+          "bytes": "20133401",
+          "first_request": "2026-11-28 04:37:51.875062+00:00",
+          "last_request": "2026-11-28 04:37:58.842738+00:00",
+          "waited_ms": 1029
+        },
+        {
+          "run_id": "live-load-filings-1",
+          "requests": 29,
+          "bytes": "26073549",
+          "first_request": "2026-11-28 09:28:09.942330+00:00",
+          "last_request": "2026-11-28 09:28:40.963622+00:00",
+          "waited_ms": 1009
+        },
+        {
+          "run_id": "live-load-reference-1",
+          "requests": 2,
+          "bytes": "1579007703",
+          "first_request": "2026-11-28 09:28:55.624332+00:00",
+          "last_request": "2026-11-28 09:28:56.186111+00:00",
+          "waited_ms": 1019
+        },
+        {
+          "run_id": "live-load-facts-1",
+          "requests": 50,
+          "bytes": "188160189",
+          "first_request": "2026-11-28 09:35:04.494651+00:00",
+          "last_request": "2026-11-28 09:35:35.332652+00:00",
+          "waited_ms": 1030
+        }
+      ],
+      "archive": [
+        {
+          "granted_at": "2026-11-28 09:28:56.186111+00:00",
+          "duration_ms": 106443,
+          "byte_count": 1578485771,
+          "http_status": 200,
+          "outcome": "ok"
+        }
+      ]
+    },
+    "circuit": [],
+    "runs": [
+      {
+        "entry_point": "sec.filings",
+        "run_id": "live-load-filings-1",
+        "status": "success",
+        "started_at": "2026-11-28 09:28:08.885213+00:00",
+        "duration_ms": 32651,
+        "row_count": 132735,
+        "byte_count": 26073549
+      },
+      {
+        "entry_point": "sec.reference",
+        "run_id": "live-load-reference-1",
+        "status": "success",
+        "started_at": "2026-11-28 09:28:54.566595+00:00",
+        "duration_ms": 166476,
+        "row_count": 7988,
+        "byte_count": 1579007703
+      },
+      {
+        "entry_point": "sec.reference",
+        "run_id": "live-load-reference-2",
+        "status": "success",
+        "started_at": "2026-11-28 09:33:18.352488+00:00",
+        "duration_ms": 24058,
+        "row_count": 7988,
+        "byte_count": 0
+      },
+      {
+        "entry_point": "sec.filings",
+        "run_id": "live-load-filings-2",
+        "status": "success",
+        "started_at": "2026-11-28 09:34:52.814149+00:00",
+        "duration_ms": 1121,
+        "row_count": 96326,
+        "byte_count": 0
+      },
+      {
+        "entry_point": "sec.facts",
+        "run_id": "live-load-facts-1",
+        "status": "success",
+        "started_at": "2026-11-28 09:35:03.438620+00:00",
+        "duration_ms": 35231,
+        "row_count": 1255672,
+        "byte_count": 188160189
+      }
+    ],
+    "objects": [
+      {
+        "dataset": "bulk",
+        "state": "loaded",
+        "objects": 1,
+        "first_date": "2026-11-28",
+        "last_date": "2026-11-28",
+        "bytes": "1578485771"
+      },
+      {
+        "dataset": "companyfacts",
+        "state": "loaded",
+        "objects": 50,
+        "first_date": "2026-11-28",
+        "last_date": "2026-11-28",
+        "bytes": "188160189"
+      },
+      {
+        "dataset": "index",
+        "state": "loaded",
+        "objects": 24,
+        "first_date": "2026-10-26",
+        "last_date": "2026-11-28",
+        "bytes": "25245134"
+      },
+      {
+        "dataset": "index",
+        "state": "not_published",
+        "objects": 2,
+        "first_date": "2026-11-11",
+        "last_date": "2026-11-26",
+        "bytes": null
+      },
+      {
+        "dataset": "reference",
+        "state": "loaded",
+        "objects": 1,
+        "first_date": "2026-11-28",
+        "last_date": "2026-11-28",
+        "bytes": "521932"
+      },
+      {
+        "dataset": "submissions",
+        "state": "loaded",
+        "objects": 7988,
+        "first_date": "2026-11-28",
+        "last_date": "2026-11-28",
+        "bytes": "668778437"
+      }
+    ],
+    "versions": [
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-10-26",
+        "committed_rows": 3466,
+        "duplicate_rows": 79,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 171,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-10-27",
+        "committed_rows": 4980,
+        "duplicate_rows": 91,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 309,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-10-28",
+        "committed_rows": 4341,
+        "duplicate_rows": 132,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 165,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-10-29",
+        "committed_rows": 5494,
+        "duplicate_rows": 60,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 78,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-10-30",
+        "committed_rows": 5882,
+        "duplicate_rows": 76,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 87,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-02",
+        "committed_rows": 5304,
+        "duplicate_rows": 49,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 69,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-03",
+        "committed_rows": 6611,
+        "duplicate_rows": 32,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 194,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-04",
+        "committed_rows": 5424,
+        "duplicate_rows": 63,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 83,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-05",
+        "committed_rows": 5517,
+        "duplicate_rows": 76,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 126,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-06",
+        "committed_rows": 5386,
+        "duplicate_rows": 97,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 120,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-09",
+        "committed_rows": 4827,
+        "duplicate_rows": 64,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 91,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-10",
+        "committed_rows": 5385,
+        "duplicate_rows": 44,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 143,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-12",
+        "committed_rows": 7715,
+        "duplicate_rows": 90,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 194,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-13",
+        "committed_rows": 7344,
+        "duplicate_rows": 127,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 143,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-16",
+        "committed_rows": 11037,
+        "duplicate_rows": 31,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 174,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-17",
+        "committed_rows": 5310,
+        "duplicate_rows": 23,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 156,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-18",
+        "committed_rows": 4148,
+        "duplicate_rows": 121,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 72,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-19",
+        "committed_rows": 3961,
+        "duplicate_rows": 61,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 81,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-20",
+        "committed_rows": 4044,
+        "duplicate_rows": 92,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 108,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-23",
+        "committed_rows": 4869,
+        "duplicate_rows": 58,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 114,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-24",
+        "committed_rows": 6385,
+        "duplicate_rows": 86,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 172,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-25",
+        "committed_rows": 5759,
+        "duplicate_rows": 124,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 136,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_index",
+        "unit_kind": "day",
+        "unit": "2026-11-27",
+        "committed_rows": 4574,
+        "duplicate_rows": 63,
+        "quarantined_rows": 0,
+        "file_count": 1,
+        "duration_ms": 81,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_filing_detail",
+        "unit_kind": "keys",
+        "unit": "cik:5:9205ae41",
+        "committed_rows": 4972,
+        "duplicate_rows": null,
+        "quarantined_rows": null,
+        "file_count": 5,
+        "duration_ms": 2163,
+        "run_id": "live-load-filings-1"
+      },
+      {
+        "table_name": "sec_company_snapshot",
+        "unit_kind": "day",
+        "unit": "2026-11-28",
+        "committed_rows": 7988,
+        "duplicate_rows": null,
+        "quarantined_rows": null,
+        "file_count": 1,
+        "duration_ms": 165707,
+        "run_id": "live-load-reference-1"
+      },
+      {
+        "table_name": "sec_company_former_name",
+        "unit_kind": "table",
+        "unit": "table",
+        "committed_rows": 6489,
+        "duplicate_rows": null,
+        "quarantined_rows": null,
+        "file_count": 7988,
+        "duration_ms": 202,
+        "run_id": "live-load-reference-1"
+      },
+      {
+        "table_name": "sec_company_snapshot",
+        "unit_kind": "day",
+        "unit": "2026-11-28",
+        "committed_rows": 7988,
+        "duplicate_rows": null,
+        "quarantined_rows": null,
+        "file_count": 1,
+        "duration_ms": 23757,
+        "run_id": "live-load-reference-2"
+      },
+      {
+        "table_name": "sec_company_former_name",
+        "unit_kind": "table",
+        "unit": "table",
+        "committed_rows": 6489,
+        "duplicate_rows": null,
+        "quarantined_rows": null,
+        "file_count": 7988,
+        "duration_ms": 181,
+        "run_id": "live-load-reference-2"
+      },
+      {
+        "table_name": "sec_filing_detail",
+        "unit_kind": "keys",
+        "unit": "cik:50:788942ca",
+        "committed_rows": 96326,
+        "duplicate_rows": null,
+        "quarantined_rows": null,
+        "file_count": 50,
+        "duration_ms": 918,
+        "run_id": "live-load-filings-2"
+      },
+      {
+        "table_name": "sec_xbrl_fact",
+        "unit_kind": "keys",
+        "unit": "cik:50:788942ca",
+        "committed_rows": 1255672,
+        "duplicate_rows": 0,
+        "quarantined_rows": 0,
+        "file_count": 50,
+        "duration_ms": 34976,
+        "run_id": "live-load-facts-1"
+      }
+    ],
+    "failed_checks": []
+  },
+  "lake": {
+    "tables": {
+      "sec_company_snapshot": {
+        "rows": 7988,
+        "data_files": 1,
+        "bytes": 362049
+      },
+      "sec_company_former_name": {
+        "rows": 6489,
+        "data_files": 1,
+        "bytes": 245687
+      },
+      "sec_filing_index": {
+        "rows": 127763,
+        "data_files": 23,
+        "bytes": 3615215
+      },
+      "sec_filing_detail": {
+        "rows": 96326,
+        "data_files": 1,
+        "bytes": 3042070
+      },
+      "sec_xbrl_fact": {
+        "rows": 1255672,
+        "data_files": 50,
+        "bytes": 10831818
+      }
+    },
+    "index": {
+      "files": 23,
+      "rows": 127763,
+      "pairs_in_two_index_files": 3,
+      "rows_with_an_earlier_date": 1425,
+      "forms": 282
+    },
+    "snapshot": {
+      "dates": [
+        "2026-11-28"
+      ],
+      "companies": 7988,
+      "with_a_sic_code": 6886,
+      "with_a_fiscal_year_end": 7562,
+      "with_a_state": 7089,
+      "without_an_exchange": 155,
+      "stale": 0,
+      "inactive": 0,
+      "distinct_attr_hash": 7988
+    },
+    "detail": {
+      "companies": 50,
+      "rows": 96326,
+      "largest_forms": [
+        [
+          "424B2",
+          45163
+        ],
+        [
+          "4",
+          21959
+        ],
+        [
+          "FWP",
+          5558
+        ],
+        [
+          "6-K",
+          3872
+        ],
+        [
+          "8-K",
+          3819
+        ],
+        [
+          "144",
+          3478
+        ],
+        [
+          "SCHEDULE 13G/A",
+          1896
+        ],
+        [
+          "SC 13G/A",
+          996
+        ]
+      ]
+    },
+    "facts": {
+      "companies": 50,
+      "rows": 1255672,
+      "taxonomies": {
+        "us-gaap": 26312,
+        "ifrs-full": 2287,
+        "ffd": 186,
+        "ecd": 143,
+        "dei": 94,
+        "srt": 33,
+        "invest": 19,
+        "rxp": 2
+      },
+      "companies_with_each_metric": {
+        "cash": 50,
+        "employees": 3,
+        "equity": 50,
+        "net_income": 50,
+        "operating_income": 43,
+        "revenue": 49,
+        "total_assets": 50
+      }
+    }
+  }
+}

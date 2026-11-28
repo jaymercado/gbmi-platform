@@ -4,3 +4,48 @@ rank,cik,name_at_selection,reason,added_on
 3,789019,MICROSOFT CORP,demo company: a fiscal year which ends in June,2026-11-28
 4,63276,MATTEL INC /DE/,demo company: a calendar year,2026-11-28
 5,1075124,THOMSON REUTERS CORP /CAN/,demo company: a foreign company with the forms 40-F and 6-K,2026-11-28
+6,1652044,Alphabet Inc.,gold sheet: the string 'Google' with 110 documents,2026-11-28
+7,1744489,Walt Disney Co,gold sheet: the string 'Espn' with 74 documents,2026-11-28
+8,1018724,AMAZON COM INC,gold sheet: the string 'Amazon Autos International' with 68 documents,2026-11-28
+9,1120193,"NASDAQ, INC.",gold sheet: the string 'Nasdaq' with 60 documents,2026-11-28
+10,1065280,NETFLIX INC,gold sheet: the string 'Netflix' with 41 documents,2026-11-28
+11,71691,NEW YORK TIMES CO,gold sheet: the string 'New York Times' with 39 documents,2026-11-28
+12,104169,Walmart Inc.,gold sheet: the string 'Walmart' with 35 documents,2026-11-28
+13,93410,CHEVRON CORP,gold sheet: the string 'Chevron' with 28 documents,2026-11-28
+14,217346,TEXTRON INC,gold sheet: the string 'Cessna' with 27 documents,2026-11-28
+15,2041610,Skydance Corp,gold sheet: the string 'Cnn' with 24 documents,2026-11-28
+16,46080,"HASBRO, INC.",gold sheet: the string 'Hasbro' with 23 documents,2026-11-28
+17,1579684,"USA TODAY Co., Inc.",gold sheet: the string 'Eastern Daily' with 21 documents,2026-11-28
+18,313838,Sony Group Corp,gold sheet: the string 'Sony' with 9 documents,2026-11-28
+19,895421,MORGAN STANLEY,news volume: 'morgan stanley' in 5172 GKG documents of 30 days,2026-11-28
+20,12927,BOEING CO,news volume: 'boeing' in 4668 GKG documents of 30 days,2026-11-28
+21,312069,BARCLAYS PLC,news volume: 'barclays' in 4155 GKG documents of 30 days,2026-11-28
+22,1730168,Broadcom Inc.,news volume: 'broadcom' in 3855 GKG documents of 30 days,2026-11-28
+23,831001,CITIGROUP INC,news volume: 'citigroup' in 3388 GKG documents of 30 days,2026-11-28
+24,72971,WELLS FARGO & COMPANY/MN,news volume: 'wells fargo' in 3336 GKG documents of 30 days,2026-11-28
+25,829224,STARBUCKS CORP,news volume: 'starbucks' in 3263 GKG documents of 30 days,2026-11-28
+26,2488,ADVANCED MICRO DEVICES INC,news volume: 'advanced micro devices' in 2902 GKG documents of 30 days,2026-11-28
+27,59478,ELI LILLY & Co,news volume: 'eli lilly' in 2354 GKG documents of 30 days,2026-11-28
+28,723125,MICRON TECHNOLOGY INC,news volume: 'micron technology' in 2189 GKG documents of 30 days,2026-11-28
+29,1141391,Mastercard Inc,news volume: 'mastercard' in 2167 GKG documents of 30 days,2026-11-28
+30,27904,"DELTA AIR LINES, INC.",news volume: 'delta air lines' in 2066 GKG documents of 30 days,2026-11-28
+31,1048911,FEDEX CORP,news volume: 'fedex' in 1928 GKG documents of 30 days,2026-11-28
+32,764478,BEST BUY CO INC,news volume: 'best buy' in 1759 GKG documents of 30 days,2026-11-28
+33,936468,LOCKHEED MARTIN CORP,news volume: 'lockheed martin' in 1673 GKG documents of 30 days,2026-11-28
+34,2012383,"BlackRock, Inc.",news volume: 'blackrock' in 1636 GKG documents of 30 days,2026-11-28
+35,77476,PEPSICO INC,news volume: 'pepsico' in 1566 GKG documents of 30 days,2026-11-28
+36,804328,QUALCOMM INC/DE,news volume: 'qualcomm' in 1504 GKG documents of 30 days,2026-11-28
+37,4962,AMERICAN EXPRESS CO,news volume: 'american express' in 1477 GKG documents of 30 days,2026-11-28
+38,1067491,Infosys Ltd,news volume: 'infosys' in 1446 GKG documents of 30 days,2026-11-28
+39,749251,GARTNER INC,news volume: 'gartner' in 1417 GKG documents of 30 days,2026-11-28
+40,1506293,"PINTEREST, INC.",news volume: 'pinterest' in 1357 GKG documents of 30 days,2026-11-28
+41,887596,CHEESECAKE FACTORY INC,news volume: 'cheesecake factory' in 1326 GKG documents of 30 days,2026-11-28
+42,938323,PEARSON PLC,news volume: 'pearson' in 1304 GKG documents of 30 days,2026-11-28
+43,92380,SOUTHWEST AIRLINES CO,news volume: 'southwest airlines' in 1225 GKG documents of 30 days,2026-11-28
+44,96223,Jefferies Financial Group Inc.,news volume: 'jefferies financial group' in 1184 GKG documents of 30 days,2026-11-28
+45,217410,UNILEVER PLC,news volume: 'unilever' in 1174 GKG documents of 30 days,2026-11-28
+46,1467373,Accenture plc,news volume: 'accenture' in 1112 GKG documents of 30 days,2026-11-28
+47,886982,GOLDMAN SACHS GROUP INC,news volume: 'goldman sachs group' in 1100 GKG documents of 30 days,2026-11-28
+48,56873,KROGER CO,news volume: 'kroger' in 1096 GKG documents of 30 days,2026-11-28
+49,78003,PFIZER INC,news volume: 'pfizer' in 1079 GKG documents of 30 days,2026-11-28
+50,1067983,BERKSHIRE HATHAWAY INC,news volume: 'berkshire hathaway' in 1058 GKG documents of 30 days,2026-11-28
