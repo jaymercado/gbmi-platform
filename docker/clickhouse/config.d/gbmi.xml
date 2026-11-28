@@ -1,14 +1,11 @@
 <?xml version="1.0"?>
-<!-- Server settings for a single small node (blueprint 9.1, 9.3). -->
+<!-- Server settings for a single small node (blueprint 9.1, 9.3): the laptop and the AWS host.
+     The lake of the laptop has a file of its own, lake-local.xml; the host reads the lake
+     from S3 and mounts no lake folder (week 3 plan 3.3). -->
 <clickhouse>
     <!-- Kept below the container limit so that ClickHouse rejects a query instead of the
          kernel killing the server. The value comes from CH_MAX_SERVER_MEMORY_USAGE. -->
     <max_server_memory_usage from_env="CH_MAX_SERVER_MEMORY_USAGE"/>
-
-    <!-- IcebergLocal, like every file-based engine, may only read below user_files_path
-         (spike SK2, question Q4). The lake is mounted read-only at /lake, at the same path
-         as in the containers that write it, because Iceberg metadata holds absolute URIs. -->
-    <user_files_path>/lake/</user_files_path>
 
     <logger>
         <level>information</level>
